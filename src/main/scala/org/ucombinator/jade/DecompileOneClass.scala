@@ -13,10 +13,16 @@ object DecompileOneClass {
   }
 }
 
-
 class ClassPrinter() extends ClassVisitor(Opcodes.ASM6) {
   private var sourceFile = Option.empty[String]
   private var visitSourceIsCalled = false
+
+  private def extractModifiers(access: Int, candidateFlags: Map[Int, TAccessFlag])
+  : Set[String] = candidateFlags
+    .keySet
+    .withFilter(f => (f & access) != 0)
+    .map(candidateFlags)
+    .flatMap(_.keyword)
 
   override def visit(version: Int, access: Int, name: String, signature: String, superName: String,
                      interfaces: Array[String])
@@ -29,7 +35,10 @@ class ClassPrinter() extends ClassVisitor(Opcodes.ASM6) {
       if (interfaces.isEmpty) { "" }
       else                    { s"implements ${interfaces.mkString(", ")}" }
 
-    val header = s"$name $extendsSuperName $implementsInterfaces"
+    val modifiers = extractModifiers(access, AccessFlag.classFlags)
+      .mkString(" ")
+
+    val header = s"$modifiers $name $extendsSuperName $implementsInterfaces"
     println(header + " {")
   }
 
@@ -53,7 +62,8 @@ class ClassPrinter() extends ClassVisitor(Opcodes.ASM6) {
 
   override def visitField(access: Int, name: String, desc: String, signature: String, value: Any)
   : FieldVisitor = {
-    println(" " + desc + " " + name)
+    val modifiers = extractModifiers(access, AccessFlag.fieldFlags).mkString(" ")
+    println(s"$modifiers $desc $name")
     null
   }
 
