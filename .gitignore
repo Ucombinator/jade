@@ -1,4 +1,18 @@
+### Git, Editor, IDE, and OS files
+# Emacs
+*~
+# InteliJ IDEA
 .idea
-out
+*.iml
+# Vim
+.*.sw?
+# Max OSX
+.DS_Store
+# Git
+*.orig
+
+### Compilation results
+*.class
 target
+
 src/main/scala/org/ucombinator/jade/Experiments.sc
