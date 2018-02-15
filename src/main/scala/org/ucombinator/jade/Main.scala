@@ -8,10 +8,22 @@ import org.apache.commons.io.FileUtils
 
 import scala.collection.JavaConverters._
 
+class MainConf(args: Seq[String]) extends JadeScallopConf(args = args) {
+  val help = opt[Unit](short = 'h', descr = "show this help message")(HelpConverter)
+
+  val jarFile = trailArg[String]()
+  val destinationFolder = trailArg[String]()
+
+  verify()
+}
 
 object Main {
   def main(args: Array[String])
   : Unit = {
+    val conf = new MainConf(args)
+    println("jarFile: " + conf.jarFile())
+    println("destinationFolder: " + conf.destinationFolder())
+
     // TODO: accept a directory that includes .class files
     require(args.length == 2, "Usage: <this program> <.jar file> <destination folder>")
     val appName: String = args(0)
@@ -81,4 +93,3 @@ object Main {
         Files.copy(jarFile.getInputStream(d), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
       }
 }
-
