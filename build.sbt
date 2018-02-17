@@ -8,21 +8,14 @@ scalaVersion := "2.12.4"
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 
 libraryDependencies ++= Seq(
-  // TODO: Add more command line options and use scallop to parse
   "org.rogach" %% "scallop" % "3.1.1",
-
-  // https://mvnrepository.com/artifact/org.ow2.asm/asm
   "org.ow2.asm" % "asm" % "6.0",
-
-  // ScalaTest
   "org.scalactic" %% "scalactic" % "3.0.4",
   "org.scalatest" %% "scalatest" % "3.0.4" % Test,
-
-  // https://mvnrepository.com/artifact/commons-io/commons-io
-  "commons-io" % "commons-io" % "2.6",
-
-  // https://mvnrepository.com/artifact/com.google.guava/guava
-  "com.google.guava" % "guava" % "24.0-jre")
+  "commons-io" % "commons-io" % "2.6"
+// "com.google.guava" % "guava" % "24.0-jre",
+//  "org.apache.maven" % "maven-core" % "3.5.2"
+)
 
 // Flags to 'scalac'.  Try to get as much error and warning detection as possible.
 scalacOptions ++= Seq(

@@ -23,6 +23,7 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   shortSubcommandsHelp(true)
   // TODO: banner("Usage: ...")
   addSubcommand(Decompile)
+  addSubcommand(ListArtifacts)
   verify()
 }
 
@@ -99,4 +100,10 @@ object Decompile extends JadeSubcommand("decompile") {
            path = Paths.get(outputDirectoryName, d.getName)) {
         Files.copy(jarFile.getInputStream(d), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
       }
+}
+
+object ListArtifacts extends JadeSubcommand("list-artifacts") {
+  def run(): Unit = {
+    // TODO
+  }
 }
