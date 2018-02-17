@@ -4,30 +4,36 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.util.jar.{JarEntry, JarFile}
 
-import org.apache.commons.io.FileUtils
-
 import scala.collection.JavaConverters._
 
-class MainConf(args: Seq[String]) extends JadeScallopConf(args = args) {
-  val help = opt[Unit](short = 'h', descr = "show this help message")(HelpConverter)
+import org.apache.commons.io.FileUtils
+import org.rogach.scallop.ScallopConf
 
-  val jarFile = trailArg[String]()
-  val destinationFolder = trailArg[String]()
+object Main extends App {
+  val conf: Main = new Main(this.args)
 
+  conf.subcommand match {
+    case None => println("ERROR: No subcommand specified")
+    case Some(m: JadeSubcommand) => m.run()
+    case Some(m) => println("ERROR: Unknown subcommand: " + m)
+  }
+}
+
+class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopConf {
+  shortSubcommandsHelp(true)
+  // TODO: banner("Usage: ...")
+  addSubcommand(Decompile)
   verify()
 }
 
-object Main {
-  def main(args: Array[String])
-  : Unit = {
-    val conf = new MainConf(args)
-    println("jarFile: " + conf.jarFile())
-    println("destinationFolder: " + conf.destinationFolder())
+object Decompile extends JadeSubcommand("decompile") {
+  val jarFile = trailArg[String]()
+  val destinationFolder = trailArg[String]()
 
+  override def run(): Unit = {
     // TODO: accept a directory that includes .class files
-    require(args.length == 2, "Usage: <this program> <.jar file> <destination folder>")
-    val appName: String = args(0)
-    val destinationDirectoryName: String = args(1)
+    val appName: String = jarFile()
+    val destinationDirectoryName: String = destinationFolder()
     validityCheck(appName, destinationDirectoryName)
 
     val projectDirectory: Path = {
@@ -39,9 +45,10 @@ object Main {
     }
 
     createProjectDirectory(projectDirectory.toFile)
-    val jarFile = new JarFile(appName)
-    processJar(jarFile, projectDirectory)
+    val jar = new JarFile(appName)
+    processJar(jar, projectDirectory)
   }
+
 
   private def validityCheck(appName: String, destinationDirectoryName: String)
   : Unit = {
