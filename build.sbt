@@ -10,8 +10,8 @@ resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 libraryDependencies ++= Seq(
   "org.rogach" %% "scallop" % "3.1.1",
   "org.ow2.asm" % "asm" % "6.0",
-  "org.scalactic" %% "scalactic" % "3.0.4",
-  "org.scalatest" %% "scalatest" % "3.0.4" % Test,
+  "org.scalactic" %% "scalactic" % "3.0.5",
+  "org.scalatest" %% "scalatest" % "3.0.5" % Test,
   "commons-io" % "commons-io" % "2.6"
 // "com.google.guava" % "guava" % "24.0-jre",
 //  "org.apache.maven" % "maven-core" % "3.5.2"
