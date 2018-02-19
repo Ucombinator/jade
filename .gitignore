@@ -14,5 +14,6 @@
 ### Compilation results
 *.class
 target
+jars/jade.jar
 
 src/main/scala/org/ucombinator/jade/Experiments.sc

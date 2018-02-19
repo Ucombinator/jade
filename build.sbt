@@ -34,3 +34,33 @@ scalacOptions ++= Seq(
 javacOptions in compile ++= Seq(
   // Turn on all warnings
   "-Xlint")
+
+assemblyOutputPath in assembly := new File("./jars/jade.jar")
+
+// Create merge strategies that do not cause warnings
+def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {
+  val name = "quiet:" + mergeStragegy.name
+  def apply(tempDir: File, path: String, files: Seq[File]): Either[String, Seq[(File, String)]] =
+    mergeStragegy(tempDir, path, files)
+
+  override def notifyThreshold = 1
+  override def detailLogLevel = Level.Info
+  override def summaryLogLevel = Level.Info
+}
+
+lazy val quietDiscard = quiet(MergeStrategy.discard)
+lazy val quietRename = quiet(MergeStrategy.rename)
+
+assemblyMergeStrategy in assembly := {
+  case PathList(file) if List(
+    "library.properties", // from scala-library
+    "rootdoc.txt", // from scala-library
+    "reflect.properties", // from scala-reflect
+    "module-info.class" // from info_asm-6.0
+  ).contains(file) => quietDiscard
+
+  case PathList("META-INF", "maven", xs @ _*) => MergeStrategy.deduplicate
+  case PathList("META-INF", xs @ _*) => quietRename
+
+  case _ => MergeStrategy.deduplicate
+}
