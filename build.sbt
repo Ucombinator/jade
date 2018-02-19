@@ -35,7 +35,7 @@ javacOptions in compile ++= Seq(
   // Turn on all warnings
   "-Xlint")
 
-assemblyOutputPath in assembly := new File("./jars/jade.jar")
+assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 
 // Create merge strategies that do not cause warnings
 def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {

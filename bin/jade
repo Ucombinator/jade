@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+: ${JADE_dir:="$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd -P)"}
+: ${JADE_jar:="$JADE_dir/lib/jade/jade.jar"}
+: ${JADE_java:="java"}
+: ${JADE_java_opts:=""}
+
+# Use JAVA_OPTS if provided, otherwise use the default from above.
+chosen_java_opts=${JAVA_OPTS:-"${JADE_java_opts}"}
+export JAVA_OPTS="${chosen_java_opts}"
+
+# Do the execution.
+exec "${JADE_java}" -Xss16M -jar "${JADE_jar}" "$@"
