@@ -29,8 +29,7 @@ scalacOptions ++= Seq(
   "-opt:l:inline",
   // Enable additional warnings where generated code depends on assumptions.
   "-unchecked",
-  "-Xlint:_"
-)
+  "-Xlint:_")
 
 javacOptions in compile ++= Seq(
   // Turn on all warnings
