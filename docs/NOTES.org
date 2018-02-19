@@ -1,0 +1,62 @@
+* Maven
+** List of all repositories indexed by https://mvnrepository.com/
+** Get list of all artifacts in a remote repository
+** Detect non-Java
+
+* ASM
+** Variable Analysis
+
+* Testing
+** OpenJDK vs Oracle JDK
+** Other decompiler test suites
+** Fuzzing/QuickCheck
+*** `javac` fuzzers
+** Convergence after 1 vs 2 cycles.
+
+** Success/error levels
+*** Unknown failure
+*** Setup failure
+**** Get Jar
+**** Get dependencies
+*** Decompile failure
+**** ASM failure
+*** Decompile succeeded
+*** Compile succeeded
+*** Equal Signatures
+*** Equivalent Method Bodies
+    Include information about whether identical or what transformations are
+    needed to show that they are equivalent
+
+* Implementation stages
+** `class Foo {}`
+** Class modifiers
+*** interface
+*** extends
+*** abstract
+*** generics
+** imports
+** fields
+** method signatures
+** Method Bodies
+*** Non-branching
+*** Non-looping
+*** While loop
+*** Do/while loop
+*** Loop improvement
+**** for (init; test; inc)
+**** for (x : expr)
+
+* Special considerations
+** Lambda
+   Look at Soot.scala for example of how to decode
+** Generics
+** Synthetics
+** Inner and nested classes
+
+* Support levels
+** Java Language Level (e.g., as in IntelliJ)
+** Class file format version
+
+* TODO/Questions
+** include sbt-launch.jar
+** Why do we have a META-INF in `src/`?
