@@ -59,4 +59,3 @@
 
 * TODO/Questions
 ** include sbt-launch.jar
-** Why do we have a META-INF in `src/`?
