@@ -13,15 +13,16 @@ object Main extends App {
   val conf: Main = new Main(this.args)
 
   conf.subcommand match {
-    case None => println("ERROR: No subcommand specified")
+    case None => conf.errorMessageHandler("Missing subcommand")
     case Some(m: JadeSubcommand) => m.run()
-    case Some(m) => println("ERROR: Unknown subcommand: " + m)
+    case Some(m) => conf.errorMessageHandler("Unknown subcommand: " + m)
   }
 }
 
 class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopConf {
   shortSubcommandsHelp(true)
-  // TODO: banner("Usage: ...")
+
+  banner("Usage: jade [subcommand] [options]")
   addSubcommand(Decompile)
   addSubcommand(ListArtifacts)
   verify()
