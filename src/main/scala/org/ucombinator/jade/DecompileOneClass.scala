@@ -11,14 +11,13 @@ object DecompileOneClass {
   def decompileOne(className: String): Unit = {
     require(className != null, "the given class file name is actually `null`!")
     val cn = new ClassNode
-    // TODO: It seems in my test case the given names are only the class in Java standard library
-    // TODO (continue): try other cases later
+    // TODO: It seems in my test case the given names are only the class in Java standard library like
+    // TODO (CONTINUE): "java.lang.Runnable" and "java.util.HashMap"
+    // TODO (CONTINUE): try other cases later
     val cr = new ClassReader(className)
-    //val cr = new ClassReader("java.lang.Runnable")
-    //val cr = new ClassReader("java.util.HashMap")
     cr.accept(cn, 0)
 
-    //cn.version
+    // cn.version
 
     /* -- annotations -- */
     val visibleAnnotationsString: String = annotationText(cn.visibleAnnotations.asScala)
@@ -29,20 +28,22 @@ object DecompileOneClass {
     val classHeader: String = constructClassHeader(
       cn.access, cn.name,
       Option(cn.superName),
-      cn.interfaces.asScala.toList, cn.signature)
+      cn.interfaces.asScala.toList, cn.signature, isInner = cn.outerClass != null)
 
     // TODO: cn.sourceFile, cn.sourceDebug
-    // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
-    // This is non-standard attributes, I'm not sure if I need them.
-    // TODO: cn.attrs
 
     println(classHeader + " {")
+
+    // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
 
     // TODO: Inner classes
     val inners: List[InnerClassNode] = cn.innerClasses.asScala.toList
     inners.foreach { c =>
       println(c.name)
     }
+
+    // This is non-standard attributes, I'm not sure if I need them.
+    // TODO: cn.attrs
 
     val fields: List[FieldNode] = cn.fields.asScala.toList
     val filedsCode: List[String] = fields.map(fieldText)
@@ -60,10 +61,12 @@ object DecompileOneClass {
 
 
   private def constructClassHeader(access: Int, name: String, superName: Option[String],
-                                   interfaces: List[String], signature: String): String = {
+                                   interfaces: List[String], signature: String, isInner: Boolean): String = {
 
     /* -- modifiers, which may include `interface` -- */
-    val modifiers = AccessFlag.extractClassAccessFlags(access)
+
+    val modifiers = if (isInner) AccessFlag.extractNestedClassAccessFlags(access)
+                    else         AccessFlag.extractClassAccessFlags(access)
     val isInterface = modifiers.contains("interface")
 
     val modifiersAndTypeString: String =
@@ -115,7 +118,7 @@ object DecompileOneClass {
 
 
   /** Get field Text */
-  def fieldText(field: FieldNode): String = {
+  private def fieldText(field: FieldNode): String = {
     val visibleAnnotationsString = annotationText(field.visibleAnnotations.asScala)
     val invisibleAnnotationsString = annotationText(field.invisibleAnnotations.asScala)
 
@@ -133,7 +136,7 @@ object DecompileOneClass {
   }
 
   /** Get method Text */
-  def methodText(method: MethodNode): String = {
+  private def methodText(method: MethodNode): String = {
     val visibleAnnotationsString = annotationText(method.visibleAnnotations.asScala)
     val invisibleAnnotationsString = annotationText(method.invisibleAnnotations.asScala)
 
@@ -143,12 +146,22 @@ object DecompileOneClass {
 
     val checkedExceptions = method.exceptions.asScala.mkString(", ")
 
+    val parameterList = Option(method.parameters.asScala).
+      getOrElse(mutable.Buffer.empty[ParameterNode]).
+      map { p =>
+        AccessFlag.extractParameterAccessFlags(p.access).mkString(" ") + p.name
+      }.mkString(" ")
+//    val parameterList =
+//      method.parameters.asScala.map { p: ParameterNode =>
+//        AccessFlag.extractParameterAccessFlags(p.access).mkString(" ") + p.name
+//      }.mkString(", ")
+
     visibleAnnotationsString + "\n" +
       invisibleAnnotationsString + "\n" +
       // TODO: signature
-      modifiers + " " + /* signatureString +*/ " " + method.name + "(" + "TODO: parameters" + ")" +
+      modifiers + " " + /* signatureString +*/ " " + method.name + "(" + parameterList + ")" +
       " " + (if (checkedExceptions.isEmpty) "" else "throws" + " " + checkedExceptions) +
-      "{" + "}"
+      " " + (if (isAbstract) ";" else "{ /* TODO */ }")
   }
 
   def printInsnNode(insnNode: AbstractInsnNode): Unit = insnNode match {
