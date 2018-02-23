@@ -10,6 +10,11 @@ resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 libraryDependencies ++= Seq(
   "org.rogach" %% "scallop" % "3.1.1",
   "org.ow2.asm" % "asm" % "6.0",
+  "org.ow2.asm" % "asm-commons" % "6.0",
+  "org.ow2.asm" % "asm-tree" % "6.0",
+  "org.ow2.asm" % "asm-analysis" % "6.0",
+  "org.ow2.asm" % "asm-util" % "6.0",
+  // "org.ow2.asm" % "asm-xml" % "6.0",
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
   "commons-io" % "commons-io" % "2.6",

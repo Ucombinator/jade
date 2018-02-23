@@ -28,7 +28,7 @@ class Decompiler(val jarFile: JarFile, val classFiles: Iterator[JarEntry]) {
 
   private def getStartLineNumber(jarEntry: JarEntry)
   : Long = {
-    // TODO: Replace mock
+    // TODO: Replace the placeholder
     3.toLong
   }
 
@@ -41,7 +41,7 @@ class Decompiler(val jarFile: JarFile, val classFiles: Iterator[JarEntry]) {
     // Use ASM
     // class file --> jvm instructions or ASM class file representations
     // jvm instructions --> decompiled java code
-    // TODO: replace mock
+    // TODO: replace placeholder
     List(1.toByte)
   }
 }

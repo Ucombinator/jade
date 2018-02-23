@@ -12,15 +12,7 @@ case object J extends FieldDescriptor  // `long`   - long integer
 case class  L(className: String) extends FieldDescriptor  // reference  - reference an instance of class ClassName
 case object S extends FieldDescriptor  // `short`   - signed short
 case object Z extends FieldDescriptor  // `boolean` - true or false
-
-abstract class ArrayFieldDescriptor extends FieldDescriptor // reference - one array dimension
-case object `[B` extends ArrayFieldDescriptor
-case object `[C` extends ArrayFieldDescriptor
-case object `[D` extends ArrayFieldDescriptor
-case object `[F` extends ArrayFieldDescriptor
-case object `[I` extends ArrayFieldDescriptor
-case object `[J` extends ArrayFieldDescriptor
-case class  `[L`(className: String) extends ArrayFieldDescriptor
-case object `[S` extends ArrayFieldDescriptor
-case object `[Z` extends ArrayFieldDescriptor
-case class  `[`(arr: ArrayFieldDescriptor) extends ArrayFieldDescriptor // High dimension array
+// TODO: Update to the se 9 version of specification
+// Ref: https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.1
+// "An array type descriptor is valid only if it represents 255 or fewer dimensions.")
+case class  `[`(arr: FieldDescriptor) extends FieldDescriptor // reference - one array dimension
