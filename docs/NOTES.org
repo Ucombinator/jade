@@ -55,7 +55,16 @@
 
 * Support levels
 ** Java Language Level (e.g., as in IntelliJ)
+*** 1.3 Plain old java
+*** 1.4 'assert' keyword
+*** 5.0 'enum' keyword, generics, autoboxing etc.
+*** 6 '@Override' in interface
+*** 7 Diamons, ARM, multi-catch etc.
+*** 8 Lambdas, type annotations etc.
+*** 9 Modules, private methods in interfaces etc.
 ** Class file format version
 
 * TODO/Questions
-** include sbt-launch.jar
+** generate META-INF/maven
+   For both jade and all dependencies
+** Why is `src/main/scala/org/ucombinator/jade/Experiments.sc` in .gitignore

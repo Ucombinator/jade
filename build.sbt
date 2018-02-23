@@ -12,9 +12,10 @@ libraryDependencies ++= Seq(
   "org.ow2.asm" % "asm" % "6.0",
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
-  "commons-io" % "commons-io" % "2.6"
+  "commons-io" % "commons-io" % "2.6",
+  "org.apache.maven" % "maven-core" % "3.5.2", // 3.5.2 has self conflicts in its own dependencies
+  "org.apache.maven" % "maven-compat" % "3.5.2"
 // "com.google.guava" % "guava" % "24.0-jre",
-//  "org.apache.maven" % "maven-core" % "3.5.2"
 )
 
 // Flags to 'scalac'.  Try to get as much error and warning detection as possible.
@@ -56,7 +57,8 @@ assemblyMergeStrategy in assembly := {
     "library.properties", // from scala-library
     "rootdoc.txt", // from scala-library
     "reflect.properties", // from scala-reflect
-    "module-info.class" // from info_asm-6.0
+    "module-info.class", // from asm-6.0
+    "about.html" // from org.eclipse.sisu.plexus-0.3.3 and org.eclipse.sisu.inject-0.3.3
   ).contains(file) => quietDiscard
 
   case PathList("META-INF", "maven", xs @ _*) => MergeStrategy.deduplicate
