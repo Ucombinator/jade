@@ -16,4 +16,5 @@
 target
 lib/jade/jade.jar
 
-src/main/scala/org/ucombinator/jade/Experiments.sc
+# Scala Worksheet
+*.sc
