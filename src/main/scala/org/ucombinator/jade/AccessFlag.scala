@@ -122,7 +122,7 @@ case object ACC_INTERFACE extends AccessFlag
   val hasKeyword = true
   val keyword = Some("interface")  // TODO: ??? From the specification, an interface also need acc_abstract flag??? page 68 JVM 8
   val code = 0x0200
-  override val rank = Int.MaxValue
+  override val rank: Int = Int.MaxValue
 }
 
 case object ACC_ABSTRACT extends AccessFlag
