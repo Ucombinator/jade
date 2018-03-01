@@ -2,9 +2,11 @@ package org.ucombinator.jade
 
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.analysis._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.immutable
 
 object DecompileOneClass {
 
@@ -55,6 +57,10 @@ object DecompileOneClass {
 
     println(methodsCode.mkString("\n"))
 
+    for (method <- methods) {
+      println(method.name)
+      new IdentifierAnalyzer(className, method)
+    }
 
     println("\n}")
   }
