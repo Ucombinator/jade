@@ -32,9 +32,18 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   shortSubcommandsHelp(true)
 
   banner("Usage: jade [subcommand] [options]")
+  addSubcommand(DecompileClass)
   addSubcommand(Decompile)
   addSubcommand(TestArtifact)
   verify()
+}
+
+object DecompileClass extends JadeSubcommand("decompile-class") {
+  val className = trailArg[String]()
+
+  override def run(): Unit = {
+      DecompileOneClass.decompileOne(className())
+  }
 }
 
 object Decompile extends JadeSubcommand("decompile") {
