@@ -19,7 +19,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
   "commons-io" % "commons-io" % "2.6",
   "org.apache.maven" % "maven-core" % "3.5.2", // 3.5.2 has self conflicts in its own dependencies
-  "org.apache.maven" % "maven-compat" % "3.5.2"
+  "org.apache.maven" % "maven-compat" % "3.5.2",
+  "org.jgrapht" % "jgrapht-core" % "1.1.0",
+  "org.jgrapht" % "jgrapht-ext" % "1.1.0"
 // "com.google.guava" % "guava" % "24.0-jre",
 )
 
