@@ -45,7 +45,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer) extends Inte
      * handler variable and with <code>null</code> type for variables reserved
      * by long and double types.
      *
-     * @param type
+     * @param typ
      *            a primitive or reference type, or <tt>null</tt> to represent
      *            an uninitialized value.
      * @return a value that represents the given type. The size of the returned
