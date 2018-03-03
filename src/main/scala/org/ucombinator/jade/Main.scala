@@ -127,6 +127,29 @@ object TestArtifact extends JadeSubcommand("test-artifact") {
   val artifactId = trailArg[String]()
 
   def run(): Unit = {
+    import org.apache.maven.wagon.Wagon
+    import org.codehaus.plexus.DefaultContainerConfiguration
+    import org.codehaus.plexus.DefaultPlexusContainer
+    import org.codehaus.plexus.PlexusConstants
+    import org.apache.maven.index.Indexer
+    import org.apache.maven.index.updater.IndexUpdater
+
+    // here we create Plexus container, the Maven default IoC container
+    // Plexus falls outside of MI scope, just accept the fact that
+    // MI is a Plexus component ;)
+    // If needed more info, ask on Maven Users list or Plexus Users list
+    // google is your friend!
+    val config = new DefaultContainerConfiguration
+    config.setClassPathScanning(PlexusConstants.SCANNING_INDEX)
+    val plexusContainer = new DefaultPlexusContainer(config)
+
+    // lookup the indexer components from plexus
+    val indexer = plexusContainer.lookup(classOf[Indexer])
+    val indexUpdater = plexusContainer.lookup(classOf[IndexUpdater])
+    // lookup wagon used to remotely fetch index
+    val httpWagon = plexusContainer.lookup(classOf[Wagon], "http")
+
+  /*
     //org.apache.maven.artifact.repository.metadata.RepositoryMetadataManager
     //ContainerConfiguration
     //org.apache.maven.artifact.repository.metadata.DefaultRepositoryMetadataManager
@@ -159,5 +182,6 @@ object TestArtifact extends JadeSubcommand("test-artifact") {
     //r.find()
     //new DefaultArtifact(groupId: String, artifactId: String, versionRange: VersionRange, scope: String, `type`: String, classifier: String, artifactHandler: ArtifactHandler, optional: Boolean)
     //println(versions.asScala)
+    */
   }
 }

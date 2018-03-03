@@ -18,11 +18,24 @@ libraryDependencies ++= Seq(
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
   "commons-io" % "commons-io" % "2.6",
-  "org.apache.maven" % "maven-core" % "3.5.2", // 3.5.2 has self conflicts in its own dependencies
-  "org.apache.maven" % "maven-compat" % "3.5.2",
   "org.jgrapht" % "jgrapht-core" % "1.1.0",
-  "org.jgrapht" % "jgrapht-ext" % "1.1.0"
-// "com.google.guava" % "guava" % "24.0-jre",
+  "org.jgrapht" % "jgrapht-ext" % "1.1.0",
+//  "com.google.guava" % "guava" % "24.0-jre",
+
+  // NOTE: 3.5.2 has self conflicts in its own dependencies
+  "org.apache.maven" % "maven-core" % "3.5.2",
+  "org.apache.maven" % "maven-compat" % "3.5.2",
+//  "org.apache.maven.indexer" % "indexer-core" % "6.0.0",
+  "org.apache.maven.indexer" % "indexer-core" % "6.0.0",
+  "org.apache.maven.wagon" % "wagon-http-lightweight" % "2.12"
+//  "org.eclipse.sisu" % "org.eclipse.sisu.plexus" % "0.3.3"
+
+)
+
+// Deal with version conflicts in library dependencies
+dependencyOverrides ++= Seq(
+  "com.google.guava" % "guava" % "20.0",
+  "org.codehaus.plexus" % "plexus-utils" % "3.1.0"
 )
 
 // Flags to 'scalac'.  Try to get as much error and warning detection as possible.
@@ -45,6 +58,11 @@ javacOptions in compile ++= Seq(
 
 assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 
+assemblyShadeRules in assembly := Seq(
+  // Conflicts with "javax.annotation" % "javax.annotation-api" % "1.2"
+  ShadeRule.rename("javax.annotation.**" -> "javax.annotation.jsr250.@1").inLibrary("javax.annotation" % "jsr250-api" % "1.0")
+)
+
 // Create merge strategies that do not cause warnings
 def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {
   val name = "quiet:" + mergeStragegy.name
@@ -54,6 +72,30 @@ def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy =
   override def notifyThreshold = 1
   override def detailLogLevel = Level.Info
   override def summaryLogLevel = Level.Info
+}
+
+// MergeStrategy for `META-INF/plexus/components.xml` files
+val componentsXmlMerge: sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {
+  val name = "componentsXmlMerge"
+  import scala.xml._
+
+  def apply(tempDir: File, path: String, files: Seq[File]): Either[String, Seq[(File, String)]] = {
+    val components: Seq[Node] =
+      files
+      .map(XML.loadFile)
+      .flatMap(_ \\ "component-set" \ "components" \ "_")
+      .flatMap(List(Text("\n    "), _)) ++ Seq(Text("\n  "))
+    val componentSet = new Elem(null, "component-set", Null, TopScope, false,
+      Text("\n  "),
+      new Elem(null, "components", Null, TopScope, false,
+        components: _*),
+      Text("\n"))
+
+    val file = MergeStrategy.createMergeTarget(tempDir, path)
+    XML.save(file.toString, componentSet, enc = "UTF-8", xmlDecl = true)
+    IO.append(file, IO.Newline.getBytes(IO.defaultCharset))
+    Right(Seq(file -> path))
+  }
 }
 
 lazy val quietDiscard = quiet(MergeStrategy.discard)
@@ -68,8 +110,18 @@ assemblyMergeStrategy in assembly := {
     "about.html" // from org.eclipse.sisu.plexus-0.3.3 and org.eclipse.sisu.inject-0.3.3
   ).contains(file) => quietDiscard
 
-  case PathList("META-INF", "maven", xs @ _*) => MergeStrategy.deduplicate
-  case PathList("META-INF", xs @ _*) => quietRename
+  case PathList("META-INF", file) if List(
+    "MANIFEST.MF",
+    "DEPENDENCIES",
+    "LICENSE",
+    "LICENSE.txt",
+    "NOTICE",
+    "NOTICE.txt"
+  ).contains(file) => quietRename
+
+  case PathList("META-INF", "services", xs @ _*) => quietDiscard
+  case PathList("META-INF", "plexus", "components.xml") => quiet(componentsXmlMerge)
+  case PathList("META-INF", "sisu", "javax.inject.Named") => quiet(MergeStrategy.filterDistinctLines)
 
   case _ => MergeStrategy.deduplicate
 }
