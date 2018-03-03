@@ -1,6 +1,6 @@
 package org.ucombinator.jade
 
-import scala.collection.immutable._
+import scala.collection.immutable.{HashMap, Queue}
 
 sealed trait TAccessFlag {
   val hasKeyword: Boolean
@@ -184,11 +184,11 @@ val hasKeyword = false
 object AccessFlag {
 //  public protected private abstract static final transient volatile synchronized native strictfp interface
   private def extractAccessFlags(access: Int, flags: Map[Int, TAccessFlag])
-    : List[String] = flags
+    : Queue[String] = flags
       .keySet
       .withFilter(f => (f & access) != 0)
       .map(flags)
-      .toList
+      .asInstanceOf[Queue[TAccessFlag]]
       .sortBy(_.rank)
       .flatMap(_.keyword)
 
@@ -209,7 +209,7 @@ object AccessFlag {
   // TODO: this does NOT works as java.lang.reflect.Modifier.toString(obj.getClass.getModifiers)
   // TODO(continue): find out the reason!!! Both can get a right result, since they don't have the same passed in
   // TODO(continue): argument. You can't use one method with another method's argument!!!
-  def extractClassAccessFlags(access: Int): List[String] = {
+  def extractClassAccessFlags(access: Int): Queue[String] = {
     val l = extractAccessFlags(access, classFlags)
     if (l.contains("interface") && l.contains("abstract")) {
       l.filter(_ != "abstract")
@@ -232,7 +232,7 @@ object AccessFlag {
     0x4000 -> ACC_ENUM,       // Declared as an element of an enum.
   )
 
-  def extractFieldAccessFlags(access: Int): List[String] =
+  def extractFieldAccessFlags(access: Int): Queue[String] =
     extractAccessFlags(access, fieldFlags)
 
   private val methodFlags = HashMap[Int, TMethodFlag](
@@ -250,7 +250,7 @@ object AccessFlag {
     0x1000 -> ACC_SYNTHETIC,     // Declared synthetic; not present in the source code.
   )
 
-  def extractMethodAccessFlags(access: Int): List[String] =
+  def extractMethodAccessFlags(access: Int): Queue[String] =
     extractAccessFlags(access, methodFlags)
 
   private val nestedClassFlags = HashMap[Int, TNestedClassFlag](
@@ -266,7 +266,7 @@ object AccessFlag {
         0x4000 -> ACC_ENUM,        // Declared as an enum type.
   )
 
-  def extractNestedClassAccessFlags(access: Int): List[String] =
+  def extractNestedClassAccessFlags(access: Int): Queue[String] =
     extractAccessFlags(access, nestedClassFlags)
 
   // TODO: Comment
@@ -276,13 +276,13 @@ object AccessFlag {
     0x8000 -> ACC_MANDATED
   )
 
-  def extractParameterAccessFlags(access: Int): List[String] =
+  def extractParameterAccessFlags(access: Int): Queue[String] =
     extractAccessFlags(access, parameterFlags)
 
   // TODO
   private val moduleFlags = HashMap.empty[Int, TModuleFlag]
 
-  def extractModuleAccessFlags(access: Int): List[String] =
+  def extractModuleAccessFlags(access: Int): Queue[String] =
     extractAccessFlags(access, moduleFlags)
 }
 
