@@ -27,9 +27,9 @@ libraryDependencies ++= Seq(
   "org.apache.maven" % "maven-compat" % "3.5.2",
 //  "org.apache.maven.indexer" % "indexer-core" % "6.0.0",
   "org.apache.maven.indexer" % "indexer-core" % "6.0.0",
-  "org.apache.maven.wagon" % "wagon-http-lightweight" % "2.12"
-//  "org.eclipse.sisu" % "org.eclipse.sisu.plexus" % "0.3.3"
-
+  "org.apache.maven.wagon" % "wagon-http-lightweight" % "2.12",
+//  "org.eclipse.sisu" % "org.eclipse.sisu.plexus" % "0.3.3",
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
 )
 
 // Deal with version conflicts in library dependencies
