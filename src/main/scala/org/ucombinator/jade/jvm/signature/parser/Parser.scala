@@ -2,7 +2,7 @@ package org.ucombinator.jade.jvm.signature.parser
 
 import org.ucombinator.jade.jvm.signature.Signature.{ClassSignature, JavaTypeSignature, MethodSignature}
 
-
+// TODO: Modify the traits to guarantee LL(1)
 object Parser
   extends TJavaTypeSignatureParser with TClassSignatureParser with TMethodSignatureParser {
 
