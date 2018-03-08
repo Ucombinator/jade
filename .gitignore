@@ -10,11 +10,13 @@
 .DS_Store
 # Git
 *.orig
+# Scala Worksheet
+*.sc
 
 ### Compilation results
 *.class
 target
 lib/jade/jade.jar
 
-# Scala Worksheet
-*.sc
+### Execution results
+maven-indexes
