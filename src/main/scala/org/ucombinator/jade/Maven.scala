@@ -15,7 +15,6 @@ import org.apache.maven.index.updater.IndexUpdateRequest
 import org.apache.maven.index.updater.IndexUpdateResult
 import org.apache.maven.index.updater.ResourceFetcher
 import org.apache.maven.index.updater.WagonHelper
-import java.util
 
 import org.apache.maven.wagon.observers.AbstractTransferListener
 import org.apache.maven.wagon.events.TransferEvent
@@ -54,12 +53,10 @@ object Maven {
   val indexers = List(
     plexusContainer.lookup(classOf[IndexCreator], MinimalArtifactInfoIndexCreator.ID))
 
-  val httpWagon = plexusContainer.lookup(classOf[Wagon], "http")
   val listener = new AbstractTransferListener() {
-    override def transferStarted(transferEvent: TransferEvent): Unit = { println("  Downloading " + transferEvent.getResource.getName + ":" + transferEvent) }
+    override def transferStarted(transferEvent: TransferEvent): Unit = { println(f"  Downloading ${transferEvent.getWagon.getRepository.getUrl}/${transferEvent.getResource.getName}") }
     override def transferCompleted(transferEvent: TransferEvent): Unit = { println("   - Done") }
   }
-  val resourceFetcher = new WagonHelper.WagonFetcher(httpWagon, listener, null, null)
 
   def getContext(indexesDir: File, url: URI): IndexingContext = {
     val subdir = new File(indexesDir, URLEncoder.encode(url.toString, "UTF-8"))
@@ -67,6 +64,7 @@ object Maven {
     val index = new File(subdir, "index")
     cache.mkdirs()
     index.mkdirs()
+
     indexer.createIndexingContext("context-id", "repository-id", cache, index, url.toString, null, true, true, indexers.asJava)
   }
 
@@ -80,11 +78,13 @@ object Maven {
         val context = getContext(indexesDir, url)
 
         val timestamp = context.getTimestamp
+        val httpWagon = plexusContainer.lookup(classOf[Wagon], "http")
+        val resourceFetcher = new WagonHelper.WagonFetcher(httpWagon, listener, null, null)
         val updateResult = indexUpdater.fetchAndUpdateIndex(new IndexUpdateRequest(context, resourceFetcher))
 
         if (updateResult.isFullUpdate) { println("Full update completed") }
         else if (updateResult.getTimestamp == timestamp) { println("No update needed") }
-        else { println(f"Incremental update completed (${timestamp} through ${updateResult.getTimestamp})") }
+        else { println(f"Incremental update completed ($timestamp through ${updateResult.getTimestamp})") }
       } catch {
         case e: Throwable =>
           println("Update failed")
