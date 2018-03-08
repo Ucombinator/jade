@@ -1,8 +1,8 @@
 package org.ucombinator.jade
 
 import scala.collection.JavaConverters._
-
 import java.io.File
+import java.net.{URI, URLEncoder}
 
 import org.apache.maven.wagon.Wagon
 import org.codehaus.plexus.DefaultContainerConfiguration
@@ -10,7 +10,7 @@ import org.codehaus.plexus.DefaultPlexusContainer
 import org.codehaus.plexus.PlexusConstants
 import org.apache.maven.index.Indexer
 import org.apache.maven.index.updater.IndexUpdater
-import org.apache.maven.index.context.IndexCreator
+import org.apache.maven.index.context.{IndexCreator, IndexUtils, IndexingContext}
 import org.apache.maven.index.updater.IndexUpdateRequest
 import org.apache.maven.index.updater.IndexUpdateResult
 import org.apache.maven.index.updater.ResourceFetcher
@@ -19,13 +19,12 @@ import java.util
 
 import org.apache.maven.wagon.observers.AbstractTransferListener
 import org.apache.maven.wagon.events.TransferEvent
-
 import org.apache.lucene.index.IndexReader
 import org.apache.lucene.index.MultiFields
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.util.Bits
 import org.apache.maven.index.ArtifactInfo
-import org.apache.maven.index.context.IndexUtils
+import org.apache.maven.index.creator.MinimalArtifactInfoIndexCreator
 
 
 /*
@@ -42,35 +41,67 @@ import org.eclipse.aether.metadata.DefaultMetadata
 */
 
 object Maven {
+  val config = {
+    val c = new DefaultContainerConfiguration
+    c.setClassPathScanning(PlexusConstants.SCANNING_INDEX)
+  }
+  val plexusContainer = new DefaultPlexusContainer(config)
+
+  val indexer = plexusContainer.lookup(classOf[Indexer])
+  val indexUpdater = plexusContainer.lookup(classOf[IndexUpdater])
+
+  // See https://maven.apache.org/maven-indexer/indexer-core/apidocs/index.html?constant-values.html
+  val indexers = List(
+    plexusContainer.lookup(classOf[IndexCreator], MinimalArtifactInfoIndexCreator.ID))
+
+  val httpWagon = plexusContainer.lookup(classOf[Wagon], "http")
+  val listener = new AbstractTransferListener() {
+    override def transferStarted(transferEvent: TransferEvent): Unit = { println("  Downloading " + transferEvent.getResource.getName + ":" + transferEvent) }
+    override def transferCompleted(transferEvent: TransferEvent): Unit = { println("   - Done") }
+  }
+  val resourceFetcher = new WagonHelper.WagonFetcher(httpWagon, listener, null, null)
+
+  def getContext(indexesDir: File, url: URI): IndexingContext = {
+    val subdir = new File(indexesDir, URLEncoder.encode(url.toString, "UTF-8"))
+    val cache = new File(subdir, "cache")
+    val index = new File(subdir, "index")
+    cache.mkdirs()
+    index.mkdirs()
+    indexer.createIndexingContext("context-id", "repository-id", cache, index, url.toString, null, true, true, indexers.asJava)
+  }
+
+  def updateIndexes(indexesDir: File, urls0: List[String]): Unit = {
+    val urls = if (urls0.isEmpty) { MavenRepositories.repositories.values.toList } else { urls0 }
+
+    for ((url: java.net.URI, i) <- urls.zipWithIndex) {
+      println(f"Updating (${i + 1} of ${urls.length}): $url")
+
+      try {
+        val context = getContext(indexesDir, url)
+
+        val timestamp = context.getTimestamp
+        val updateResult = indexUpdater.fetchAndUpdateIndex(new IndexUpdateRequest(context, resourceFetcher))
+
+        if (updateResult.isFullUpdate) { println("Full update completed") }
+        else if (updateResult.getTimestamp == timestamp) { println("No update needed") }
+        else { println(f"Incremental update completed (${timestamp} through ${updateResult.getTimestamp})") }
+      } catch {
+        case e: Throwable =>
+          println("Update failed")
+          e.printStackTrace()
+      }
+
+      println()
+    }
+  }
+
   def testArtifact(): Unit = {
-
-    // here we create Plexus container, the Maven default IoC container
-    // Plexus falls outside of MI scope, just accept the fact that
-    // MI is a Plexus component ;)
-    // If needed more info, ask on Maven Users list or Plexus Users list
-    // google is your friend!
-    val config = new DefaultContainerConfiguration
-    config.setClassPathScanning(PlexusConstants.SCANNING_INDEX)
-    val plexusContainer = new DefaultPlexusContainer(config)
-
-    // lookup the indexer components from plexus
-    val indexer = plexusContainer.lookup(classOf[Indexer])
-    val indexUpdater = plexusContainer.lookup(classOf[IndexUpdater])
-    // lookup wagon used to remotely fetch index
-    val httpWagon = plexusContainer.lookup(classOf[Wagon], "http")
-
     // Files where local cache is (if any) and Lucene Index should be located
     val centralLocalCache = new File("maven-cache/central-cache")
     val centralIndexDir = new File("maven-cache/central-index")
 
-    // Creators we want to use (search for fields it defines)
-    val indexers = new util.ArrayList[IndexCreator]
-    indexers.add(plexusContainer.lookup(classOf[IndexCreator], "min"))
-    indexers.add(plexusContainer.lookup(classOf[IndexCreator], "jarContent"))
-    indexers.add(plexusContainer.lookup(classOf[IndexCreator], "maven-plugin"))
-
     // Create context for central repository index
-    val centralContext = indexer.createIndexingContext("central-context", "central", centralLocalCache, centralIndexDir, "http://repo1.maven.org/maven2", null, true, true, indexers)
+    val centralContext = indexer.createIndexingContext("central-context", "central", centralLocalCache, centralIndexDir, "http://repo1.maven.org/maven2", null, true, true, indexers.asJava)
 
     // Update the index (incremental update will happen if this is not 1st run and files are not deleted)
     // This whole block below should not be executed on every app start, but rather controlled by some configuration
@@ -82,29 +113,6 @@ object Maven {
       System.out.println("This might take a while on first run, so please be patient!")
       // Create ResourceFetcher implementation to be used with IndexUpdateRequest
       // Here, we use Wagon based one as shorthand, but all we need is a ResourceFetcher implementation
-      val listener = new AbstractTransferListener() {
-        override def transferStarted(transferEvent: TransferEvent): Unit = {
-          println("  Downloading " + transferEvent.getResource.getName)
-        }
-
-        override def transferProgress(transferEvent: TransferEvent, buffer: Array[Byte], length: Int): Unit
-        =
-        {
-          //println("   - Progress: " + length)
-        }
-        override def transferCompleted(transferEvent: TransferEvent): Unit
-        =
-        {
-          println("   - Done")
-        }
-      }
-      val resourceFetcher = new WagonHelper.WagonFetcher(httpWagon, listener, null, null)
-      val centralContextCurrentTimestamp = centralContext.getTimestamp
-      val updateRequest = new IndexUpdateRequest(centralContext, resourceFetcher)
-      val updateResult = indexUpdater.fetchAndUpdateIndex(updateRequest)
-      if (updateResult.isFullUpdate) System.out.println("Full update happened!")
-      else if (updateResult.getTimestamp == centralContextCurrentTimestamp) System.out.println("No update needed, index is up to date!")
-      else System.out.println("Incremental update happened, change covered " + centralContextCurrentTimestamp + " - " + updateResult.getTimestamp + " period.")
       System.out.println()
     }
 

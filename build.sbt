@@ -106,6 +106,8 @@ val componentsXmlMerge: sbtassembly.MergeStrategy = new sbtassembly.MergeStrateg
 
 lazy val quietDiscard = quiet(MergeStrategy.discard)
 lazy val quietRename = quiet(MergeStrategy.rename)
+lazy val quietFilterDistinctLines = quiet(MergeStrategy.filterDistinctLines)
+lazy val quietComponentsXmlMerge = quiet(componentsXmlMerge)
 
 assemblyMergeStrategy in assembly := {
   case PathList(file) if List(
@@ -125,9 +127,9 @@ assemblyMergeStrategy in assembly := {
     "NOTICE.txt"
   ).contains(file) => quietRename
 
-  case PathList("META-INF", "services", xs @ _*) => quiet(MergeStrategy.filterDistinctLines)
-  case PathList("META-INF", "plexus", "components.xml") => quiet(componentsXmlMerge)
-  case PathList("META-INF", "sisu", "javax.inject.Named") => quiet(MergeStrategy.filterDistinctLines)
+  case PathList("META-INF", "services", xs @ _*) => quietFilterDistinctLines
+  case PathList("META-INF", "plexus", "components.xml") => quietComponentsXmlMerge
+  case PathList("META-INF", "sisu", "javax.inject.Named") => quietFilterDistinctLines
 
   case _ => MergeStrategy.deduplicate
 }

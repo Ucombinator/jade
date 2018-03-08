@@ -7,7 +7,7 @@ import scala.collection.mutable
 object MavenRepositories {
   // Note that these are in order of number of indexed jars (largest first).
   // Note that we use `URI`s not `URL`s as `java.net.URL.equals()` involves network host resolution (!)
-  val repositories = mutable.LinkedHashMap(
+  val repositories = mutable.LinkedHashMap[String, URI](
     "Central" -> new URI("http://central.maven.org/maven2/"),
     "Sonatype Releases" -> new URI("https://oss.sonatype.org/content/repositories/releases/"),
     "Spring Plugins" -> new URI("http://repo.spring.io/plugins-release/"),

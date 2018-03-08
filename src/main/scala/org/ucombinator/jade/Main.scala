@@ -24,6 +24,7 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   banner("Usage: jade [subcommand] [options]")
   addSubcommand(DecompileClass)
   addSubcommand(Decompile)
+  addSubcommand(UpdateIndexes)
   addSubcommand(TestArtifact)
   verify()
 }
@@ -109,6 +110,13 @@ object Decompile extends JadeSubcommand("decompile") {
            path = Paths.get(outputDirectoryName, d.getName)) {
         Files.copy(jarFile.getInputStream(d), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
       }
+}
+
+object UpdateIndexes extends JadeSubcommand("update-indexes") {
+  val indexDir = opt[java.io.File](default = Some(new java.io.File("maven-indexes")))
+  val url = trailArg[List[String]](default = Some(List()))
+
+  def run(): Unit = { Maven.updateIndexes(indexDir(), url())}
 }
 
 object TestArtifact extends JadeSubcommand("test-artifact") {
