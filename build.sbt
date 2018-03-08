@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   // "org.ow2.asm" % "asm-xml" % "6.0",
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0",
   "commons-io" % "commons-io" % "2.6",
   "org.jgrapht" % "jgrapht-core" % "1.1.0",
   "org.jgrapht" % "jgrapht-ext" % "1.1.0",
@@ -35,7 +36,6 @@ libraryDependencies ++= Seq(
   "org.apache.lucene" % "lucene-analyzers-common" % "5.5.5",
   "org.apache.lucene" % "lucene-highlighter" % "5.5.5",
   "org.apache.lucene" % "lucene-backward-codecs" % "5.5.5"
-
 )
 
 // Deal with version conflicts in library dependencies
