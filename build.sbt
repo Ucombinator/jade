@@ -31,7 +31,7 @@ libraryDependencies ++= Seq(
   "org.apache.maven.wagon" % "wagon-http-lightweight" % "2.12",
 //  "org.eclipse.sisu" % "org.eclipse.sisu.plexus" % "0.3.3"
 
-"org.apache.lucene" % "lucene-core" % "5.5.5",
+  "org.apache.lucene" % "lucene-core" % "5.5.5",
   "org.apache.lucene" % "lucene-queryparser" % "5.5.5",
   "org.apache.lucene" % "lucene-analyzers-common" % "5.5.5",
   "org.apache.lucene" % "lucene-highlighter" % "5.5.5",
