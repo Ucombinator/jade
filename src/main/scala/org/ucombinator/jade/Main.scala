@@ -6,7 +6,7 @@ import java.util.jar.{JarEntry, JarFile}
 
 import scala.collection.JavaConverters._
 import org.apache.commons.io.FileUtils
-import org.rogach.scallop.ScallopConf
+import org.rogach.scallop.{ScallopConf, ScallopOption}
 
 object Main extends App {
   val conf: Main = new Main(this.args)
@@ -30,12 +30,13 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
 }
 
 object DecompileClass extends JadeSubcommand("decompile-class") {
-  val className = trailArg[String]()
+  val className: ScallopOption[String] = trailArg[String]()
 
   override def run(): Unit = {
       DecompileOneClass.decompileOne(className())
   }
 }
+
 
 object Decompile extends JadeSubcommand("decompile") {
   val jarFile = trailArg[String]()

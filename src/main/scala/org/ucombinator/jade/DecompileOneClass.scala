@@ -2,20 +2,32 @@ package org.ucombinator.jade
 
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
-import org.objectweb.asm.tree.analysis._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.collection.immutable
+import java.nio.file.{Files, NoSuchFileException, Paths}
+
 
 object DecompileOneClass {
-
   def decompileOne(className: String): Unit = {
     require(className != null, "the given class file name is actually `null`!")
     val cn = new ClassNode
     // TODO: It seems in my test case the given names are only the class in Java standard library like
     // TODO (CONTINUE): "java.lang.Runnable" and "java.util.HashMap"
     // TODO (CONTINUE): try other cases later
+
+//    val path = {
+//      try {
+//        Paths.get("C:\\Users\\lanjian\\__Research__\\Decompiler\\JavaDecompiler\\jade\\src\\test\\resources\\HashMap.class")
+//      } catch {
+//        case _: NoSuchFileException =>
+//          Paths.get("/mnt/c/Users/lanjian/__Research__/Decompiler/JavaDecompiler/jade/src/test/resources/HashMap.class")
+//      }
+//    }
+//
+//    val byteArray = Files.readAllBytes(path)
+//    val cr = new ClassReader(byteArray)
+
     val cr = new ClassReader(className)
     cr.accept(cn, 0)
 
@@ -48,9 +60,9 @@ object DecompileOneClass {
     // TODO: cn.attrs
 
     val fields: List[FieldNode] = cn.fields.asScala.toList
-    val filedsCode: List[String] = fields.map(fieldText)
+    val fieldsCode: List[String] = fields.map(fieldText)
 
-    println(filedsCode.mkString("\n"))
+    println(fieldsCode.mkString("\n"))
 
     val methods: List[MethodNode] = cn.methods.asScala.toList
     val methodsCode: List[String] = methods.map(methodText)
@@ -102,7 +114,7 @@ object DecompileOneClass {
   // TODO: eliminate `null`
     if (annotations != null && annotations.nonEmpty)
       annotations.map {
-        // TODO: Annoation can only be class ????!!!?? I don't know!!!
+        // TODO: Annotation can only be class ????!!!?? I don't know!!!
         "@" + _.desc.stripPrefix("L").stripSuffix(";")
       }.mkString("\n")
     else ""

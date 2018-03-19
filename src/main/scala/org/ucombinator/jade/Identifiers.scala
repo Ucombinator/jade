@@ -6,29 +6,29 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 
 import scala.collection.JavaConverters._
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
 
-//case class Identifier(id: Int, basicValue: BasicValue)
-case class IdentifierSet(ids: Set[Int], basicValue: BasicValue) extends Value {
+
+case class Identifier(id: Int, copyVersion: Int, basicValue: BasicValue) extends Value {
   override def getSize: Int = basicValue.getSize
 }
 
 class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
-    extends Interpreter[IdentifierSet](/*TODO: api*/Opcodes.ASM6) {
+  extends Interpreter[Identifier](/*TODO: api*/Opcodes.ASM6) {
 
   private var identifierCount = this.identifierAnalyzer.method.instructions.size
 
-  private def identifier(insn: AbstractInsnNode, basicValue: BasicValue): IdentifierSet = {
+  private def identifier(insn: AbstractInsnNode, basicValue: BasicValue): Identifier = {
     if (basicValue == null) { null }
-    else                    { IdentifierSet(Set(this.identifierAnalyzer.method.instructions.indexOf(insn)), basicValue) }
+    else                    { Identifier(this.identifierAnalyzer.method.instructions.indexOf(insn), 0, basicValue) }
   }
 
-  private def identifier(basicValue: BasicValue): IdentifierSet = {
+  private def identifier(basicValue: BasicValue): Identifier = {
     val id =
       if (basicValue == null) { null }
       else {
         this.identifierCount += 1
-        IdentifierSet(Set(this.identifierCount - 1), basicValue)
+        Identifier(this.identifierCount - 1, 0, basicValue)
       }
 
     if (this.identifierAnalyzer.tryCatchBlockNode != null) {
@@ -42,19 +42,19 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
 
   private val basicInterpreter = new BasicInterpreter
 
-    /** Creates a new value that represents the given type.
-      *
-      * Called for method parameters (including <code>this</code>), exception
-      * handler variable and with <code>null</code> type for variables reserved
-      * by long and double types.
-      *
-      * @param typ
-      *            a primitive or reference type, or <tt>null</tt> to represent
-      *            an uninitialized value.
-      * @return a value that represents the given type. The size of the returned
-      *         value must be equal to the size of the given type.
-      */
-  override def newValue(typ: Type): IdentifierSet = {
+  /** Creates a new value that represents the given type.
+    *
+    * Called for method parameters (including <code>this</code>), exception
+    * handler variable and with <code>null</code> type for variables reserved
+    * by long and double types.
+    *
+    * @param typ
+    *            a primitive or reference type, or <tt>null</tt> to represent
+    *            an uninitialized value.
+    * @return a value that represents the given type. The size of the returned
+    *         value must be equal to the size of the given type.
+    */
+  override def newValue(typ: Type): Identifier = {
     val basicValue = this.basicInterpreter.newValue(typ)
     this.identifier(basicValue)
   }
@@ -71,7 +71,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def newOperation(insn: AbstractInsnNode): IdentifierSet = {
+  override def newOperation(insn: AbstractInsnNode): Identifier = {
     val basicValue = this.basicInterpreter.newOperation(insn)
     this.identifierAnalyzer.instructionArguments += insn -> List.empty
     this.identifier(insn, basicValue)
@@ -92,9 +92,14 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def copyOperation(insn: AbstractInsnNode, value: IdentifierSet): IdentifierSet = {
+  override def copyOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
     val basicValue = this.basicInterpreter.copyOperation(insn, value.basicValue)
-    IdentifierSet(value.ids, basicValue)
+    // TODO
+    this.identifierAnalyzer.copyVersion += 1
+    val result = Identifier(this.identifierAnalyzer.method.instructions.indexOf(insn), this.identifierAnalyzer.copyVersion, basicValue)
+    //    println(s"Before copy: $value")
+    //    println(s"After copy: $result")
+    result
   }
 
   /** Interprets a bytecode instruction with a single argument. This method is
@@ -114,7 +119,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def unaryOperation(insn: AbstractInsnNode, value: IdentifierSet): IdentifierSet = {
+  override def unaryOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
     val basicValue = this.basicInterpreter.unaryOperation(insn, value.basicValue)
     this.identifierAnalyzer.instructionArguments += insn -> List(value)
     this.identifier(insn, basicValue)
@@ -140,7 +145,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def binaryOperation(insn: AbstractInsnNode, value1: IdentifierSet, value2: IdentifierSet): IdentifierSet = {
+  override def binaryOperation(insn: AbstractInsnNode, value1: Identifier, value2: Identifier): Identifier = {
     val basicValue = this.basicInterpreter.binaryOperation(insn, value1.basicValue, value2.basicValue)
     this.identifierAnalyzer.instructionArguments += insn -> List(value1, value2)
     this.identifier(insn, basicValue)
@@ -164,7 +169,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def ternaryOperation(insn: AbstractInsnNode, value1: IdentifierSet, value2: IdentifierSet, value3: IdentifierSet): IdentifierSet = {
+  override def ternaryOperation(insn: AbstractInsnNode, value1: Identifier, value2: Identifier, value3: Identifier): Identifier = {
     val basicValue = this.basicInterpreter.ternaryOperation(insn, value1.basicValue, value2.basicValue, value3.basicValue)
     this.identifierAnalyzer.instructionArguments += insn -> List(value1, value2, value3)
     this.identifier(insn, basicValue)
@@ -184,7 +189,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: IdentifierSet]): IdentifierSet = {
+  override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: Identifier]): Identifier = {
     val basicValue = this.basicInterpreter.naryOperation(insn, values.asScala.map(_.basicValue).asJava)
     this.identifierAnalyzer.instructionArguments += insn -> values.asScala.toList
     this.identifier(insn, basicValue)
@@ -204,8 +209,8 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @throws AnalyzerException
     * if an error occurred during the interpretation.
     */
-  override def returnOperation(insn: AbstractInsnNode, value: IdentifierSet, expected: IdentifierSet): Unit = {
-  // TODO: noop since already is a unary operation
+  override def returnOperation(insn: AbstractInsnNode, value: Identifier, expected: Identifier): Unit = {
+    // TODO: noop since already is a unary operation
     this.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
     this.identifierAnalyzer.instructionArguments += insn -> List(value)
   }
@@ -223,9 +228,30 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     * @return the merged value. If the merged value is equal to <tt>v</tt>,
     *         this method <i>must</i> return <tt>v</tt>.
     */
-  override def merge(v: IdentifierSet, w: IdentifierSet): IdentifierSet = {
+  override def merge(v: Identifier, w: Identifier): Identifier = {
     val basicValue = this.basicInterpreter.merge(v.basicValue, w.basicValue)
-    IdentifierSet(v.ids ++ w.ids, basicValue)
+
+    //    println(s"v: $v, w: $w")
+
+    if (v == w) {
+      //      println(s"== branch: $v")
+      v
+    }
+    else if (this.identifierAnalyzer.ssaMap.getOrElse(v, Set.empty).contains(w)) {
+      //      println(s"contains w branch: $v")
+      v
+    }
+    else if (this.identifierAnalyzer.ssaMap.getOrElse(w, Set.empty).contains(v)) {
+      //      println(s"contains v branch: $w")
+      w
+    }
+    else {
+      val result = this.identifier(basicValue)
+      val ids = this.identifierAnalyzer.ssaMap.getOrElse(result, Set.empty) + (v, w)
+      this.identifierAnalyzer.ssaMap += (result -> ids)
+      //      println(s"new identifier branch: $result")
+      result
+    }
   }
 }
 
@@ -233,14 +259,17 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
 // JSR (exception?)
 
 class IdentifierAnalyzer(val owner: String, val method: MethodNode) {
-  var tryCatchBlockNode: TryCatchBlockNode = null
-  var caughtExceptionIdentifiers = immutable.Map.empty[AbstractInsnNode, IdentifierSet]
-  var instructionArguments = immutable.Map.empty[AbstractInsnNode, List[IdentifierSet]]
+  var copyVersion: Int = 0
+
+  var tryCatchBlockNode: TryCatchBlockNode = _
+  var caughtExceptionIdentifiers = immutable.Map.empty[AbstractInsnNode, Identifier]
+  var instructionArguments = immutable.Map.empty[AbstractInsnNode, List[Identifier]]
+  var ssaMap = immutable.Map.empty[Identifier, Set[Identifier]]
 
   val edges = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
   val interpreter = new IdentifierInterpreter(this)
   val analyzer = new IdentifierAnalyzerImpl(this)
-  val frames = analyzer.analyze(owner, method)
+  val frames: Array[Frame[Identifier]] = analyzer.analyze(owner, method)
 
   println(f"method: ${method.signature} ${method.desc}")
   println("frames: " + frames.length)
@@ -254,6 +283,11 @@ class IdentifierAnalyzer(val owner: String, val method: MethodNode) {
   for ((key, value) <- caughtExceptionIdentifiers) {
     println(f"handler: $key -> $value")
   }
+
+  for ((key, value) <- ssaMap) {
+    println(s"$key -> $value")
+  }
+
 }
 
 final class Edge(val source: AbstractInsnNode, val target: AbstractInsnNode, val isException: Boolean) {
@@ -261,9 +295,10 @@ final class Edge(val source: AbstractInsnNode, val target: AbstractInsnNode, val
 }
 
 class IdentifierAnalyzerImpl(identifierAnalyzer: IdentifierAnalyzer)
-    extends Analyzer[IdentifierSet](identifierAnalyzer.interpreter) {
+  extends Analyzer[Identifier](identifierAnalyzer.interpreter) {
 
   override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
+    this.identifierAnalyzer.copyVersion = 0
     val source = this.identifierAnalyzer.method.instructions.get(insn)
     val target = this.identifierAnalyzer.method.instructions.get(successor)
     this.identifierAnalyzer.edges.addVertex(source)
@@ -286,3 +321,4 @@ class IdentifierAnalyzerImpl(identifierAnalyzer: IdentifierAnalyzer)
     true // the edge must always be considered by the analyzer
   }
 }
+
