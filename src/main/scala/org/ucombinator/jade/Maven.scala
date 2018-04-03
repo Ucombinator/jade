@@ -95,6 +95,57 @@ object Maven {
     }
   }
 
+  def listArtifacts(indexesDir: File, urls0: List[String]): Unit = {
+    val urls = if (urls0.isEmpty) { MavenRepositories.repositories.values.toList } else { urls0 }
+
+    for ((url: java.net.URI, i) <- urls.zipWithIndex) {
+      println(f"Listing (${i + 1} of ${urls.length}): $url")
+
+      try {
+        val context = getContext(indexesDir, url)
+
+      val searcher = context.acquireIndexSearcher
+      try {
+        val ir = searcher.getIndexReader
+        val liveDocs = MultiFields.getLiveDocs(ir)
+        var i = 0
+        while ( {
+          i < ir.maxDoc
+        }) {
+          if (liveDocs == null || liveDocs.get(i)) {
+            val doc = ir.document(i)
+            val ai = IndexUtils.constructArtifactInfo(doc, context)
+            //System.out.println(ai.getGroupId + ":" + ai.getArtifactId + ":" + ai.getVersion + ":" + ai.getClassifier + " (sha1=" + ai.getSha1 + ")")
+            println("gav:"+ai.calculateGav())
+            println("fn:"+ai.getFileName)
+            println("rep:"+ai.getRepository)
+            println("path:"+ai.getPath)
+            println("url"+ai.getRemoteUrl);
+
+            println("ai"+ai)
+            for (d <- doc.iterator().asScala) {
+              println("field: " + d.fieldType() + ":" + d.name() + ":" + d.stringValue() + ":" + d)
+            }
+            println()
+          }
+
+          {
+            i += 1; i - 1
+          }
+        }
+      } finally {
+          context.releaseIndexSearcher(searcher)
+      }
+      } catch {
+        case e: Throwable =>
+          println("Update failed")
+          e.printStackTrace()
+      }
+
+      println()
+    }
+  }
+
   def testArtifact(): Unit = {
     // Files where local cache is (if any) and Lucene Index should be located
     val centralLocalCache = new File("maven-cache/central-cache")
@@ -139,7 +190,13 @@ object Maven {
             val doc = ir.document(i)
             val ai = IndexUtils.constructArtifactInfo(doc, centralContext)
             //System.out.println(ai.getGroupId + ":" + ai.getArtifactId + ":" + ai.getVersion + ":" + ai.getClassifier + " (sha1=" + ai.getSha1 + ")")
-            println(ai)
+            println("gav:"+ai.calculateGav())
+            println("fn:"+ai.getFileName)
+            println("rep:"+ai.getRepository)
+            println("path:"+ai.getPath)
+            println("url"+ai.getRemoteUrl);
+
+            println("ai"+ai)
             for (d <- doc.iterator().asScala) {
               println("field: " + d.fieldType() + ":" + d.name() + ":" + d.stringValue() + ":" + d)
             }
@@ -152,6 +209,7 @@ object Maven {
       } finally centralContext.releaseIndexSearcher(searcher)
     }
 
+//org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
   /*
     //org.apache.maven.artifact.repository.metadata.RepositoryMetadataManager
     //ContainerConfiguration
@@ -162,7 +220,7 @@ object Maven {
     //container.addComponent(updateCheckManager, "org.apache.maven.repository.legacy.UpdateCheckManager")
     //val artifactMetadataSource = container.lookup(classOf[ArtifactMetadataSource])
     //org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy
-    //!!org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
+    org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
 
     //new DefaultRepositoryLayout()
     val snapshotPolicy = new ArtifactRepositoryPolicy(false, ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS, ArtifactRepositoryPolicy.CHECKSUM_POLICY_FAIL)
