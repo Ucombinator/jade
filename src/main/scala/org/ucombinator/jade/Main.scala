@@ -25,6 +25,7 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   addSubcommand(DecompileClass)
   addSubcommand(Decompile)
   addSubcommand(UpdateIndexes)
+  addSubcommand(ListArtifacts)
   addSubcommand(TestArtifact)
   verify()
 }
@@ -117,7 +118,14 @@ object UpdateIndexes extends JadeSubcommand("update-indexes") {
   val indexDir = opt[java.io.File](default = Some(new java.io.File("maven-indexes")))
   val url = trailArg[List[String]](default = Some(List()))
 
-  def run(): Unit = { Maven.updateIndexes(indexDir(), url())}
+  def run(): Unit = { Maven.updateIndexes(indexDir(), url()) }
+}
+
+object ListArtifacts extends JadeSubcommand("list-artifacts") {
+  val indexDir = opt[java.io.File](default = Some(new java.io.File("maven-indexes")))
+  val url = trailArg[List[String]](default = Some(List()))
+
+  def run(): Unit = { Maven.listArtifacts(indexDir(), url()) }
 }
 
 object TestArtifact extends JadeSubcommand("test-artifact") {
