@@ -209,7 +209,7 @@ object Maven {
       } finally centralContext.releaseIndexSearcher(searcher)
     }
 
-org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
+//org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
   /*
     //org.apache.maven.artifact.repository.metadata.RepositoryMetadataManager
     //ContainerConfiguration
