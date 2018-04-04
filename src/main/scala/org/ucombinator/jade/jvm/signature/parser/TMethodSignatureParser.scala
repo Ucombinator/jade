@@ -10,13 +10,13 @@ trait TMethodSignatureParser extends TJavaTypeSignatureParser with TTypeParamete
       case tps ~ "(" ~ jtss ~ ")" ~ r ~ tss => MethodSignature(tps, jtss, r, tss)
     }
 
-  final protected def result: Parser[TResult] =
+  final protected def result: Parser[Result] =
     javaTypeSignature | voidDescriptor
 
-  final protected def throwsSignature: Parser[TThrows] =
+  final protected def throwsSignature: Parser[ThrowsSignature] =
     "^" ~> (classTypeSignature | typeVariableSignature)
 
-  final protected val voidDescriptor: Parser[TResult] =
+  final protected val voidDescriptor: Parser[Result] =
     "V" ^^^
       VoidDescriptor
 }

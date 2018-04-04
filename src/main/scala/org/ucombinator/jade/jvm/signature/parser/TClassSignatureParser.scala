@@ -7,7 +7,7 @@ trait TClassSignatureParser extends TJavaTypeSignatureParser with TTypeParameter
 
   final def classSignature: Parser[ClassSignature] =
     opt(typeParameters) ~ superclassSignature ~ rep(superinterfaceSignature) ^^ {
-      case tps ~ scs ~ sifss => ClassSignature(tps, scs, sifss)
+      case tps ~ scs ~ sifss => ClassSignature(tps.getOrElse(Nil), scs, sifss)
     }
 
   final protected def superclassSignature: Parser[ClassTypeSignature] =

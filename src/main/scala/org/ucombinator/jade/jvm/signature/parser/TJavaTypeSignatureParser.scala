@@ -7,25 +7,26 @@ import scala.util.parsing.combinator._
 
 trait TJavaTypeSignatureParser extends JavaTokenParsers {
 
+  // TODO: shouldn't this be any string not containing: . ; [ / < > :
   protected val identifier: Parser[String] = ident
 
   def javaTypeSignature: Parser[JavaTypeSignature] =
     baseType | referenceTypeSignature
 
-  protected def baseType: Parser[BaseType] =
+  protected def baseType: Parser[JavaTypeSignature] =
     ("B" | "C" | "D" | "F" | "I" | "J" | "S" | "Z") ^^
-      BaseType.BaseTypeOf
+      BaseType.fromString
 
   protected def referenceTypeSignature: Parser[ReferenceTypeSignature] =
     classTypeSignature | typeVariableSignature | arrayTypeSignature
 
   protected def classTypeSignature: Parser[ClassTypeSignature] =
-    "L" ~> opt(packageSpecifier) ~ simpleClassTypeSignature ~ rep(classTypeSignatureSuffix) <~ ";" ^^ {
-      case pkgs ~ scts ~ ctss => ClassTypeSignature(pkgs, scts, ctss)
+    "L" ~> packageSpecifier ~ rep1sep(simpleClassTypeSignature, ".") <~ ";" ^^ {
+      case pkgs ~ scts => ClassTypeSignature(pkgs, scts)
     }
 
   protected def packageSpecifier: Parser[PackageSpecifier] =
-    rep1(identifier <~ "/")
+    rep(identifier <~ "/")
 
   protected def simpleClassTypeSignature: Parser[SimpleClassTypeSignature] =
     identifier ~ opt(typeArguments) ^^ {
@@ -48,9 +49,6 @@ trait TJavaTypeSignatureParser extends JavaTokenParsers {
       case "+" => Extends
       case "-" => Super
     }
-
-  protected def classTypeSignatureSuffix: Parser[SimpleClassTypeSignature] =
-    "." ~> simpleClassTypeSignature
 
   protected def typeVariableSignature: Parser[TypeVariableSignature] =
     "T" ~> identifier <~ ";" ^^

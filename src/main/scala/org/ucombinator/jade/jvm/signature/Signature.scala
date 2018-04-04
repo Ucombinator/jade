@@ -1,8 +1,8 @@
 package org.ucombinator.jade.jvm.signature
 
-import scala.annotation.tailrec
-
-/** JVMS9 - 4.7.9.1 Signatures */
+/** Specified in "The Java Virtual Machine Specification", Section 4.7.9.1
+  * <https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.9.1>
+  */
 object Signature {
 
   // TODO: if use parser combinator, the `indent` guarantees this!
@@ -13,6 +13,8 @@ object Signature {
     * should to verify the identifier(s) with this method */
   private def isJVMIdentifier(id: String): Boolean = {
     require(id != null, "mustn't be `null`")
+    // TODO: shouldn't we disallow only: . ; [ / < > :
+    // TODO: maybe implement with an implicit conversion from String to an Identifier type
     java.lang.Character.isJavaIdentifierStart(id.head) &&
       id.tail.forall(java.lang.Character.isJavaIdentifierPart)
   }
@@ -20,62 +22,62 @@ object Signature {
   // TODO: add a trait with methods: `toCanonicalForm`, `toConponmentList`
   // TODO (CONTINUE): `toJavaSourceCode`
 
-  sealed trait TResult
-  case object VoidDescriptor extends TResult  // V
-  sealed abstract class JavaTypeSignature extends TResult
+  // A "Java type signature" represents either a reference type or a primitive type of the Java programming language.
+  sealed trait JavaTypeSignature extends Result
 
-  sealed trait TThrows
-  // ClassTypeSignature implements TThrows
-  // TypeVariableSignature implements TThrows
-
-  sealed abstract class BaseType extends JavaTypeSignature
+  sealed trait BaseType extends JavaTypeSignature
   object BaseType {
-    val repr: List[String] = List("B", "C", "D", "F", "I", "J", "S", "Z")
-
-    def BaseTypeOf: Map[String, BaseType] = Map(
-      "B" -> B,
-      "C" -> C,
-      "D" -> D,
-      "F" -> F,
-      "I" -> I,
-      "J" -> J,
-      "S" -> S,
-      "Z" -> Z
-    )
+    val values = List(B, C, D, F, I, J, S, Z)
+    val fromString = values.map(v => v.toString -> v).toMap
   }
+  case object B extends BaseType // `byte`    - signed byte
+  case object C extends BaseType // `char`    - Unicode code point in the Basic Multilingual Plane, encoded with UTF-16
+  case object D extends BaseType // `double`  - double-precision floating-point value
+  case object F extends BaseType // `float`   - single-precision floating-point value
+  case object I extends BaseType // `int`     - integer
+  case object J extends BaseType // `long`    - long integer
+  case object S extends BaseType // `short`   - signed short
+  case object Z extends BaseType // `boolean` - true or false
 
-  sealed abstract class ReferenceTypeSignature extends JavaTypeSignature
+  // A "reference type signature" represents a reference type of the Java programming language, that is, a class or interface type, a type variable, or an array type.
+  sealed trait ReferenceTypeSignature extends JavaTypeSignature
 
+  //// A "class type signature" represents a (possibly parameterized) class or interface type.
+  final case class ClassTypeSignature(
+    packageSpecifier: PackageSpecifier, classes: List[SimpleClassTypeSignature])
+    extends ReferenceTypeSignature with ThrowsSignature {
 
-  /** BaseType subtypes */
-  case object B extends BaseType  // `byte`    - signed byte
-  case object C extends BaseType  // `char`    - Unicode code point in the Basic Multilingual Plane, encoded with UTF-16
-  case object D extends BaseType  // `double`  - double-precision floating-point value
-  case object F extends BaseType  // `float`   - single-precision floating-point value
-  case object I extends BaseType  // `int`     - integer
-  case object J extends BaseType  // `long`    - long integer
-  case object S extends BaseType  // `short`   - signed short
-  case object Z extends BaseType  // `boolean` - true or false
-
-
-  /** ReferenceTypeSignature subtypes */
-  sealed case class ClassTypeSignature(pkgs: Option[PackageSpecifier],
-                                       cls: SimpleClassTypeSignature,
-                                       clses: ClassTypeSignatureSuffixes)
-    extends ReferenceTypeSignature with TThrows {
-
-    pkgs foreach { p =>
-      require(p.forall(isJVMIdentifier), "An illegal Java identifier in `pkg`!")
+    require(classes.nonEmpty, "Empty `classes` in `ClassTypeSignature`")
+    packageSpecifier foreach { p =>
+      require(isJVMIdentifier(p), "An illegal Java identifier in `pkg`!")
     }
   }
 
-  type ClassTypeSignatureSuffixes = List[SimpleClassTypeSignature]
+  type PackageSpecifier = List[String]
 
-  sealed case class TypeVariableSignature(name: String) extends ReferenceTypeSignature with TThrows {
+  sealed case class SimpleClassTypeSignature(name: String, typeArguments: TypeArguments) extends {
+    require(isJVMIdentifier(name), "An illegal Java identifier - simple class `name`!")
+  }
+
+  type TypeArguments = List[TypeArgument]
+
+  sealed abstract class TypeArgument
+  final case object UnBoundedTypeArgument extends TypeArgument // *
+  final case class BoundedTypeArgument(
+    wildcardIndicator: Option[WildcardIndicator],
+    signature: ReferenceTypeSignature) extends TypeArgument
+
+  sealed abstract class WildcardIndicator
+  case object Extends extends WildcardIndicator // +
+  case object Super extends WildcardIndicator   // -
+
+  //// A "type variable signature" represents a type variable.
+  final case class TypeVariableSignature(name: String) extends ReferenceTypeSignature with ThrowsSignature {
     require(isJVMIdentifier(name), "An illegal Java identifier - type variable `name`!")
   }
 
-  sealed case class ArrayTypeSignature(javaType: JavaTypeSignature) extends ReferenceTypeSignature
+  //// An "array type signature" represents one dimension of an array type.
+  final case class ArrayTypeSignature(javaType: JavaTypeSignature) extends ReferenceTypeSignature
 
   //  object ArrayTypeSignature {
   //    def constructArrayType(typ: JavaTypeSignature, dim: Int): ArrayTypeSignature = {
@@ -90,30 +92,8 @@ object Signature {
   //    }
   //  }
 
-
-  /** ClassTypeSignature subtypes */
-
-  type PackageSpecifier = List[String]
-
-  sealed case class SimpleClassTypeSignature(name: String, typeArguments: TypeArguments) extends {
-    require(isJVMIdentifier(name), "An illegal Java identifier - simple class `name`!")
-  }
-
-  type TypeArguments = List[TypeArgument]
-
-  sealed abstract class TypeArgument
-  sealed case class BoundedTypeArgument(wildcardIndicator: Option[WildcardIndicator],
-                                        bound: ReferenceTypeSignature) extends TypeArgument
-  case object UnBoundedTypeArgument extends TypeArgument  // *
-
-  sealed abstract class WildcardIndicator
-  case object Extends extends WildcardIndicator  // +
-  case object Super extends WildcardIndicator    // -
-
-  type ClassTypeSignatureSuffix = SimpleClassTypeSignature
-
-  /** ClassSignature */
-  sealed case class ClassSignature(typeParameters: Option[TypeParameters],
+  // A "class signature" encodes type information about a (possibly generic) class declaration.
+  final case class ClassSignature(typeParameters: TypeParameters,
                                    superClass: SuperclassSignature,
                                    superinterfaces: List[SuperinterfaceSignature])
 
@@ -137,11 +117,17 @@ object Signature {
   /** MethodSignature */
   sealed case class MethodSignature(typeParameters: Option[TypeParameters],
                                     parameterTypes: List[JavaTypeSignature],
-                                    result: TResult,
-                                    exceptions: List[TThrows])
+                                    result: Result,
+                                    exceptions: List[ThrowsSignature])
 
   //  /** FieldSignature */
   //  type FieldSignature = ReferenceTypeSignature
 
-}
+  sealed trait Result
+  case object VoidDescriptor extends Result  // V
 
+  sealed trait ThrowsSignature
+  // ClassTypeSignature implements TThrows
+  // TypeVariableSignature implements TThrows
+
+}
