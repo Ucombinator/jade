@@ -5,6 +5,7 @@ import org.ucombinator.jade.jvm.signature.Parser._
 import scala.language.implicitConversions
 
 object ParserUtil {
+  // A `rep` that is bracketed by `left` and `right`
   def repbra[T](left: => Parser[Any], p: => Parser[T], right: => Parser[Any]): Parser[List[T]] = {
     opt(left ~> rep1(p) <~ right) ^^ (_.getOrElse(Nil))
   }

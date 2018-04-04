@@ -93,6 +93,6 @@ sealed trait Result
 
 sealed trait ThrowsSignature // ^
 
-// The character V indicates that the method returns no value (its result is void).
+//// The character V indicates that the method returns no value (its result is void).
 case object VoidDescriptor // V
   extends Result
