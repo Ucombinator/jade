@@ -8,7 +8,6 @@ import org.objectweb.asm.tree.analysis._
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-
 case class Identifier(id: Int, copyVersion: Int, basicValue: BasicValue) extends Value {
   override def getSize: Int = basicValue.getSize
 }

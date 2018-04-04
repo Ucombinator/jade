@@ -1,8 +1,8 @@
 package org.ucombinator.jade
 
 import org.rogach.scallop._
-//import scala.collection.immutable
-//import reflect.runtime.universe.TypeTag
+
+import scala.collection.immutable
 
 abstract class JadeSubcommand(name: String) extends Subcommand(name) with JadeScallopConf {
   def run(): Unit
@@ -42,7 +42,6 @@ trait JadeScallopConf extends ScallopConf {
       descrNo = descrNo,
       hidden = hidden)
 
-/*
   // Options that take an argument from a fixed list
   def enum[A](
     name: String = null,
@@ -56,10 +55,7 @@ trait JadeScallopConf extends ScallopConf {
     hidden: Boolean = false,
     noshort: Boolean = false,
     elems: immutable.ListMap[String, A],
-    conv: ValueConverter[A] = null)(
-    implicit tt: TypeTag[A]): ScallopOption[A] = {
-    val conv2 =
-      if (conv != null) { conv } else { enumConverter(argType, elems) }
+    conv: ValueConverter[A] = null): ScallopOption[A] = {
     opt[A](
       name = name,
       short = short,
@@ -74,22 +70,19 @@ trait JadeScallopConf extends ScallopConf {
       argName = argName,
       hidden = hidden,
       noshort = noshort)(
-      conv = conv2)
+      conv = if (conv != null) { conv } else { enumConverter(argType, elems) })
   }
- */
 
-/*
-  def enumConverter[A](name: String, elems: Map[String, A])(implicit tt: TypeTag[A]) = {
+  private def enumConverter[A](name: String, elems: Map[String, A]) = {
     def conv(s: String): A =
       elems.getOrElse(s, throw new IllegalArgumentException(s"bad $name `$s` (expected one of: %s)" format elems.keys.mkString(" ")))
-  // TODO: allow `handler` to be specified
+    // TODO: allow `handler` to be specified
     val handler: PartialFunction[Throwable, Either[String, Option[A]]] = {
       case e: IllegalArgumentException => Left(e.getMessage)
     }
 
-    singleArgConverter[A](conv, handler)(tt)
+    singleArgConverter[A](conv, handler)
   }
-*/
 }
 
 /**
