@@ -1,11 +1,12 @@
 package org.ucombinator.jade
 
+import org.jgrapht.graph.DefaultDirectedGraph
 import org.jgrapht.{Graph, Graphs}
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
-class Util {
+object Util {
   // Returns a mapping from nodes to the set of nodes that dominate them
   def dominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
     val vs = graph.vertexSet.asScala.toSet
