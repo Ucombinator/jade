@@ -21,8 +21,9 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
   val analyzer = new org.ucombinator.jade.method.IdentifierAnalyzer("TestIfLoop", method)
   //val tree = new InsnBlockTree("TestIfLoop", m)
 
-//  protected[this] val insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])] =
-//    (method.instructions.toArray zip analyzer.frames).toList
+  //  protected[this] val insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])] =
+  //    (method.instructions.toArray zip analyzer.frames).toList
+
   protected[this] val insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])] = {
     val instructions = method.instructions.toArray
     val tmpInsns: Array[AbstractInsnNode] = instructions ++ Array(instructions.last)
@@ -107,25 +108,28 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
     DescriptorParser.parseMethodDescriptor(desc).get.parameterDescriptors.length
 
   /** Debug usage */
-  def printInsnNode(i: AbstractInsnNode): Unit =
+  def printInsnNode(i: AbstractInsnNode): Unit = {
+    val op = org.ucombinator.jade.util.Util.translator(i)
+
+    val message =
     i match {
-      case fld:  FieldInsnNode         => println(s"$fld -- name: ${fld.name}")
-      case iinc: IincInsnNode          => println(s"$iinc -- var: ${iinc.`var`} -- incr: ${iinc.incr}")
-      case insn: InsnNode              => println(s"$insn -- no operand")
-      case int:  IntInsnNode           => println(s"$int -- ${int.operand}")
-      case ivk:  InvokeDynamicInsnNode => println(s"$ivk -- bsm: ${ivk.bsm} -- bsmArgs: ${ivk.bsmArgs}")
-      case jmp:  JumpInsnNode          => println(s"$jmp -- label: ${jmp.label}")
-      case ldc:  LdcInsnNode           => println(s"$ldc -- cst: ${ldc.cst}")
-      case ls:   LookupSwitchInsnNode  =>
-        println(s"$ls -- dlft: ${ls.dflt} -- keys: ${ls.keys} -- lables: ${ls.labels}")
-      case m:    MethodInsnNode        =>
-        println(s"$m -- desc: ${m.desc} -- itf: ${m.itf} -- name: ${m.name}")
-      case ts:   TableSwitchInsnNode   =>
-        println(s"$ts -- dflt: ${ts.dflt} -- labels: ${ts.labels} -- max: ${ts.max} -- min: ${ts.min}")
-      case t:    TypeInsnNode          => println(s"$t -- desc: ${t.desc}")
-      case v:    VarInsnNode           => println(s"$v -- var: ${v.`var`}")
-      case _ => println("Non-Insn")
+      case fld:  FieldInsnNode         => s"$op  --  $i -- name: ${fld.name}"
+      case iinc: IincInsnNode          => s"$op  --  $i -- var: ${iinc.`var`} -- incr: ${iinc.incr}"
+      case _: InsnNode                 => s"$op  --  $i -- NO OPERAND"
+      case int:  IntInsnNode           => s"$op  --  $i -- ${int.operand}"
+      case ivk:  InvokeDynamicInsnNode => s"$op  --  $i -- bsm: ${ivk.bsm} -- bsmArgs: ${ivk.bsmArgs}"
+      case jmp:  JumpInsnNode          => s"$op  --  $i -- label: ${jmp.label}"
+      case ldc:  LdcInsnNode           => s"$op  --  $i -- cst: ${ldc.cst}"
+      case ls:   LookupSwitchInsnNode  => s"$op  --  $i -- dlft: ${ls.dflt} -- keys: ${ls.keys} -- lables: ${ls.labels}"
+      case m:    MethodInsnNode        => s"$op  --  $i -- desc: ${m.desc} -- itf: ${m.itf} -- name: ${m.name}"
+      case ts:   TableSwitchInsnNode   => s"$op  --  $i -- dflt: ${ts.dflt} -- labels: ${ts.labels} -- max: ${ts.max} -- min: ${ts.min}"
+      case t:    TypeInsnNode          => s"$op  --  $i -- desc: ${t.desc}"
+      case v:    VarInsnNode           => s"$op  --  $i -- var: ${v.`var`}"
+      case _                           => s"$op  --  $i"
     }
+
+    println(message)
+  }
 
   def interp(insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])],
              stackMap: Map[Identifier, Val],
