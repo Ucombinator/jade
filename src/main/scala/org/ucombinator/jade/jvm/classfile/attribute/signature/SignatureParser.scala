@@ -21,7 +21,7 @@ object SignatureParser extends JavaTokenParsersOpt {
 
   private lazy val baseType: Parser[JavaTypeSignature] =
     ("B" | "C" | "D" | "F" | "I" | "J" | "S" | "Z") ^^
-      BaseType.valueOf
+      BaseType.typeOf
 
   // A "reference type signature" represents a reference type of the Java programming language, that is, a class or interface type, a type variable, or an array type.
   private lazy val referenceTypeSignature: Parser[ReferenceTypeSignature] =

@@ -3,6 +3,7 @@ package org.ucombinator.jade.method
 import org.objectweb.asm.{ClassReader, Opcodes}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis.Frame
+import org.ucombinator.jade.jvm.classfile.TypeCommons._
 import org.ucombinator.jade.jvm.classfile.descriptor.DescriptorParser
 import org.ucombinator.jade.method.bytecode._
 import org.ucombinator.jade.method.bytecode.MathByteCode._
@@ -35,34 +36,37 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
 
   protected[this] val newArrayMap = Map(
-    4 -> "boolean",
-    5 -> "char",
-    6 -> "float",
-    7 -> "double",
-    8 -> "byte",
-    9 -> "short",
-    10 -> "int",
-    11 -> "long"
+    4  -> Z, // "boolean"
+    5  -> C, // "char"
+    6  -> F, // "float"
+    7  -> D, // "double"
+    8  -> B, // "byte"
+    9  -> S, // "short"
+    10 -> I, // "int"
+    11 -> J, // "long"
   )
 
-  protected[this] val constantInsnToConst =
+  protected[this] val constantInsnToConst: Map[Int, Value] =
     Map(
-      Opcodes.ACONST_NULL -> null,
-      Opcodes.ICONST_M1   -> IntVal(-1),
-      Opcodes.ICONST_0    -> IntVal(0),
-      Opcodes.ICONST_1    -> IntVal(1),
-      Opcodes.ICONST_2    -> IntVal(2),
-      Opcodes.ICONST_3    -> IntVal(3),
-      Opcodes.ICONST_4    -> IntVal(4),
-      Opcodes.ICONST_5    -> IntVal(5),
-      Opcodes.LCONST_0    -> LongVal(0L),
-      Opcodes.LCONST_1    -> LongVal(1L),
-      Opcodes.FCONST_0    -> FloatVal(0.0F),
-      Opcodes.FCONST_1    -> FloatVal(1.0F),
-      Opcodes.FCONST_2    -> FloatVal(2.0F),
-      Opcodes.DCONST_0    -> DoubleVal(0.0),
-      Opcodes.DCONST_1    -> DoubleVal(1.0)
+      Opcodes.ACONST_NULL -> NullV,
+      Opcodes.ICONST_M1   -> IV(-1),
+      Opcodes.ICONST_0    -> IV(0),
+      Opcodes.ICONST_1    -> IV(1),
+      Opcodes.ICONST_2    -> IV(2),
+      Opcodes.ICONST_3    -> IV(3),
+      Opcodes.ICONST_4    -> IV(4),
+      Opcodes.ICONST_5    -> IV(5),
+      Opcodes.LCONST_0    -> JV(0L),
+      Opcodes.LCONST_1    -> JV(1L),
+      Opcodes.FCONST_0    -> FV(0.0F),
+      Opcodes.FCONST_1    -> FV(1.0F),
+      Opcodes.FCONST_2    -> FV(2.0F),
+      Opcodes.DCONST_0    -> DV(0.0),
+      Opcodes.DCONST_1    -> DV(1.0)
     )
+
+  // TODO: getTopStackAsVariable  without getEventually
+  // TODO: getTopStackAsValue     with    getEventually
 
   protected[this] def getStack(frame: Frame[Identifier])(index: Int): Identifier =
     frame.getStack(frame.getStackSize - index - 1)
@@ -79,17 +83,32 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
   protected[this] def getTop3Stack(frame: Frame[Identifier]): List[Identifier] =
     getTopNStack(frame, 3)
 
-  protected[this] def getConstVal(insn: AbstractInsnNode, opcodes: Int): Val =
-    (opcodes: @unchecked) match {
-      case _ if constantInsnToConst.contains(opcodes) => constantInsnToConst(opcodes)
-      case Opcodes.BIPUSH | Opcodes.SIPUSH            => IntVal(insn.asInstanceOf[IntInsnNode].operand)
-      // TODO: The ASM API says this must be NON-null
-      case Opcodes.LDC                                => LDCVal(insn.asInstanceOf[LdcInsnNode].cst)
+  protected[this] def getConstVal(insn: AbstractInsnNode, opcodes: Int): Value = {
+    require(opcodes >= 1 && opcodes <= 18)
+    // since in ASM LDC also represents opcode LDC_W, LDC2_W in the JVMS,
+    // the actually opcodes processed here are in the range of [1, 20].
+
+    // ASM guarantees the `cst` of `LdcInsnNode` will never be `null`.
+    //   Since there is an opcode `aconst_null`, I guess that all compilers
+    // shouldn't use the opcodes `ldc` or `ldc_w` to process `null` value.  // TODO: is this MANDATORY?!?!?!?
+    opcodes match {
+      case Opcodes.BIPUSH => BV(insn.asInstanceOf[IntInsnNode].operand.toByte)
+      case Opcodes.SIPUSH => SV(insn.asInstanceOf[IntInsnNode].operand.toShort)
+      // TODO: https://stackoverflow.com/questions/28264012/im-curious-about-what-ldc-short-for-in-jvm/28268671
+
+      // TODO: check the API and you can find useful info about the type of `cst`:
+      // TODO(CONTINUE)   Integer, Float, Long, Double, String, or (ASM) Type
+
+      // TODO: ??? These types are not consistent with the info given in the stackoverflow link above
+      case Opcodes.LDC    => LDCVal(insn.asInstanceOf[LdcInsnNode].cst)
+
+      case _              => constantInsnToConst(opcodes)
     }
+  }
 
   protected[this] def getEventually(key: Identifier,
-                                    stkMap: => Map[Identifier, Val],
-                                    locMap: => Map[Identifier, Val]): Val = {
+                                    stkMap: Map[Identifier, Value],
+                                    locMap: Map[Identifier, Value]): Value = {
     println(s"key: $key")  // Debug message!
 
     if (locMap.contains(key))
@@ -101,7 +120,6 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
       }
 
   }
-
 
   // Example: val desc = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
   def nParameters(desc: String): Int =
@@ -132,8 +150,8 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
   }
 
   def interp(insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])],
-             stackMap: Map[Identifier, Val],
-             localVariableMap: Map[Identifier, Val]): Unit = {
+             stackMap: Map[Identifier, Value],
+             localVariableMap: Map[Identifier, Value]): Unit = {
 
     println(s"stackMap: $stackMap")
     println(s"localVar: $localVariableMap")
@@ -160,15 +178,15 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
           /** Constants: 0 ~ 20 */
           // Opcodes.NOP /* 0 */ => Do nothing
 
-          case c @ (
-            Opcodes.ACONST_NULL | Opcodes.ICONST_M1 | Opcodes.ICONST_0 |  // \
-            Opcodes.ICONST_1    | Opcodes.ICONST_2  | Opcodes.ICONST_3 |  //  \
-            Opcodes.ICONST_4    | Opcodes.ICONST_5  | Opcodes.LCONST_0 |  //   --> InsnNode
-            Opcodes.LCONST_1    | Opcodes.FCONST_0  | Opcodes.FCONST_1 |  //  /
-            Opcodes.FCONST_2    | Opcodes.DCONST_0  | Opcodes.DCONST_1 |  // /
-            Opcodes.BIPUSH      | Opcodes.SIPUSH    |                     // ----> IntInsnNode
-            Opcodes.LDC)                                                  // ----> LdcInsnNode
-            // Also covers:
+          case c@(
+            Opcodes.ACONST_NULL | Opcodes.ICONST_M1 | Opcodes.ICONST_0 | // \
+            Opcodes.ICONST_1 | Opcodes.ICONST_2 | Opcodes.ICONST_3 | //  \
+            Opcodes.ICONST_4 | Opcodes.ICONST_5 | Opcodes.LCONST_0 | //   --> InsnNode
+            Opcodes.LCONST_1 | Opcodes.FCONST_0 | Opcodes.FCONST_1 | //  /
+            Opcodes.FCONST_2 | Opcodes.DCONST_0 | Opcodes.DCONST_1 | // /
+            Opcodes.BIPUSH | Opcodes.SIPUSH | // ----> IntInsnNode
+            Opcodes.LDC) // ----> LdcInsnNode
+            // This case also covers:
             // LDC_W (19), LDC2_W (20)
           =>
             val key = getTopStack(nextFrame)
@@ -201,7 +219,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
             val value = {
               val List(index, arrayRef) = getTop2Stack(frame).map(getEventually(_, stackMap, localVariableMap))
-              ArrayElementVal(arrayRef, index)
+              ArrayElementV(arrayRef, index)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
@@ -227,25 +245,32 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             * JVM opcodes: 79 - 86 */
           case Opcodes.IASTORE | Opcodes.LASTORE | Opcodes.FASTORE |
                Opcodes.DASTORE | Opcodes.AASTORE | Opcodes.BASTORE |
-               Opcodes.CASTORE | Opcodes.SASTORE  // 79 ~ 86
+               Opcodes.CASTORE | Opcodes.SASTORE // 79 ~ 86
           =>
             val key = {
               val i = insn.asInstanceOf[VarInsnNode].`var`
               nextFrame.getLocal(i)
             }
 
-            val value  = {
+            val value = {
               val Seq(v, index, arrayRef) = getTop3Stack(frame).map(getEventually(_, stackMap, localVariableMap))
-              val result = ArrayElementVal(arrayRef.asInstanceOf[Identifier], index)
-              code += result + " = " + v  // TODO: or `k`
+              val result = ArrayElementV(arrayRef.asInstanceOf[Identifier], index)
+              code += result + " = " + v // TODO: or `k`
               result
             }
-            interp(leftInsns, stackMap, localVariableMap + (key -> value) )
+            interp(leftInsns, stackMap, localVariableMap + (key -> value))
 
           // ---------------------------------------------------------------
           /** Stack */
           case Opcodes.POP | Opcodes.POP2 // 87, 88  // TODO: not sure
           =>
+          // The implementation of POP is right if your purpose is to generate compilable code.
+          // TODO: However, this implmentation CANNOT recover the original code like:
+          //   def void foo() {
+          //       Integer ii = Integer.valueOf(3);
+          //       Integer jj = ii.valueOf(4);  // the result of decompilation of this line: Integer jj = Integer.valueOf(4);
+          //   }
+
             interp(leftInsns, stackMap, localVariableMap)
 
           case Opcodes.DUP /* 89 */
@@ -391,27 +416,37 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
           // Developing --------------------------------------------------------------
           /** References */
           case Opcodes.GETSTATIC /* 178 */ =>
-            val ins = insn.asInstanceOf[FieldInsnNode]
             val key = getTopStack(nextFrame)
-            val value = StaticFieldVal(NameVal(ins.owner), ins.name, ins.desc)
+            val value = {
+              val ins = insn.asInstanceOf[FieldInsnNode]
+              val desc = DescriptorParser.parseFieldDescriptor(ins.desc).get  // TODO: The returned `desc` may not be the internal form, which make my parser crash!!!!
+              StaticFieldV(ins.owner, ins.name, desc)
+            }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.PUTSTATIC /* 179 */ =>
             val ins = insn.asInstanceOf[FieldInsnNode]
             val value = getEventually(getTopStack(frame), stackMap, localVariableMap)
-            code += NameVal(ins.owner) + "." + ins.name + " = "  + value
+            code += s"${ins.owner}.${ins.name} = value"
+            // No change for maps -- PUTSTATIC change the source code and then
+            // the future computation, but it doesn't change the `stackMap` and the `localVariableMap`
             interp(leftInsns, stackMap, localVariableMap)
 
           case Opcodes.GETFIELD /* 180 */ =>
-            val ins = insn.asInstanceOf[FieldInsnNode]
-            val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
             val key = getTopStack(nextFrame)
-            interp(leftInsns, stackMap + (key -> InstanceFieldVal(obj, ins.name, ins.desc)), localVariableMap)
+            val value = {
+              val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
+              val ins = insn.asInstanceOf[FieldInsnNode]
+              val name = ins.name
+              val desc = DescriptorParser.parseFieldDescriptor(ins.name).get
+              InstanceFieldV(obj, name, desc)  // TODO: The returned `desc` may not be the internal form, which make my parser crash!!!!
+            }
+            interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.PUTFIELD /* 181 */ =>
             val ins = insn.asInstanceOf[FieldInsnNode]
             val Seq(value, obj) = getTop2Stack(frame).map(getEventually(_, stackMap, localVariableMap))
-            code += ObjVal(obj) + "." + ins.name + " = "  + value
+            code += obj + "." + ins.name + " = "  + value
             interp(leftInsns, stackMap, localVariableMap)
 
           case Opcodes.INVOKEVIRTUAL /* 182 */ =>
@@ -421,7 +456,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             val key = getTopStack(nextFrame)
             val obj = getEventually(id, stackMap, localVariableMap)
             val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap)).toList
-            interp(leftInsns, stackMap + (key -> InvokeVirtualVal(obj.asInstanceOf[ObjectVal], ins.name, parameters)), localVariableMap)
+            interp(leftInsns, stackMap + (key -> InvokeVirtualV(obj, ins.name, parameters)), localVariableMap)
 
           case Opcodes.INVOKESPECIAL /* 183 */ =>
             val ins = insn.asInstanceOf[MethodInsnNode]
@@ -430,14 +465,14 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             val key = getTopStack(nextFrame)
             val obj = getEventually(id, stackMap, localVariableMap)
             val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap))
-            interp(leftInsns, stackMap + (key -> InvokeSpecialVal(obj.asInstanceOf[ObjectVal], ins.name, parameters)), localVariableMap)
+            interp(leftInsns, stackMap + (key -> InvokeSpecialV(obj, ins.name, parameters)), localVariableMap)
 
           case Opcodes.INVOKESTATIC /* 184 (0xb8) */ =>
             val ins = insn.asInstanceOf[MethodInsnNode]
             val parameterCount = nParameters(ins.desc)
             val key = getTopStack(nextFrame)
             val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap))
-            interp(leftInsns, stackMap + (key -> InvokeStaticVal(NameVal(ins.owner), ins.name, parameters)), localVariableMap)
+            interp(leftInsns, stackMap + (key -> InvokeStaticV(ClassV(ins.owner), ins.name, parameters)), localVariableMap)
 
           case Opcodes.INVOKEINTERFACE /* 185 (0xb9) */ =>
             val ins = insn.asInstanceOf[MethodInsnNode]
@@ -446,7 +481,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             val key = getTopStack(nextFrame)
             val obj = getEventually(id, stackMap, localVariableMap)
             val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap))
-            interp(leftInsns, stackMap + (key -> InvokeInterfaceVal(obj.asInstanceOf[ObjectVal], ins.name, parameters)), localVariableMap)
+            interp(leftInsns, stackMap + (key -> InvokeInterfaceV(obj, ins.name, parameters)), localVariableMap)
 
 
 
@@ -468,7 +503,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
           case Opcodes.NEW /* 187 (0xbb) */ =>
             val key = getTopStack(nextFrame)
             val value = insn.asInstanceOf[TypeInsnNode].desc
-            interp(leftInsns, stackMap + (key -> NameVal(value)), localVariableMap)
+            interp(leftInsns, stackMap + (key -> ClassV(value)), localVariableMap)
 
           case Opcodes.NEWARRAY /* 188 (0xbc) */ =>
             val key = getTopStack(nextFrame)
@@ -476,7 +511,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
               val typeCode = insn.asInstanceOf[IntInsnNode].operand
               val nDimensions = getTopStack(frame)
               val v = getEventually(nDimensions, stackMap, localVariableMap)
-              NewArrayVal(newArrayMap(typeCode), v)
+              NewPrimitiveArrayV(newArrayMap(typeCode), v)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
@@ -484,8 +519,8 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             val key = getTopStack(nextFrame)
             val value = {
               val arrLen = getEventually(getTopStack(frame), stackMap, localVariableMap)
-              val elementType = DescriptorParser.parseFieldDescriptor(insn.asInstanceOf[TypeInsnNode].desc).get
-              NewObjectArray(elementType, arrLen)
+              val elementType = DescriptorParser.parseObjectDescriptor(insn.asInstanceOf[TypeInsnNode].desc).get
+              NewReferenceArrayV(elementType, arrLen)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
@@ -493,7 +528,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             val key = getTopStack(nextFrame)
             val value = {
               val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
-              ArrayLength(obj)
+              ArrayLengthV(obj)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
@@ -502,11 +537,12 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             interp(leftInsns, stackMap, localVariableMap)
 
           case Opcodes.CHECKCAST /* 192 (0xc0) */ =>  // TODO: similar to `INSTANCEOF`
+            // TODO: from the JVMS -- "If objectref is null, then the operand stack is unchanged.".    DO I need to correct this instruction  ???
             val key = getTopStack(nextFrame)
             val value = {
               val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
               val descriptor = DescriptorParser.parseFieldDescriptor(insn.asInstanceOf[TypeInsnNode].desc).get
-              CheckCastVal(obj, descriptor)
+              CheckCastV(obj, descriptor)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
@@ -538,7 +574,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
           case Opcodes.MULTIANEWARRAY /* 197 */ =>
             val ins = insn.asInstanceOf[MultiANewArrayInsnNode]
-            val dims = getTopNStack(frame, ins.dims).map(getEventually(_, stackMap, localVariableMap)).toList
+            val dims = getTopNStack(frame, ins.dims).map(getEventually(_, stackMap, localVariableMap))
             val key = getTopStack(nextFrame)
             val t = DescriptorParser.parseArrayDescriptor(ins.desc).get.typ
             val value = NewMultiDimArray(t, dims)

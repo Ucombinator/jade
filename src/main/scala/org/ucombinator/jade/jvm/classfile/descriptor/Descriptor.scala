@@ -1,9 +1,9 @@
 package org.ucombinator.jade.jvm.classfile.descriptor
 
 import org.ucombinator.jade.jvm.classfile.TypeCommons.JavaIdentifier
-import org.ucombinator.jade.method.Val
 
 import scala.annotation.tailrec
+
 
 trait Descriptor
 
@@ -13,20 +13,17 @@ object Descriptor {
 
   abstract class FieldType extends FieldDescriptor with ReturnDescriptor
 
-  trait ArrayElementType extends Val  // Tag trait
-  trait ReferenceType extends Val
-
   // TODO: ClassName -- $4.2.1
   sealed case class ObjectType(packageSpecifier: List[JavaIdentifier], className: JavaIdentifier)
-    extends FieldType with ArrayElementType with ReferenceType
+    extends FieldType
 
-  sealed case class ArrayType(componentType: ComponentType) extends FieldType with ReferenceType {
-    val typ: ArrayElementType = {
+  sealed case class ArrayType(componentType: ComponentType) extends FieldType {
+    val typ: FieldDescriptor = {
       @tailrec
-      def unwrap(ft: FieldType): ArrayElementType =
+      def unwrap(ft: FieldType): FieldDescriptor =
         ft match {
           case ArrayType(t)        => unwrap(t)
-          case t: ArrayElementType => t
+          case t                   => t
         }
 
       unwrap(this)
@@ -36,13 +33,13 @@ object Descriptor {
   type ComponentType = FieldType
 
   /** Method Descriptors */
-  case class MethodDescriptor(parameterDescriptors: List[ParameterDescriptor],
-                              returnDescriptor: ReturnDescriptor)
+  sealed case class MethodDescriptor(parameterDescriptors: List[ParameterDescriptor],
+                                     returnDescriptor: ReturnDescriptor)
     extends Descriptor
 
   type ParameterDescriptor = FieldType
 
-  trait ReturnDescriptor extends Descriptor
+  sealed trait ReturnDescriptor extends Descriptor
   case object VoidDescriptor extends ReturnDescriptor
 }
 

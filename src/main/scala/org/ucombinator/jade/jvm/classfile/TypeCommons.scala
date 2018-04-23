@@ -1,7 +1,8 @@
 package org.ucombinator.jade.jvm.classfile
 
 import org.ucombinator.jade.jvm.classfile.attribute.signature.JavaTypeSignature
-import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.{ArrayElementType, FieldType}
+//import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.{ArrayElementType, FieldType}
+import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.FieldType
 
 object TypeCommons {
   // The grammar includes the terminal symbol Identifier to denote the name of a
@@ -13,18 +14,19 @@ object TypeCommons {
 
   // TODO: Better name required!!!
   // It is not clear for maintainers about the difference between `Identifier` and the `JavaIdentifier` here.
-  case class JavaIdentifier(string: String) {
+  sealed case class JavaIdentifier(string: String) {
     require(string.forall(isSignatureIdentifierCharacter),  // TODO: Should also work for "Descriptors"
       f"Illegal JVM signature identifier: $string")
   }
 
   sealed trait BaseType
-    extends FieldType with JavaTypeSignature with ArrayElementType
+    extends FieldType with JavaTypeSignature //  with ArrayElementType
 
   object BaseType {
-    val values: List[BaseType] = List(B, C, D, F, I, J, S, Z)
-    val valueOf: Map[String, BaseType] = values.map(v => v.toString -> v).toMap
+    val subTypes: List[BaseType] = List(B, C, D, F, I, J, S, Z)
+    val typeOf: Map[String, BaseType] = subTypes.map(v => v.toString -> v).toMap
   }
+
   case object B extends BaseType // `byte`    - signed byte
   case object C extends BaseType // `char`    - Unicode code point in the Basic Multilingual Plane, encoded with UTF-16
   case object D extends BaseType // `double`  - double-precision floating-point value

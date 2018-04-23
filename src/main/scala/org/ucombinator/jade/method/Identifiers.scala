@@ -4,17 +4,10 @@ import org.jgrapht.graph.DefaultDirectedGraph
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
-import org.ucombinator.jade.Variable
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-
-
-case class Identifier(id: Int, copyVersion: Int, basicValue: BasicValue)
-    extends Value with Val with Variable {
-  override def getSize: Int = basicValue.getSize
-}
 
 class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
   extends Interpreter[Identifier](/*TODO: api*/Opcodes.ASM6) {
