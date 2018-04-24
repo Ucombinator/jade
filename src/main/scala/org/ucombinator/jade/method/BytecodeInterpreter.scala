@@ -1,25 +1,27 @@
 package org.ucombinator.jade.method
 
-import org.objectweb.asm.{ClassReader, Opcodes}
+import org.objectweb.asm.{ClassReader, Opcodes, Type}
 import org.objectweb.asm.tree._
-import org.objectweb.asm.tree.analysis.Frame
+import org.objectweb.asm.tree.analysis.{Frame, BasicValue => AsmBasicValue}
 import org.ucombinator.jade.jvm.classfile.TypeCommons._
 import org.ucombinator.jade.jvm.classfile.descriptor.DescriptorParser
 import org.ucombinator.jade.method.bytecode._
 import org.ucombinator.jade.method.bytecode.MathByteCode._
+import org.ucombinator.jade.Util.printInsnNode
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
 
 // TODO: abstract here is added for testing: in Scala worksheet, I always extends this abstract class, and finish the `interp` method.
-abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
+abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) extends FrameOperations {
 
   protected[this] val cn = new ClassNode
   protected[this] val cr = new ClassReader(bytes)
   cr.accept(cn, 0)
   val method: MethodNode = cn.methods.asScala.filter(_.name == methodName).head  // TODO: for develop
-  val analyzer = new org.ucombinator.jade.method.IdentifierAnalyzer("TestIfLoop", method)
+  val analyzer = new org.ucombinator.jade.method.IdentifierAnalyzer(cn.name, method)
   //val tree = new InsnBlockTree("TestIfLoop", m)
 
   //  protected[this] val insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])] =
@@ -34,8 +36,7 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
   protected[this] val code = new ListBuffer[String] // TODO: Should finally be `val code = new ListBuffer[Statement]`
 
-
-  protected[this] val newArrayMap = Map(
+  protected[this] val primitiveArrayElementType = Map(
     4  -> Z, // "boolean"
     5  -> C, // "char"
     6  -> F, // "float"
@@ -65,136 +66,104 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
       Opcodes.DCONST_1    -> DV(1.0)
     )
 
-  // TODO: getTopStackAsVariable  without getEventually
-  // TODO: getTopStackAsValue     with    getEventually
-
-  protected[this] def getStack(frame: Frame[Identifier])(index: Int): Identifier =
-    frame.getStack(frame.getStackSize - index - 1)
-
-  protected[this] def getTopStack(frame: Frame[Identifier]): Identifier =
-    getStack(frame: Frame[Identifier])(0)
-
-  protected[this] def getTopNStack(frame: Frame[Identifier], n: Int): List[Identifier] =
-    (0 until n).map(getStack(frame)).toList
-
-  protected[this] def getTop2Stack(frame: Frame[Identifier]): List[Identifier] =
-    getTopNStack(frame, 2)
-
-  protected[this] def getTop3Stack(frame: Frame[Identifier]): List[Identifier] =
-    getTopNStack(frame, 3)
-
-  protected[this] def getConstVal(insn: AbstractInsnNode, opcodes: Int): Value = {
-    require(opcodes >= 1 && opcodes <= 18)
-    // since in ASM LDC also represents opcode LDC_W, LDC2_W in the JVMS,
-    // the actually opcodes processed here are in the range of [1, 20].
-
-    // ASM guarantees the `cst` of `LdcInsnNode` will never be `null`.
-    //   Since there is an opcode `aconst_null`, I guess that all compilers
-    // shouldn't use the opcodes `ldc` or `ldc_w` to process `null` value.  // TODO: is this MANDATORY?!?!?!?
-    opcodes match {
-      case Opcodes.BIPUSH => BV(insn.asInstanceOf[IntInsnNode].operand.toByte)
-      case Opcodes.SIPUSH => SV(insn.asInstanceOf[IntInsnNode].operand.toShort)
-      // TODO: https://stackoverflow.com/questions/28264012/im-curious-about-what-ldc-short-for-in-jvm/28268671
-
-      // TODO: check the API and you can find useful info about the type of `cst`:
-      // TODO(CONTINUE)   Integer, Float, Long, Double, String, or (ASM) Type
-
-      // TODO: ??? These types are not consistent with the info given in the stackoverflow link above
-      case Opcodes.LDC    => LDCVal(insn.asInstanceOf[LdcInsnNode].cst)
-
-      case _              => constantInsnToConst(opcodes)
+  final protected[this] def getConstVal(insn: IntInsnNode): Value =
+    (insn.getOpcode: @unchecked) match {
+      case Opcodes.BIPUSH => BV(insn.operand.toByte)
+      case Opcodes.SIPUSH => SV(insn.operand.toShort)
     }
-  }
 
-  protected[this] def getEventually(key: Identifier,
-                                    stkMap: Map[Identifier, Value],
-                                    locMap: Map[Identifier, Value]): Value = {
-    println(s"key: $key")  // Debug message!
+  final protected[this] def getConstVal(insn: LdcInsnNode): Value =
+    (insn.cst: @unchecked) match {
+      case i: java.lang.Integer => IV(i)
+      case f: java.lang.Float   => FV(f)
+      case j: java.lang.Long    => JV(j)
+      case d: java.lang.Double  => DV(d)
+      case _: java.lang.String  => Class(DescriptorParser.parseReferenceDescriptor("Ljava/lang/String;").get)
+      case t: Type /* ASM) */   => Class(DescriptorParser.parseReferenceDescriptor(t.getDescriptor).get)
+      // TODO: https://stackoverflow.com/questions/28264012/im-curious-about-what-ldc-short-for-in-jvm/28268671
+      // `ldc` can load `java.lang.invoke.MethodType` and `java.lang.invoke.MethodHandle`, but this is NOT for
+      // Java code.
+      // TODO: This may change in the future! If this changes, the actual type of `cst` will also change.
+    }
 
-    if (locMap.contains(key))
-      key
-    else
-      stkMap(key) match {
-        case id: Identifier => getEventually(id, stkMap, locMap)
-        case v              => v
-      }
-
-  }
+//  final protected[this] def getConstVal(insn: AbstractInsnNode): Value =
+//    (insn.getOpcode: @unchecked) match {
+//      case Opcodes.BIPUSH =>
+//        BV(insn.asInstanceOf[IntInsnNode].operand.toByte)
+//
+//      case Opcodes.SIPUSH =>
+//        SV(insn.asInstanceOf[IntInsnNode].operand.toShort)
+//
+//      case Opcodes.LDC =>
+//        val rawValue = insn.asInstanceOf[LdcInsnNode].cst // Integer, Float, Long, Double, String, or (ASM) Type
+//        (rawValue: @unchecked) match {
+//          case i: java.lang.Integer => IV(i)
+//          case f: java.lang.Float   => FV(f)
+//          case j: java.lang.Long    => JV(j)
+//          case d: java.lang.Double  => DV(d)
+//          case _: java.lang.String  => Class(DescriptorParser.parseReferenceDescriptor("Ljava/lang/String;").get)
+//          case t: Type              => Class(DescriptorParser.parseReferenceDescriptor(t.getDescriptor).get)
+//          // TODO: https://stackoverflow.com/questions/28264012/im-curious-about-what-ldc-short-for-in-jvm/28268671
+//          // `ldc` can load `java.lang.invoke.MethodType` and `java.lang.invoke.MethodHandle`, but this is NOT for
+//          // Java code.
+//          // TODO: This may change in the future! If this changes, the actual type of `cst` will also change.
+//        }
+//    }
 
   // Example: val desc = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
-  def nParameters(desc: String): Int =
+  final protected[this] def nParameters(desc: String): Int =
     DescriptorParser.parseMethodDescriptor(desc).get.parameterDescriptors.length
 
-  /** Debug usage */
-  def printInsnNode(i: AbstractInsnNode): Unit = {
-    val op = org.ucombinator.jade.util.Util.translator(i)
+  @tailrec
+  final def interp(insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])],
+                   stackMap: Map[Identifier, Value] = Map.empty[Identifier, Value],
+                   localVariableMap: Map[Identifier, Value]): Unit = {
 
-    val message =
-    i match {
-      case fld:  FieldInsnNode         => s"$op  --  $i -- name: ${fld.name}"
-      case iinc: IincInsnNode          => s"$op  --  $i -- var: ${iinc.`var`} -- incr: ${iinc.incr}"
-      case _: InsnNode                 => s"$op  --  $i -- NO OPERAND"
-      case int:  IntInsnNode           => s"$op  --  $i -- ${int.operand}"
-      case ivk:  InvokeDynamicInsnNode => s"$op  --  $i -- bsm: ${ivk.bsm} -- bsmArgs: ${ivk.bsmArgs}"
-      case jmp:  JumpInsnNode          => s"$op  --  $i -- label: ${jmp.label}"
-      case ldc:  LdcInsnNode           => s"$op  --  $i -- cst: ${ldc.cst}"
-      case ls:   LookupSwitchInsnNode  => s"$op  --  $i -- dlft: ${ls.dflt} -- keys: ${ls.keys} -- lables: ${ls.labels}"
-      case m:    MethodInsnNode        => s"$op  --  $i -- desc: ${m.desc} -- itf: ${m.itf} -- name: ${m.name}"
-      case ts:   TableSwitchInsnNode   => s"$op  --  $i -- dflt: ${ts.dflt} -- labels: ${ts.labels} -- max: ${ts.max} -- min: ${ts.min}"
-      case t:    TypeInsnNode          => s"$op  --  $i -- desc: ${t.desc}"
-      case v:    VarInsnNode           => s"$op  --  $i -- var: ${v.`var`}"
-      case _                           => s"$op  --  $i"
-    }
-
-    println(message)
-  }
-
-  def interp(insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])],
-             stackMap: Map[Identifier, Value],
-             localVariableMap: Map[Identifier, Value]): Unit = {
-
-    println(s"stackMap: $stackMap")
-    println(s"localVar: $localVariableMap")
-    println("-------------------------------------------------------------------\n\n")
+    println(s"stackMap: $stackMap\nlocalVar: $localVariableMap\n\n")
 
     insnFramePairs match {
-      case Nil => // TODO:
+      case Nil =>
 
-      case List(x) => // TODO:
+      case List(_) => // TODO:
         interp(Nil, stackMap, localVariableMap)
 
       case (insn, frame) :: (leftInsns@(nextInsn, nextFrame) :: _) =>
 
         /** Debug print - Start */
-        val instruction = org.ucombinator.jade.util.Util.translator(insn)
-        println(s"insn: $instruction")
+        printInsnNode(insn)
         println(s"nLocals: ${frame.getLocals}")
         println(s"nStack: ${frame.getStackSize}")
         println(s"frame: $frame")
+        println("--------------------------------------------------------------------------")
 
         /** Debug print - End */
 
         insn.getOpcode match {
           /** Constants: 0 ~ 20 */
           // Opcodes.NOP /* 0 */ => Do nothing
-
-          case c@(
-            Opcodes.ACONST_NULL | Opcodes.ICONST_M1 | Opcodes.ICONST_0 | // \
-            Opcodes.ICONST_1 | Opcodes.ICONST_2 | Opcodes.ICONST_3 | //  \
-            Opcodes.ICONST_4 | Opcodes.ICONST_5 | Opcodes.LCONST_0 | //   --> InsnNode
-            Opcodes.LCONST_1 | Opcodes.FCONST_0 | Opcodes.FCONST_1 | //  /
-            Opcodes.FCONST_2 | Opcodes.DCONST_0 | Opcodes.DCONST_1 | // /
-            Opcodes.BIPUSH | Opcodes.SIPUSH | // ----> IntInsnNode
-            Opcodes.LDC) // ----> LdcInsnNode
-            // This case also covers:
-            // LDC_W (19), LDC2_W (20)
+          case c @ (
+            Opcodes.ACONST_NULL | Opcodes.ICONST_M1 | Opcodes.ICONST_0 |
+            Opcodes.ICONST_1    | Opcodes.ICONST_2  | Opcodes.ICONST_3 |
+            Opcodes.ICONST_4    | Opcodes.ICONST_5  | Opcodes.LCONST_0 |
+            Opcodes.LCONST_1    | Opcodes.FCONST_0  | Opcodes.FCONST_1 |
+            Opcodes.FCONST_2    | Opcodes.DCONST_0  | Opcodes.DCONST_1
+            )
           =>
-            val key = getTopStack(nextFrame)
-            val value = getConstVal(insn, c)
+            val key = topStack(nextFrame)
+            val value = constantInsnToConst(c)
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
-          /** LOADS (Primitives)
-            * JVM opcodes: 21 ~ 45 */
+          case Opcodes.BIPUSH | Opcodes.SIPUSH =>
+            val key = topStack(nextFrame)
+            val value = getConstVal(insn.asInstanceOf[IntInsnNode])
+            interp(leftInsns, stackMap + (key -> value), localVariableMap)
+
+          case Opcodes.LDC =>
+            val key = topStack(nextFrame)
+            val value = getConstVal(insn.asInstanceOf[LdcInsnNode])
+            interp(leftInsns, stackMap + (key -> value), localVariableMap)
+
+          /** LOADS (Primitives): 21 ~ 45 */
           case Opcodes.ILOAD | Opcodes.LLOAD | Opcodes.FLOAD | Opcodes.DLOAD |
                Opcodes.ALOAD // 21 ~ 25
             // Also covers 26 ~ 45:
@@ -202,24 +171,18 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             // LLOAD_3, FLOAD_0, FLOAD_1, FLOAD_2, FLOAD_3, DLOAD_0, DLOAD_1,
             // DLOAD_2, DLOAD_3, ALOAD_0, ALOAD_1, ALOAD_2, ALOAD_3
           =>
-            val key = getTopStack(nextFrame)
-            val value = {
-              val idx = insn.asInstanceOf[VarInsnNode].`var`
-              frame.getLocal(idx)
-            }
+            val key = topStack(nextFrame)
+            val value = nthLocalVariable(frame, index = insn.asInstanceOf[VarInsnNode].`var`)
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
-          /** LOADS (Arrays)
-            * JVM opcodes: 46 ~ 53 */
+          /** LOADS (Arrays): 46 ~ 53 */
           case Opcodes.IALOAD | Opcodes.LALOAD | Opcodes.FALOAD |
                Opcodes.DALOAD | Opcodes.AALOAD | Opcodes.BALOAD |
                Opcodes.CALOAD | Opcodes.SALOAD
           =>
-            val key = getTopStack(nextFrame)
-
-            val value = {
-              val List(index, arrayRef) = getTop2Stack(frame).map(getEventually(_, stackMap, localVariableMap))
-              ArrayElementV(arrayRef, index)
+            val key = topStack(nextFrame)
+            val value = top2StackValues(frame, stackMap, localVariableMap) match {
+              case List(index, arrayRef) => ArrayElementV(arrayRef, index)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
@@ -233,12 +196,13 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             // DSTORE_0, DSTORE_1, DSTORE_2, DSTORE_3, ASTORE_0, ASTORE_1,
             // ASTORE_2, ASTORE_3
           =>
-            val key = {
-              val idx = insn.asInstanceOf[VarInsnNode].`var`
-              nextFrame.getLocal(idx)
-            }
-            val value = getTopStack(frame)
-            code += key + " = " + getEventually(value, stackMap, localVariableMap)
+            val key = nthLocalVariable(nextFrame, index = insn.asInstanceOf[VarInsnNode].`var`)
+            // TODO: High priority!!!
+            // TODO: Which one is right? The old one? OR the new one?
+//            val value = getTopStack(frame)
+//            code += key + " = " + getEventually(value, stackMap, localVariableMap)
+//            interp(leftInsns, stackMap, localVariableMap + (key -> value))
+            val value = topStackValue(frame, stackMap, localVariableMap)
             interp(leftInsns, stackMap, localVariableMap + (key -> value))
 
           /** Stores (Arrays)
@@ -247,37 +211,37 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
                Opcodes.DASTORE | Opcodes.AASTORE | Opcodes.BASTORE |
                Opcodes.CASTORE | Opcodes.SASTORE // 79 ~ 86
           =>
-            val key = {
-              val i = insn.asInstanceOf[VarInsnNode].`var`
-              nextFrame.getLocal(i)
-            }
-
-            val value = {
-              val Seq(v, index, arrayRef) = getTop3Stack(frame).map(getEventually(_, stackMap, localVariableMap))
-              val result = ArrayElementV(arrayRef.asInstanceOf[Identifier], index)
-              code += result + " = " + v // TODO: or `k`
-              result
+            val key = nthLocalVariable(nextFrame, index = insn.asInstanceOf[VarInsnNode].`var`)
+            val value = top3StackValues(frame, stackMap, localVariableMap) match {
+              case List(v, index, arrayRef) =>
+                val result = ArrayElementV(arrayRef, index)
+                code += result + " = " + v // TODO: or `k`
+                result
             }
             interp(leftInsns, stackMap, localVariableMap + (key -> value))
 
           // ---------------------------------------------------------------
           /** Stack */
-          case Opcodes.POP | Opcodes.POP2 // 87, 88  // TODO: not sure
-          =>
-          // The implementation of POP is right if your purpose is to generate compilable code.
-          // TODO: However, this implmentation CANNOT recover the original code like:
-          //   def void foo() {
-          //       Integer ii = Integer.valueOf(3);
-          //       Integer jj = ii.valueOf(4);  // the result of decompilation of this line: Integer jj = Integer.valueOf(4);
-          //   }
+          case Opcodes.POP /* 87 */ =>
+            // The implementation of POP is right if your purpose is to generate compilable code IR.
+            // TODO (Lowest priority): CANNOT recover the original code like
+            //   def void foo() {
+            //       Integer ii = Integer.valueOf(3);
+            //       Integer jj = ii.valueOf(4);  // the result of decompilation of this line: Integer jj = Integer.valueOf(4);
+            //   }
+            topStackValue(frame, stackMap, localVariableMap) match {
+              case _: Identifier =>
+              case v             => code += v.toString
+            }
+            interp(leftInsns, stackMap, localVariableMap)
 
+          case  Opcodes.POP2 /* 88 */ =>
+            // TODO: DO something similar as Opcodes.POP. Find an example and figure out the details of what to do.
             interp(leftInsns, stackMap, localVariableMap)
 
           case Opcodes.DUP /* 89 */
           =>
-            // TODO: getTop2Stack !!!
-            val key = getTopStack(nextFrame)
-            val value = getStack(nextFrame)(1)
+            val Seq(key, value) = top2Stacks(nextFrame)
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           // TODO:
@@ -310,49 +274,33 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
           // ---------------------------------------------------------------
           /** Math */
-          case binaryOp if (binaryOp >= 96 && binaryOp <= 115) || (binaryOp >= 120 && binaryOp <= 132)
+          case binaryOp
+            if (binaryOp >= Opcodes.IADD && binaryOp <= Opcodes.DREM) ||
+              (binaryOp >= Opcodes.ISHL && binaryOp <= Opcodes.IINC)
           =>
-            val key = getTopStack(nextFrame)
-            val Seq(i2, i1) = getTop2Stack(frame)
-            val v1 = getEventually(i1, stackMap, localVariableMap)
-            val v2 = getEventually(i2, stackMap, localVariableMap)
-
-            val value =
-              if      (Set(Opcodes.IADD, Opcodes.LADD, Opcodes.FADD, Opcodes.DADD).contains(binaryOp))
-                ADD(v1, v2)
-              else if (Set(Opcodes.ISUB, Opcodes.LSUB, Opcodes.FSUB, Opcodes.DSUB).contains(binaryOp))
-                SUB(v1, v2)
-              else if (Set(Opcodes.IMUL, Opcodes.LMUL, Opcodes.FMUL, Opcodes.DMUL).contains(binaryOp))
-                MUL(v1, v2)
-              else if (Set(Opcodes.IDIV, Opcodes.LDIV, Opcodes.FDIV, Opcodes.DDIV).contains(binaryOp))
-                DIV(v1, v2)
-              else if (Set(Opcodes.IREM, Opcodes.LREM, Opcodes.FREM, Opcodes.DREM).contains(binaryOp))
-                REM(v1, v2)
-              else if (Set(Opcodes.ISHL, Opcodes.LSHL).contains(binaryOp))
-                SHL(v1, v2)
-              else if (Set(Opcodes.ISHR, Opcodes.LSHR).contains(binaryOp))
-                SHR(v1, v2)
-              else if (Set(Opcodes.IUSHR, Opcodes.LUSHR).contains(binaryOp))
-                USHR(v1, v2)
-              else if (Set(Opcodes.IAND, Opcodes.LAND).contains(binaryOp))
-                AND(v1, v2)
-              else if (Set(Opcodes.IOR, Opcodes.LOR).contains(binaryOp))
-                OR(v1, v2)
-              else if (Set(Opcodes.IXOR, Opcodes.LXOR).contains(binaryOp))
-                XOR(v1, v2)
-              else  // Opcodes.IINC
-                IINC(v1, v2)
-
+            val key = topStack(nextFrame)
+            val Seq(v2, v1) = top2StackValues(frame, stackMap, localVariableMap)
+            val value = (binaryOp : @unchecked) match {
+              // TODO: Not sure if we need finer-grain. For instance, use case classes like `IADD` rather than `ADD`
+              case Opcodes.IADD  | Opcodes.LADD | Opcodes.FADD | Opcodes.DADD => ADD(v1, v2)
+              case Opcodes.ISUB  | Opcodes.LSUB | Opcodes.FSUB | Opcodes.DSUB => SUB(v1, v2)
+              case Opcodes.IMUL  | Opcodes.LMUL | Opcodes.FMUL | Opcodes.DMUL => MUL(v1, v2)
+              case Opcodes.IDIV  | Opcodes.LDIV | Opcodes.FDIV | Opcodes.DDIV => DIV(v1, v2)
+              case Opcodes.IREM  | Opcodes.LREM | Opcodes.FREM | Opcodes.DREM => REM(v1, v2)
+              case Opcodes.ISHL  | Opcodes.LSHL                               => SHL(v1, v2)
+              case Opcodes.ISHR  | Opcodes.LSHR                               => SHR(v1, v2)
+              case Opcodes.IUSHR | Opcodes.LUSHR                              => USHR(v1, v2)
+              case Opcodes.IAND  | Opcodes.LAND                               => AND(v1, v2)
+              case Opcodes.IOR   | Opcodes.LOR                                => OR(v1, v2)
+              case Opcodes.IXOR  | Opcodes.LXOR                               => XOR(v1, v2)
+              case Opcodes.IINC                                               => IINC(v1, v2)
+            }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.INEG | Opcodes.LNEG | Opcodes.FNEG | Opcodes.DNEG // 116 ~ 119
           =>
-            val key = getTopStack(nextFrame)
-            val value = {
-              val id = getTopStack(frame)
-              val v = getEventually(id, stackMap, localVariableMap)
-              NEG(v)
-            }
+            val key = topStack(nextFrame)
+            val value = NEG(topStackValue(frame, stackMap, localVariableMap))
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           // ---------------------------------------------------------------
@@ -364,9 +312,9 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
             Opcodes.I2B | Opcodes.I2C | Opcodes.I2S
             ) // 133 ~ 147
           =>
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = {
-              val v = getEventually(getTopStack(frame), stackMap, localVariableMap)
+              val v = topStackValue(frame, stackMap, localVariableMap)
 
               (cast: @unchecked) match {
                 case Opcodes.I2L /* 133 */ => IntToLong(v)
@@ -402,21 +350,19 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
           case Opcodes.IRETURN | Opcodes.LRETURN | Opcodes.FRETURN |
                Opcodes.DRETURN | Opcodes.ARETURN // 172 ~ 177
           =>
-            val result = getEventually(getTopStack(frame), stackMap, localVariableMap)
-            code += "return" + " " + result
+            code += "return" + " " + topStackValue(frame, stackMap, localVariableMap)
             interp(leftInsns, stackMap, localVariableMap)
 
-          case Opcodes.RETURN /* 177 (0xb1) */ =>
+          case Opcodes.RETURN /* 177 */ =>
             // TODO: if `return;` at the end, don't generate source code!
             // TODO: if `return;` not at the end, DO generate source code to quit a method!
             code += "return;"
             interp(leftInsns, stackMap, localVariableMap)
 
 
-          // Developing --------------------------------------------------------------
           /** References */
           case Opcodes.GETSTATIC /* 178 */ =>
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = {
               val ins = insn.asInstanceOf[FieldInsnNode]
               val desc = DescriptorParser.parseFieldDescriptor(ins.desc).get  // TODO: The returned `desc` may not be the internal form, which make my parser crash!!!!
@@ -426,64 +372,65 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
           case Opcodes.PUTSTATIC /* 179 */ =>
             val ins = insn.asInstanceOf[FieldInsnNode]
-            val value = getEventually(getTopStack(frame), stackMap, localVariableMap)
-            code += s"${ins.owner}.${ins.name} = value"
+            val value = topStackValue(frame, stackMap, localVariableMap)
+            code += s"${ins.owner}.${ins.name} = $value"
             // No change for maps -- PUTSTATIC change the source code and then
             // the future computation, but it doesn't change the `stackMap` and the `localVariableMap`
             interp(leftInsns, stackMap, localVariableMap)
 
-          case Opcodes.GETFIELD /* 180 */ =>
-            val key = getTopStack(nextFrame)
+          case Opcodes.GETFIELD  /* 180 */ =>
+            val key = topStack(nextFrame)
             val value = {
-              val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
+              val obj = topStackValue(frame, stackMap, localVariableMap)
               val ins = insn.asInstanceOf[FieldInsnNode]
-              val name = ins.name
               val desc = DescriptorParser.parseFieldDescriptor(ins.name).get
-              InstanceFieldV(obj, name, desc)  // TODO: The returned `desc` may not be the internal form, which make my parser crash!!!!
+              // TODO: The returned `desc` may not be the internal form, which make my parser crash!!!!
+              InstanceFieldV(obj, ins.name, desc)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
-          case Opcodes.PUTFIELD /* 181 */ =>
+          case Opcodes.PUTFIELD  /* 181 */ =>
             val ins = insn.asInstanceOf[FieldInsnNode]
-            val Seq(value, obj) = getTop2Stack(frame).map(getEventually(_, stackMap, localVariableMap))
-            code += obj + "." + ins.name + " = "  + value
+            top2StackValues(frame, stackMap, localVariableMap) match {
+              case List(value, obj) => code += s"$obj.${ins.name} = $value"
+            }
             interp(leftInsns, stackMap, localVariableMap)
 
-          case Opcodes.INVOKEVIRTUAL /* 182 */ =>
+          case Opcodes.INVOKEVIRTUAL /* 182 */ =>  // TODO: Simplify this part!
             val ins = insn.asInstanceOf[MethodInsnNode]
             val parameterCount = nParameters(ins.desc)
-            val id = getStack(frame)(parameterCount)
-            val key = getTopStack(nextFrame)
+            val id = nthStack(frame)(parameterCount)
+            val key = topStack(nextFrame)
             val obj = getEventually(id, stackMap, localVariableMap)
-            val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap)).toList
+            val parameters = topNStackValues(frame, parameterCount, stackMap, localVariableMap).reverse
             interp(leftInsns, stackMap + (key -> InvokeVirtualV(obj, ins.name, parameters)), localVariableMap)
 
-          case Opcodes.INVOKESPECIAL /* 183 */ =>
+          case Opcodes.INVOKESPECIAL /* 183 */ =>  // TODO: Simplify this part!
             val ins = insn.asInstanceOf[MethodInsnNode]
             val parameterCount = nParameters(ins.desc)
-            val id = getStack(frame)(parameterCount)
-            val key = getTopStack(nextFrame)
+            val id = nthStack(frame)(parameterCount)
+            val key = topStack(nextFrame)
             val obj = getEventually(id, stackMap, localVariableMap)
-            val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap))
+            val parameters = topNStackValues(frame, parameterCount, stackMap, localVariableMap).reverse
+            // TODO: This `code` line may not be useful! We need a better one!
+            code += InvokeSpecialV(obj, ins.name, parameters).toString
             interp(leftInsns, stackMap + (key -> InvokeSpecialV(obj, ins.name, parameters)), localVariableMap)
 
-          case Opcodes.INVOKESTATIC /* 184 (0xb8) */ =>
+          case Opcodes.INVOKESTATIC /* 184 */ =>  // TODO: Simplify this part!
             val ins = insn.asInstanceOf[MethodInsnNode]
             val parameterCount = nParameters(ins.desc)
-            val key = getTopStack(nextFrame)
-            val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap))
+            val key = topStack(nextFrame)
+            val parameters = topNStackValues(frame, parameterCount, stackMap, localVariableMap).reverse
             interp(leftInsns, stackMap + (key -> InvokeStaticV(ClassV(ins.owner), ins.name, parameters)), localVariableMap)
 
-          case Opcodes.INVOKEINTERFACE /* 185 (0xb9) */ =>
+          case Opcodes.INVOKEINTERFACE /* 185 */ =>  // TODO: Simplify this part!
             val ins = insn.asInstanceOf[MethodInsnNode]
             val parameterCount = nParameters(ins.desc)
-            val id = getStack(frame)(parameterCount)
-            val key = getTopStack(nextFrame)
+            val id = nthStack(frame)(parameterCount)
+            val key = topStack(nextFrame)
             val obj = getEventually(id, stackMap, localVariableMap)
-            val parameters = getTopNStack(frame, parameterCount).reverse.map(getEventually(_, stackMap, localVariableMap))
+            val parameters = topNStackValues(frame, parameterCount, stackMap, localVariableMap).reverse
             interp(leftInsns, stackMap + (key -> InvokeInterfaceV(obj, ins.name, parameters)), localVariableMap)
-
-
 
           // TODO: ???
           case Opcodes.INVOKEDYNAMIC /* 186 */ =>
@@ -501,87 +448,76 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
 
 
           case Opcodes.NEW /* 187 (0xbb) */ =>
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = insn.asInstanceOf[TypeInsnNode].desc
-            interp(leftInsns, stackMap + (key -> ClassV(value)), localVariableMap)
+            interp(leftInsns, stackMap + (key -> ClassV(value)), localVariableMap)  // TODO: Use `Descriptor` ???
 
           case Opcodes.NEWARRAY /* 188 (0xbc) */ =>
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = {
               val typeCode = insn.asInstanceOf[IntInsnNode].operand
-              val nDimensions = getTopStack(frame)
-              val v = getEventually(nDimensions, stackMap, localVariableMap)
-              NewPrimitiveArrayV(newArrayMap(typeCode), v)
+              val nDimensions = topStackValue(frame, stackMap, localVariableMap)
+              NewPrimitiveArrayV(primitiveArrayElementType(typeCode), nDimensions)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.ANEWARRAY /* 189 (0xbd) */ =>
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = {
-              val arrLen = getEventually(getTopStack(frame), stackMap, localVariableMap)
+              val arrLen = topStackValue(frame, stackMap, localVariableMap)
               val elementType = DescriptorParser.parseObjectDescriptor(insn.asInstanceOf[TypeInsnNode].desc).get
               NewReferenceArrayV(elementType, arrLen)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.ARRAYLENGTH     /* 190 (0xbe) */ =>
-            val key = getTopStack(nextFrame)
-            val value = {
-              val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
-              ArrayLengthV(obj)
-            }
+            val key = topStack(nextFrame)
+            val value = ArrayLengthV(topStackValue(frame, stackMap, localVariableMap))
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.ATHROW /* 191 (0xbf) */ =>
-            code += "throw" + " " + getEventually(getTopStack(frame), stackMap, localVariableMap)
+            code += s"throw ${topStackValue(frame, stackMap, localVariableMap)}"
             interp(leftInsns, stackMap, localVariableMap)
 
           case Opcodes.CHECKCAST /* 192 (0xc0) */ =>  // TODO: similar to `INSTANCEOF`
             // TODO: from the JVMS -- "If objectref is null, then the operand stack is unchanged.".    DO I need to correct this instruction  ???
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = {
-              val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
+              val obj = topStackValue(frame, stackMap, localVariableMap)
               val descriptor = DescriptorParser.parseFieldDescriptor(insn.asInstanceOf[TypeInsnNode].desc).get
               CheckCastV(obj, descriptor)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
           case Opcodes.INSTANCEOF /* 193 (0xc1) */ =>
-            val key = getTopStack(nextFrame)
+            val key = topStack(nextFrame)
             val value = {
-              val obj = getEventually(getTopStack(frame), stackMap, localVariableMap)
+              val obj = topStackValue(frame, stackMap, localVariableMap)
               val descriptor = DescriptorParser.parseFieldDescriptor(insn.asInstanceOf[TypeInsnNode].desc).get
-              InstanceOf(obj, descriptor)
+              InstanceOfV(obj, descriptor)
             }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
-          case Opcodes.MONITORENTER    /* 194 (0xc2) */ =>
-            // TODO:
-            println(s"-----frame------- $frame\n")
-            println(s"-----stack------- $stackMap")
-            println(s"-----localVar---- $localVariableMap\n")
-            println(s"-----nextFrame---- $nextFrame\n")
+          case Opcodes.MONITORENTER  /* 194 */ =>
 
-          case Opcodes.MONITOREXIT     /* 195 (0xc3) */ =>
-            // TODO:
-            println(s"-----frame------- $frame\n")
-            println(s"-----stack------- $stackMap")
-            println(s"-----localVar---- $localVariableMap\n")
-            println(s"-----nextFrame---- $nextFrame\n")
+          case Opcodes.MONITOREXIT  /* 195 */ =>
 
           /** Extended */
           //          case Opcodes.WIDE               /* 196 */ NO =>
 
           case Opcodes.MULTIANEWARRAY /* 197 */ =>
             val ins = insn.asInstanceOf[MultiANewArrayInsnNode]
-            val dims = getTopNStack(frame, ins.dims).map(getEventually(_, stackMap, localVariableMap))
-            val key = getTopStack(nextFrame)
-            val t = DescriptorParser.parseArrayDescriptor(ins.desc).get.typ
-            val value = NewMultiDimArray(t, dims)
+            val key = topStack(nextFrame)
+            val value = {
+              val t = DescriptorParser.parseArrayDescriptor(ins.desc).get.typ
+              val dims = topNStackValues(frame, ins.dims, stackMap, localVariableMap)
+              NewMultiDimArray(t, dims)
+            }
             interp(leftInsns, stackMap + (key -> value), localVariableMap)
 
-          case Opcodes.IFNULL             /* 198 */ =>
-          case Opcodes.IFNONNULL          /* 199 */ =>
+          case Opcodes.IFNULL  /* 198 */ => // TODO:
+
+          case Opcodes.IFNONNULL  /* 199 */ => // TODO:
 
           //          case Opcodes.GOTO_W             /* 200 */  NO =>
           //          case Opcodes.JSR_W              /* 201 */  NO =>
@@ -605,19 +541,20 @@ abstract class BytecodeInterpreter(bytes: Array[Byte], methodName: String) {
     }
   }
 
-  // FOR Develop
+  /** FOR Develop */
   def main(): Unit
 //  def main(): Unit = {
-//    val localVariableMap: Map[Identifier, Val] = {
+//    val localVariableMap: Map[Identifier, Value] = {
 //      val frame = analyzer.frames.head
 //      (0 until frame.getLocals).
-//        map(frame.getLocal). // Filter non initialized ???
+//        map(frame.getLocal).
+//        filter(_.basicValue != AsmBasicValue.UNINITIALIZED_VALUE).
 //        map(id => id -> id).
 //        toMap
 //    }
 //
 //    println(this.insnFramePairs)
-//    interp(insnFramePairs, stackMap = Map.empty[Identifier, Val], localVariableMap)
+//    interp(insnFramePairs, localVariableMap = localVariableMap)
 //    code.foreach(println)
 //  }
 

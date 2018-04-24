@@ -1,6 +1,7 @@
 package org.ucombinator.jade.jvm.classfile
 
 import org.ucombinator.jade.jvm.classfile.attribute.signature.JavaTypeSignature
+import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.PrimitiveType
 //import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.{ArrayElementType, FieldType}
 import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.FieldType
 
@@ -20,7 +21,7 @@ object TypeCommons {
   }
 
   sealed trait BaseType
-    extends FieldType with JavaTypeSignature //  with ArrayElementType
+    extends PrimitiveType with JavaTypeSignature //  with ArrayElementType
 
   object BaseType {
     val subTypes: List[BaseType] = List(B, C, D, F, I, J, S, Z)

@@ -3,7 +3,7 @@ package org.ucombinator.jade.method
 import org.objectweb.asm.tree.analysis.{BasicValue => AsmBasicValue, Value => AsmValue}
 import org.ucombinator.jade.Variable
 import org.ucombinator.jade.jvm.classfile.TypeCommons.BaseType
-import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.{ArrayType, FieldDescriptor, ObjectType}
+import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.{ArrayType, FieldDescriptor, ObjectType, ReferenceType}
 
 
 /** Value */
@@ -51,6 +51,10 @@ case class BoxedZV(v: Short) extends BoxedValue(v) with BooleanT
 
 case object NullV extends ReferenceValue
 
+// TODO:
+// Use Class Descriptor to replace `Type`. `Type` can be "class types",
+// "field types", or "method types", and we only need "class types".
+case class Class(t: ReferenceType) extends ReferenceValue
 
 abstract class ArrayReferenceValue extends ReferenceValue
 
@@ -77,7 +81,7 @@ case class ArrayLengthV(array: Value) extends Value with ArrayOperationT with In
   require(Prerequisite.isArray(array))
 }
 
-case class InstanceOf(v: Value, typ: FieldDescriptor) extends Value with BooleanT {
+case class InstanceOfV(v: Value, typ: FieldDescriptor) extends Value with BooleanT {
   require(Prerequisite.isReference(v))
   require(Prerequisite.isReference(typ))
 }
@@ -107,8 +111,6 @@ object Prerequisite {
   def isArray(v: Value): Boolean = isReference(v)
 }
 
-
-case class LDCVal(v: Any) extends ReferenceValue  // TODO: can be improved
 case class CheckCastV(v: Value, typ: FieldDescriptor) extends Value
 
 /** Invoke */
@@ -151,69 +153,3 @@ case class ClassV(name: String) extends ReferenceValue  // TODO: ???
 
 //case class EqualTest(lhs: Value, rhs: Value) extends Value
 //case class SsaPHI(v1: Value, v2: Value) extends Value
-
-
-
-
-
-
-
-
-
-//trait Value
-//
-//case class Identifier(id: Int, copyVersion: Int, basicValue: AsmBasicValue)
-//  extends AsmValue with Value with Variable {
-//  override def getSize: Int = basicValue.getSize
-//}
-//
-//
-//case class NameV(name: String) extends Value
-//
-//// B -> `byte`
-//// C -> `char`
-//// D -> `double`
-//// F -> `float`
-//// I -> `int`
-//// J -> `long`
-//// S -> `short`
-//// Z -> `boolean`
-//
-//// Seems NO NEED to create `CV` for `char` and `ZV` or `boolean`
-//trait PrimitiveValue extends Value
-//case class BV(v: Byte) extends PrimitiveValue    // Opcodes.BIPUSH
-//case class SV(v: Short) extends PrimitiveValue   // Opcodes.SIPUSH
-//case class IV(v: Int) extends PrimitiveValue     // Opcodes.LDC
-//case class JV(v: Long) extends PrimitiveValue    // LDC2_W -- not inside the `Opcodes` class
-//case class FV(v: Float) extends PrimitiveValue   // Opcodes.LDC
-//case class DV(v: Double) extends PrimitiveValue  // LDC2_W -- not inside the `Opcodes` class
-//
-//trait ReferenceValue extends Value
-//case object NullV extends ReferenceValue
-//case class NewArrayV(typ: String, dim: Value) extends ReferenceValue  // TODO: String -> Val
-//
-//
-//case class ArrayElementV(typ: Value, dim: Value) extends Value {
-//
-//}
-//
-//case class ArrayLength(v: Value) extends Value
-//case class InstanceOf(v: Value, typ: FieldDescriptor) extends Value
-//
-//
-//case class NewObjectArray(typ: FieldDescriptor, length: Value) extends Value
-//case class NewMultiDimArray(typ: Value, lengths: List[Value]) extends Value
-//
-//
-//trait ObjectVal extends Value
-//case class ObjVal(v: Value) extends ObjectVal
-//case class LDCVal(v: Any) extends ObjectVal
-//case class CheckCastVal(v: Value, typ: FieldDescriptor) extends ObjectVal
-//case class InvokeVirtualVal(instance: Value, method: Any, parameters: List[Value]) extends ObjectVal
-//case class InvokeSpecialVal(instance: Value, method: Any, parameters: List[Value]) extends ObjectVal
-//case class InvokeStaticVal(instance: Value, method: Any, parameters: List[Value]) extends ObjectVal
-//case class InvokeInterfaceVal(instance: Value, method: Any, parameters: List[Value]) extends ObjectVal
-//
-//trait FieldVal extends Value
-//case class InstanceFieldVal(obj: Value, field: Any, desc: String) extends FieldVal  // obj should be ObjectVal, but it can also be an Identifier.
-//case class StaticFieldVal(obj: Value, field: Any, desc: String) extends FieldVal

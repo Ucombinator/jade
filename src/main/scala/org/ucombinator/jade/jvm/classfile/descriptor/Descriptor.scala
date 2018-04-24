@@ -13,11 +13,14 @@ object Descriptor {
 
   abstract class FieldType extends FieldDescriptor with ReturnDescriptor
 
+  abstract class ReferenceType extends FieldType
+  abstract class PrimitiveType extends FieldType
+
   // TODO: ClassName -- $4.2.1
   sealed case class ObjectType(packageSpecifier: List[JavaIdentifier], className: JavaIdentifier)
-    extends FieldType
+    extends ReferenceType
 
-  sealed case class ArrayType(componentType: ComponentType) extends FieldType {
+  sealed case class ArrayType(componentType: ComponentType) extends ReferenceType {
     val typ: FieldDescriptor = {
       @tailrec
       def unwrap(ft: FieldType): FieldDescriptor =

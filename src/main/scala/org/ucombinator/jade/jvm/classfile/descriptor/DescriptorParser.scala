@@ -12,6 +12,7 @@ object DescriptorParser extends JavaTokenParsersOpt {
 
   val parseObjectDescriptor: CharSequence => ParseResult[ObjectType] = parseAll(objectType, _)
   val parseArrayDescriptor: CharSequence => ParseResult[ArrayType] = parseAll(arrayType, _)
+  val parseReferenceDescriptor: CharSequence => ParseResult[ReferenceType] = parseAll(referenceType, _)
 
 //  private lazy val identifier: Parser[Identifier] = super.identifier
 
@@ -19,8 +20,11 @@ object DescriptorParser extends JavaTokenParsersOpt {
   private lazy val fieldDescriptor: Parser[FieldDescriptor] =
     fieldType
 
+  private lazy val referenceType: Parser[ReferenceType] =
+    objectType | arrayType
+
   private lazy val fieldType: Parser[FieldType] =
-    baseType | objectType | arrayType
+    baseType | referenceType
 
   private lazy val baseType: Parser[BaseType] =
     ("B" | "C" | "D" | "F" | "I" | "J" | "S" | "Z") ^^
