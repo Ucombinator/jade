@@ -1,9 +1,9 @@
-package org.ucombinator.jade.method.asminstructions
+package org.ucombinator.jade.asm.instructions
 
 import org.objectweb.asm.Handle
 import org.objectweb.asm.tree._
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
 

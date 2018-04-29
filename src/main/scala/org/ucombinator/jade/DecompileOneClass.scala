@@ -7,6 +7,8 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import java.nio.file.{Files, NoSuchFileException, Paths}
 
+import org.ucombinator.jade.jvm.classfile.AccessFlag
+
 
 object DecompileOneClass {
   def decompileOne(className: String): Unit = {

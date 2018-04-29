@@ -1,10 +1,10 @@
-package org.ucombinator.jade.method
+package org.ucombinator.jade
 
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.objectweb.asm.tree.analysis.Frame
 import org.objectweb.asm.tree.{AbstractInsnNode, MethodNode, _}
-import org.ucombinator.jade.util.Util.translator
-import org.ucombinator.jade.util._
+import org.ucombinator.jade.util.DebugUtil
+import org.ucombinator.jade.util.DebugUtil.translator
 
 import scala.collection.JavaConverters._
 
@@ -19,7 +19,7 @@ class DecompileOneMethod(className: String, method: MethodNode) {
 
   for (c <- cycles) {
     println(s"cycle $c")
-    c.foreach(i => println(Util.translator(i)))
+    c.foreach(i => println(DebugUtil.translator(i)))
   }
 
   val cycleStartPositions: List[Int] = cycles.map(c => IndexedInstructions(c.head)).sorted
@@ -53,7 +53,7 @@ class DecompileOneMethod(className: String, method: MethodNode) {
       println("-----------")
     }
 
-    if (Util.translator(insn) == "ISTORE") {
+    if (DebugUtil.translator(insn) == "ISTORE") {
       println(f.getStackSize)
       println(f.getStack(0))
       println("===========")

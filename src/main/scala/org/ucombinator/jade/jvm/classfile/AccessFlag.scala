@@ -1,4 +1,4 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.jvm.classfile
 
 import scala.collection.immutable.HashMap
 
@@ -6,170 +6,108 @@ sealed trait TAccessFlag {
   val hasKeyword: Boolean
   val keyword: Option[String]
   val code: Int
-  val rank: Int = Int.MinValue
+  val rank: Int
 }
 
-trait TClassFlag extends TAccessFlag
-trait TFieldFlag extends TAccessFlag
-trait TMethodFlag extends TAccessFlag
+trait TClassFlag       extends TAccessFlag
+trait TFieldFlag       extends TAccessFlag
+trait TMethodFlag      extends TAccessFlag
 trait TNestedClassFlag extends TClassFlag
-trait TParameterFlag extends TAccessFlag
-trait TModuleFlag extends TAccessFlag
+trait TParameterFlag   extends TAccessFlag
+trait TModuleFlag      extends TAccessFlag
 
-sealed abstract class AccessFlag extends TAccessFlag
+sealed abstract class AccessFlag(val hasKeyword: Boolean,
+                                 val keyword: Option[String],
+                                 val code: Int,
+                                 val rank: Int = Int.MinValue)
+  extends TAccessFlag
 
-case object ACC_PUBLIC extends AccessFlag
-    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag {
-  val hasKeyword = true
-  val keyword = Some("public")
-  val code = 0x0001
-  override val rank = 0
-}
+/** Concrete Flags */
+case object ACC_PUBLIC
+  extends AccessFlag(true, Some("public"), 0x0001, 0)
+    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag
 
-case object ACC_PRIVATE extends AccessFlag
-    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag {
-  val hasKeyword = true
-  val keyword = Some("private")
-  val code = 0x0002
-  override val rank = 0
-}
+case object ACC_PRIVATE
+  extends AccessFlag(true, Some("private"), 0x0002, 0)
+    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag
 
-case object ACC_PROTECTED extends AccessFlag
-    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag {
-  val hasKeyword = true
-  val keyword = Some("protected")
-  val code = 0x0004
-  override val rank = 0
-}
+case object ACC_PROTECTED
+  extends AccessFlag(true, Some("protected"), 0x0004, 0)
+    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag
 
-case object ACC_STATIC extends AccessFlag
-    with TFieldFlag with TMethodFlag with TNestedClassFlag {
-  val hasKeyword = true
-  val keyword = Some("static")
-  val code = 0x0008
-  override val rank = 1
-}
+case object ACC_STATIC
+  extends AccessFlag(true, Some("static"), 0x0008, 1)
+    with TFieldFlag with TMethodFlag with TNestedClassFlag
 
-case object ACC_FINAL extends AccessFlag
-    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag with TParameterFlag {
-  val hasKeyword = true
-  val keyword = Some("final")
-  val code = 0x0010
-  override val rank = 5
-}
+case object ACC_FINAL
+  extends AccessFlag(true, Some("final"), 0x0010, 5)
+    with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag with TParameterFlag
 
-case object ACC_SUPER extends AccessFlag
-    with TClassFlag {
-  val hasKeyword = false
-  val keyword = Option.empty[String]
-  val code = 0x0020
-}
+case object ACC_SUPER
+  extends AccessFlag(false, Option.empty[String], 0x0020)
+    with TClassFlag
 
-case object ACC_SYNCHRONIZED extends AccessFlag
-    with TMethodFlag {
-  val hasKeyword = true
-  val keyword = Some("synchronized")
-  val code = 0x0020
-  override val rank = 3
-}
+case object ACC_SYNCHRONIZED
+  extends AccessFlag(true, Some("synchronized"), 0x0020, 3)
+    with TMethodFlag
 
 //val ACC_OPEN = 0x0020; // module
 
 //val ACC_TRANSITIVE = 0x0020; // module requires
 
-case object ACC_VOLATILE extends AccessFlag
-    with TFieldFlag {
-  val hasKeyword = true
-  val keyword = Some("volatile")
-  val code = 0x0040
-  override val rank = 4
-}
+case object ACC_VOLATILE
+  extends AccessFlag(true, Some("volatile"), 0x0040, 4)
+    with TFieldFlag
 
-case object ACC_BRIDGE extends AccessFlag
-    with TMethodFlag {
-  val hasKeyword = false
-  val keyword = Option.empty[String]
-  val code = 0x0040
-}
+case object ACC_BRIDGE
+  extends AccessFlag(false, Option.empty[String], 0x0040)
+    with TMethodFlag
 
 //val ACC_STATIC_PHASE = 0x0040; // module requires
 
-case object ACC_VARARGS extends AccessFlag
-    with TMethodFlag {
-  val hasKeyword = false
-  val keyword = Option.empty[String]
-  val code = 0x0080
-}
+case object ACC_VARARGS
+  extends AccessFlag(false, Option.empty[String], 0x0080)
+    with TMethodFlag
 
-case object ACC_TRANSIENT extends AccessFlag
-    with TFieldFlag {
-  val hasKeyword = true
-  val keyword = Some("transient")
-  val code = 0x0080
-  override val rank = 4
-}
+case object ACC_TRANSIENT
+  extends AccessFlag(true, Some("transient"), 0x0080, 4)
+    with TFieldFlag
 
-case object ACC_NATIVE extends AccessFlag
-    with TMethodFlag {
-  val hasKeyword = true
-  val keyword = Some("native")
-  val code = 0x0100
-  override val rank = 6
-}
+case object ACC_NATIVE
+  extends AccessFlag(true, Some("native"), 0x0100, 6)
+    with TMethodFlag
 
-case object ACC_INTERFACE extends AccessFlag
-    with TClassFlag with TNestedClassFlag {
-  val hasKeyword = true
-  val keyword = Some("interface")  // TODO: ??? From the specification, an interface also need acc_abstract flag??? page 68 JVM 8
-  val code = 0x0200
-  override val rank: Int = Int.MaxValue
-}
+// TODO: ??? From the specification, an interface also need acc_abstract flag??? page 68 JVM 8
+case object ACC_INTERFACE
+  extends AccessFlag(true, Some("interface"), 0x0200, Int.MaxValue)
+    with TClassFlag with TNestedClassFlag
 
-case object ACC_ABSTRACT extends AccessFlag
-    with TClassFlag with TMethodFlag with TNestedClassFlag {
-  val hasKeyword = true
-  val keyword = Some("abstract")  // TODO: also used to mark `interface`
-  val code = 0x0400
-  override val rank = 2
-}
+// TODO: also used to mark `interface` */
+case object ACC_ABSTRACT
+  extends AccessFlag(true, Some("abstract") , 0x0400, 2)
+    with TClassFlag with TMethodFlag with TNestedClassFlag
 
-case object ACC_STRICT extends AccessFlag
-    with TMethodFlag {
-  val hasKeyword = true
-  val keyword = Some("strictfp")
-  val code = 0x0800
-  override val rank = 7
-  }
+case object ACC_STRICT
+  extends AccessFlag(true, Some("strictfp"), 0x0800, 7)
+    with TMethodFlag
 
 // class, field, method, parameter, module *
-case object ACC_SYNTHETIC extends AccessFlag
+case object ACC_SYNTHETIC
+  extends AccessFlag(false, Option.empty[String], 0x1000)
     with TClassFlag with TFieldFlag with TMethodFlag with TNestedClassFlag
-    with TParameterFlag with TModuleFlag {
-  val hasKeyword = false
-  val keyword = Option.empty[String]
-  val code = 0x1000
-}
+    with TParameterFlag with TModuleFlag
 
-case object ACC_ANNOTATION extends AccessFlag
-    with TClassFlag with TNestedClassFlag {
-  val hasKeyword = true // TODO: ???
-  val keyword = Some("@") // TODO: ???
-  val code = 0x2000
-}
+case object ACC_ANNOTATION
+  extends AccessFlag(true /* TODO: ??? */, Some("@") /* TODO: ??? */, 0x2000)
+    with TClassFlag with TNestedClassFlag
 
-case object ACC_ENUM extends AccessFlag
-    with TClassFlag with TFieldFlag with TNestedClassFlag {  // class(?) field inner
-  val hasKeyword = true
-  val keyword = Some("enum")
-  val code = 0x4000
-  }
+case object ACC_ENUM
+  extends AccessFlag(/* class(?) field inner */ true, Some("enum"), 0x4000)
+    with TClassFlag with TFieldFlag with TNestedClassFlag
 
-case object ACC_MANDATED extends AccessFlag
-    with TParameterFlag with TModuleFlag {  // parameter, module, module * TODO: what is "module *"
-val hasKeyword = false
-  val keyword = Option.empty[String]  // TODO:
-  val code = 0x8000
-}
+case object ACC_MANDATED
+  extends AccessFlag(false, Option.empty[String]/* TODO: */, 0x8000)
+    with TParameterFlag with TModuleFlag  // parameter, module, module * TODO: what is "module *"
 
 // TODO: module related (java 9)
 //case object ACC_MODULE extends AccessFlag

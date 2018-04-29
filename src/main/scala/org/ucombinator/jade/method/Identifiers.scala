@@ -4,6 +4,7 @@ import org.jgrapht.graph.DefaultDirectedGraph
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
+import org.ucombinator.jade.ir.Identifier
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
