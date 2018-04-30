@@ -1,10 +1,9 @@
-package org.ucombinator.jade.asm.instructions
+package org.ucombinator.jade.asm
 
 import org.objectweb.asm.Handle
 import org.objectweb.asm.tree._
 
 import scala.collection.JavaConverters._
-import scala.language.implicitConversions
 
 
 /** A node that represents a bytecode instruction. */

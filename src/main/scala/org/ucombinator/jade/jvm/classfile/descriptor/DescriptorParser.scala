@@ -1,6 +1,5 @@
 package org.ucombinator.jade.jvm.classfile.descriptor
 
-import scala.language.implicitConversions
 import org.ucombinator.jade.jvm.classfile._
 import org.ucombinator.jade.jvm.classfile.TypeCommons._
 import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor._

@@ -1,6 +1,6 @@
 package org.ucombinator.jade.ir
 
-import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.ReferenceType
+import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.ObjectType
 
 
 abstract class ConstantReferenceValue(v: Any) extends Value with ReferenceT with ConstantT {
@@ -13,12 +13,11 @@ abstract class ConstantReferenceValue(v: Any) extends Value with ReferenceT with
 
 case object NullV extends ConstantReferenceValue(null)
 
-abstract class ConstantNonArrayReferenceValue(v: Any) extends ConstantReferenceValue(v) with NonArrayReferenceT
-case class StringLiteralV(v: String)      extends ConstantNonArrayReferenceValue(v)
+abstract class ConstantNonArrayReferenceValue(v: Any)
+  extends ConstantReferenceValue(v) with NonArrayReferenceT
 
- // TODO: Keep one of Class and ClassV, NOT both
-case class ClassV(name: String)    extends ConstantNonArrayReferenceValue(name)
-case class Class(t: ReferenceType) extends Value with ReferenceT         with ConstantT // TODO: ???
+case class StringLiteralV(v: String) extends ConstantNonArrayReferenceValue(v)
+case class ClassV(t: ObjectType)     extends ConstantNonArrayReferenceValue(t)
 
 
 // NO use for now.

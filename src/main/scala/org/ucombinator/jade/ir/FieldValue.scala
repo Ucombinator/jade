@@ -8,7 +8,7 @@ abstract class FieldValue[T](obj: T, field: Any, desc: FieldDescriptor)
   extends Value
 
 case class InstanceFieldV(obj: Value, field: Any, desc: FieldDescriptor)
-  extends FieldValue[Value](obj, field, desc)  // TODO: obj should be ObjectVal, but it can also be an Identifier.  `require`
+  extends FieldValue[Value](obj, field, desc)
 
 case class StaticFieldV(cls: String, field: String, desc: FieldDescriptor)
   extends FieldValue[String](cls, field, desc)

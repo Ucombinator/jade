@@ -10,8 +10,3 @@ case class ArrayElementAssignment(variable: Value, value: Value) extends Stateme
 case class Invocation(invk: Any) extends Statement
 case class Tmp(a: Any) extends Statement
 
-
-trait Variable
-// Identifier
-//case class ArrayIndexing(, List[Math])
-

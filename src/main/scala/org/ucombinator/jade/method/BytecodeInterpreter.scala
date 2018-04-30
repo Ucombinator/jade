@@ -5,14 +5,16 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis.{Frame, BasicValue => AsmBasicValue}
 import org.ucombinator.jade.jvm.classfile.descriptor.DescriptorParser
 import org.ucombinator.jade.ir._
+import org.ucombinator.jade.method.frame.RichFrameOperations
 import org.ucombinator.jade.util.DebugUtil.printInsnNode
 
 import scala.annotation.tailrec
 
 
-// TODO: abstract here is added for testing: in Scala worksheet, I always extends this abstract class, and finish the `interp` method.
+// TODO: abstract here is added for testing:
+// TODO (continue): in Scala worksheet, I always extends this abstract class, and finish the `interp` method.
 abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame[Identifier])])
-    extends IRGenerator {
+    extends IRGenerator with RichFrameOperations {
 
   import IRGeneratorUtil._
 
@@ -24,6 +26,28 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
         (0 until frame.getLocals).map(frame.getLocal).
           filter(_.basicValue != AsmBasicValue.UNINITIALIZED_VALUE).
           map(id => id -> id).toMap
+  }
+
+  final def getInvokeValue(methodInsn: MethodInsnNode,
+                           frame: Frame[Identifier],
+                           stackMap: Map[Identifier, Value] = Map.empty[Identifier, Value],
+                           localVariableMap: Map[Identifier, Value]): Value = {
+    val parameterCount = nParameters(methodInsn.desc)
+    val parameters = topNStackValues(frame, parameterCount, stackMap, localVariableMap).reverse
+    val opcode = methodInsn.getOpcode
+
+    opcode match {
+      case Opcodes.INVOKEVIRTUAL | Opcodes.INVOKESPECIAL |
+           Opcodes.INVOKEINTERFACE
+      =>
+        val obj = nthStackValue(frame, parameterCount, stackMap, localVariableMap)
+        InvokeValue.of(opcode)(obj, methodInsn.name, parameters)
+
+      case Opcodes.INVOKESTATIC
+      =>
+        val cls = descString2ClassV(methodInsn.owner)
+        InvokeValue.of(opcode)(cls, methodInsn.name, parameters)
+    }
   }
 
   @tailrec
@@ -345,8 +369,11 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
 
           case Opcodes.NEW /* 187 (0xbb) */ =>
             val key = topStack(nextFrame)
-            val value = insn.asInstanceOf[TypeInsnNode].desc
-            interp(leftInsns, stackMap + (key -> ClassV(value)), localVariableMap)  // TODO: Use `Descriptor` ???
+            val value = {
+              val objectType = DescriptorParser.parseObjectDescriptor("L" + insn.asInstanceOf[TypeInsnNode].desc + ";").get
+              ClassV(objectType)
+            }
+            interp(leftInsns, stackMap + (key -> value), localVariableMap)  // TODO: Use `Descriptor` ???
 
           case Opcodes.NEWARRAY /* 188 (0xbc) */ =>
             val key = topStack(nextFrame)

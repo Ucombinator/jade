@@ -2,8 +2,6 @@ package org.ucombinator.jade.jvm.classfile
 
 import org.ucombinator.jade.jvm.classfile.attribute.signature.JavaTypeSignature
 import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.PrimitiveType
-//import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.{ArrayElementType, FieldType}
-import org.ucombinator.jade.jvm.classfile.descriptor.Descriptor.FieldType
 
 object TypeCommons {
   // The grammar includes the terminal symbol Identifier to denote the name of a

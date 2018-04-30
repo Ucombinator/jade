@@ -4,13 +4,13 @@ import org.objectweb.asm.Opcodes
 
 
 /** Invoke */
-abstract class InvokeValue[+T <: Value](obj: T, method: String, parameters: List[Value])
-  extends Value {
+abstract class InvokeValue(obj: Value, method: String, parameters: List[Value])
+    extends Value {
   require(isReference(obj))
 }
 
 object InvokeValue {
-  def of(opcode: Int)(obj: Value, method: String, parameters: List[Value]): InvokeValue[Value] =
+  def of(opcode: Int)(obj: Value, method: String, parameters: List[Value]): InvokeValue =
     opcode match {
       case Opcodes.INVOKEVIRTUAL   => InvokeVirtualV(obj, method, parameters)
       case Opcodes.INVOKESPECIAL   => InvokeSpecialV(obj, method, parameters)
@@ -20,10 +20,14 @@ object InvokeValue {
 }
 
 case class InvokeVirtualV(instance: Value, method: String, parameters: List[Value])
-  extends InvokeValue(instance, method, parameters)
+  extends InvokeValue(instance, method, parameters) {
+  require(isReference(instance))
+}
 
 case class InvokeSpecialV(instance: Value, method: String, parameters: List[Value])
-  extends InvokeValue(instance, method, parameters)
+  extends InvokeValue(instance, method, parameters) {
+  require(isReference(instance))
+}
 
 case class InvokeStaticV(cls: ClassV, method: String, parameters: List[Value])
   extends InvokeValue(cls, method, parameters)

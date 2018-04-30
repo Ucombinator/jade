@@ -2,6 +2,7 @@ package org.ucombinator.jade.jvm.classfile
 
 import scala.collection.immutable.HashMap
 
+
 sealed trait TAccessFlag {
   val hasKeyword: Boolean
   val keyword: Option[String]

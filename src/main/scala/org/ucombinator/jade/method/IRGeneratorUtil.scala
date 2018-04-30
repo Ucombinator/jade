@@ -2,7 +2,6 @@ package org.ucombinator.jade.method
 
 import org.objectweb.asm.{Opcodes, Type}
 import org.objectweb.asm.tree._
-import org.objectweb.asm.tree.analysis.Frame
 import org.ucombinator.jade.jvm.classfile.TypeCommons._
 import org.ucombinator.jade.jvm.classfile.descriptor.DescriptorParser
 import org.ucombinator.jade.ir._
@@ -17,7 +16,7 @@ abstract class IRGenerator {
 }
 
 
-object IRGeneratorUtil extends FrameOperations {
+object IRGeneratorUtil {
   val primitiveArrayElementType = Map(
     4  -> Z, // "boolean"
     5  -> C, // "char"
@@ -62,7 +61,7 @@ object IRGeneratorUtil extends FrameOperations {
       case j: java.lang.Long      => JV(j)
       case d: java.lang.Double    => DV(d)
       case str: java.lang.String  => StringLiteralV(str)
-      case t: Type /* ASM) */     => Class(DescriptorParser.parseReferenceDescriptor(t.getDescriptor).get)
+      case t: Type /* ASM) */     => ClassV(DescriptorParser.parseObjectDescriptor(t.getDescriptor).get)
       // TODO: https://stackoverflow.com/questions/28264012/im-curious-about-what-ldc-short-for-in-jvm/28268671
       // `ldc` can load `java.lang.invoke.MethodType` and `java.lang.invoke.MethodHandle`, but this is NOT for
       // Java code.
@@ -73,28 +72,18 @@ object IRGeneratorUtil extends FrameOperations {
       // Java code.
     }
 
-  final def getInvokeValue(instruction: MethodInsnNode,
-                           frame: Frame[Identifier],
-                           stackMap: Map[Identifier, Value] = Map.empty[Identifier, Value],
-                           localVariableMap: Map[Identifier, Value]): Value = {
-    val parameterCount = nParameters(instruction.desc)
-    val parameters = topNStackValues(frame, parameterCount, stackMap, localVariableMap).reverse
-    val opcode = instruction.getOpcode
+  final def descString2ClassV(desc: String): ClassV = {
+    val descInternalForm =
+      if (desc.startsWith("L") && desc.endsWith(";")) desc
+      else                                            "L" + desc + ";"
 
-    opcode match {
-      case Opcodes.INVOKEVIRTUAL | Opcodes.INVOKESPECIAL |
-           Opcodes.INVOKEINTERFACE
-      =>
-        val obj = nthStackValue(frame, parameterCount, stackMap, localVariableMap)
-        InvokeValue.of(opcode)(obj, instruction.name, parameters)
-
-      case Opcodes.INVOKESTATIC
-      =>
-        InvokeValue.of(opcode)(ClassV(instruction.owner), instruction.name, parameters)
-    }
+      val objectType = DescriptorParser.parseObjectDescriptor(descInternalForm).get
+      ClassV(objectType)
   }
+
 
   // Example: val desc = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
   final def nParameters(desc: String): Int =
     DescriptorParser.parseMethodDescriptor(desc).get.parameterDescriptors.length
+
 }
