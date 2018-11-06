@@ -13,8 +13,8 @@ Building the tool automatically downloads the other parts that are needed.
 
 ## Building
 
-To compile the project for use, simply run the following from the top
-level of your Jade source directory:
+To compile the project for use, simply run the following from the `decompiler/`
+folder in your Jade source directory:
 
 ```
 ./bin/sbt assembly
