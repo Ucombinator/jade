@@ -23,9 +23,13 @@ CHUNK_SIZE = 4096
 ####
 
 
-class DownloadException(Exception):
+class MavenIndexingException(Exception):
     def __init__(self, message: str):
         self.message = message
+
+
+class DownloadException(MavenIndexingException):
+    pass
 
 
 class NoSuchBlobException(DownloadException):
@@ -38,17 +42,21 @@ class NoSuchMd5BlobException(DownloadException):
         super().__init__(f"Could not download md5 blob: {name}.")
 
 
-class Md5RegexException(DownloadException):
+class RegexException(MavenIndexingException):
+    pass
+
+
+class Md5RegexException(RegexException):
     def __init__(self):
         super().__init__("Could not regex match md5 sum.")
 
 
-class BrokenMatchException(DownloadException):
+class BrokenMatchException(RegexException):
     def __init__(self):
         super().__init__("Regex match broken.")
 
 
-class MismatchedMd5Exception(DownloadException):
+class MismatchedMd5Exception(MavenIndexingException):
     def __init__(self, actual: str, expected: str):
         super().__init__(f"Actual md5 ({actual}) did not match expected md5 ({expected}).")
 
@@ -124,10 +132,10 @@ def read_md5_from_md5_file(file_name: str) -> str:
         contents = f.read()
     expected_md5 = MD5_RE.match(contents)
     if expected_md5 is None:
-        raise Md5RegexException
+        raise Md5RegexException()
     expected_md5 = expected_md5.group(0).decode('utf-8')
     if not expected_md5:
-        raise BrokenMatchException
+        raise BrokenMatchException()
     return expected_md5
 
 
@@ -266,7 +274,6 @@ def download_blobs(blob_names_file: str, download_dir: str):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('auth_file')
     parser.add_argument('--blob-names-file', '-f', default=None)
     parser.add_argument('--download-dir', '-d', default='.')
     args = parser.parse_args()
