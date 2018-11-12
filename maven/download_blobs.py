@@ -102,7 +102,7 @@ def error_context(name: str):
     except Exception as e:
         message = type(e).__name__
         if len(e.args) >= 1:
-            message += ": " + e.args[0]
+            message += ": " + str(e.args[0])
         eshow(f"{name}\t{message}")
 
 
