@@ -97,7 +97,7 @@ def error_context(name: str):
     except KeyboardInterrupt:
         # Allow a deliberate KeyboardInterrupt to terminate program execution.
         raise
-    except DownloadException as e:
+    except MavenIndexingException as e:
         eshow(f"{name}\t{e.message}")
     except Exception as e:
         message = type(e).__name__
