@@ -89,17 +89,17 @@ class XmlParseException(MavenIndexingException):
 
 class NoGroupIdException(XmlParseException):
     def __init__(self):
-        super().__init__("Could not match group ID.")
+        super().__init__("Could not find group ID.")
 
 
 class NoArtifactIdException(XmlParseException):
     def __init__(self):
-        super().__init__("Could not match artifact ID.")
+        super().__init__("Could not find artifact ID.")
 
 
 class NoLatestVersionException(XmlParseException):
     def __init__(self):
-        super().__init__("Could not match latest version.")
+        super().__init__("Could not find latest version.")
 
 
 def process_metadata_xml(xml_file: str) -> str:
