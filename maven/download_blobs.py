@@ -8,7 +8,7 @@ import requests
 import sys
 
 from os.path import abspath, dirname, isfile, join
-from typing import Callable
+from typing import Callable, Optional
 
 MAVEN_BUCKET = 'maven-central'
 BASE_URL = f'https://storage.googleapis.com/{MAVEN_BUCKET}/'
@@ -209,7 +209,7 @@ def raise_exception(exception: Exception):
 ####
 
 
-def download_blobs(blob_names_file: str, download_dir: str):
+def download_blobs(blob_names_file: Optional[str], download_dir: str):
     """
     Reads names of blobs from the given file and attempts to download each of them, verifying that their actual md5 sums
     match the expected sums given by that file's corresponding `.md5` file. The downloaded contents will be stored in
