@@ -83,17 +83,21 @@ from os.path import abspath, join
 BLOB_BASE = 'repos/central/data/'
 
 
-class NoGroupIdException(RegexException):
+class XmlParseException(MavenIndexingException):
+    pass
+
+
+class NoGroupIdException(XmlParseException):
     def __init__(self):
         super().__init__("Could not match group ID.")
 
 
-class NoArtifactIdException(RegexException):
+class NoArtifactIdException(XmlParseException):
     def __init__(self):
         super().__init__("Could not match artifact ID.")
 
 
-class NoLatestVersionException(RegexException):
+class NoLatestVersionException(XmlParseException):
     def __init__(self):
         super().__init__("Could not match latest version.")
 
