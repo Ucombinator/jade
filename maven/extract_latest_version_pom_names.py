@@ -46,7 +46,7 @@ or
     <metadata modelVersion="x.x.x">
         <groupId>xxx</groupId>
         <artifactId>xxx</artifactId>
-        <version>x.x.x>
+        <version>x.x.x</version>
         <versioning>
             <release>x.x.x</release>
             <versions>
