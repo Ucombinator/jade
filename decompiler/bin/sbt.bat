@@ -1,0 +1,1 @@
+../lib/sbt-1.2.8/bin/sbt.bat

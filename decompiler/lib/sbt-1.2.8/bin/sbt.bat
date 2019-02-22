@@ -35,9 +35,11 @@ IF DEFINED JAVA_HOME SET "PATH=%JAVA_HOME%\bin;%PATH%"
 
 rem users can set JAVA_OPTS via .jvmopts (sbt-extras style)
 IF EXIST .jvmopts FOR /F %%A IN (.jvmopts) DO (
-  SET JAVA_OPTS=%%A !JAVA_OPTS!
+  SET _jvmopts_line=%%A
+  IF NOT "!_jvmopts_line:~0,1!"=="#" (
+    SET JAVA_OPTS=%%A !JAVA_OPTS!
+  )
 )
-
 rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
 
@@ -53,7 +55,7 @@ rem We use the value of the JAVA_OPTS environment variable if defined, rather th
 set _JAVA_OPTS=%JAVA_OPTS%
 if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=%CFG_OPTS%
 
-set INIT_SBT_VERSION=1.1.1
+set INIT_SBT_VERSION=1.2.8
 
 :args_loop
 if "%~1" == "" goto args_end
@@ -66,6 +68,9 @@ if "%~1" == "-jvm-debug" (
   if not "%~1" == "!JVM_DEBUG_PORT!" (
     set SBT_ARGS=!SBT_ARGS! %1
   )
+) else if /I "%~1" == "new" (
+  set sbt_new=true
+  set SBT_ARGS=!SBT_ARGS! %1
 ) else (
   set SBT_ARGS=!SBT_ARGS! %1
 )
@@ -74,8 +79,29 @@ shift
 goto args_loop
 :args_end
 
-if defined JVM_DEBUG_PORT (
-  set _JAVA_OPTS=!_JAVA_OPTS! -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=!JVM_DEBUG_PORT!
+rem Confirm a user's intent if the current directory does not look like an sbt
+rem top-level directory and the "new" command was not given.
+if not exist build.sbt (
+  if not exist project\ (
+    if not defined sbt_new (
+      echo [warn] Neither build.sbt nor a 'project' directory in the current directory: %CD%
+      setlocal
+:confirm
+      echo c^) continue
+      echo q^) quit
+
+      set /P reply=?^ 
+      if /I "!reply!" == "c" (
+        goto confirm_end
+      ) else if /I "!reply!" == "q" (
+        exit /B 1
+      )
+
+      goto confirm
+:confirm_end
+      endlocal
+    )
+  )
 )
 
 call :process
@@ -83,6 +109,10 @@ call :process
 call :checkjava
 
 call :copyrt
+
+if defined JVM_DEBUG_PORT (
+  set _JAVA_OPTS=!_JAVA_OPTS! -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=!JVM_DEBUG_PORT!
+)
 
 call :sync_preloaded
 
@@ -97,24 +127,25 @@ goto end
 goto :eof
 
 :process
-rem parses 1.7, 1.8, 9, etc out of java version "1.8.0_91"
-"%_JAVACMD%" -Xmx512M -version 2> "%TEMP%\out.txt"
+rem Parses x out of 1.x; for example 8 out of java version 1.8.0_xx
+rem Otherwise, parses the major version; 9 out of java version 9-ea
 set JAVA_VERSION=0
->nul findstr /c:"version \"9" "%TEMP%\out.txt"
-if /I %ERRORLEVEL% EQU 0 (set JAVA_VERSION=9)
->nul findstr /c:"version \"1.8" "%TEMP%\out.txt"
-if /I %ERRORLEVEL% EQU 0 (set JAVA_VERSION=1.8)
->nul findstr /c:"version \"1.7" "%TEMP%\out.txt"
-if /I %ERRORLEVEL% EQU 0 (set JAVA_VERSION=1.7)
->nul findstr /c:"version \"1.6" "%TEMP%\out.txt"
-if /I %ERRORLEVEL% EQU 0 (set JAVA_VERSION=1.6)
->nul findstr /c:"version \"1.5" "%TEMP%\out.txt"
-if /I %ERRORLEVEL% EQU 0 (set JAVA_VERSION=1.5)
+for /f "tokens=3" %%g in ('"%_JAVACMD%" -Xms32M -Xmx32M -version 2^>^&1 ^| findstr /i version') do (
+  set JAVA_VERSION=%%g
+)
+set JAVA_VERSION=%JAVA_VERSION:"=%
+for /f "delims=.-_ tokens=1-2" %%v in ("%JAVA_VERSION%") do (
+  if /I "%%v" EQU "1" (
+    set JAVA_VERSION=%%w
+  ) else (
+    set JAVA_VERSION=%%v
+  )
+)
 exit /B 0
 
 :checkjava
-set required_version=1.6
-if /I "%JAVA_VERSION%" GEQ "%required_version%" (
+set required_version=6
+if /I %JAVA_VERSION% GEQ %required_version% (
   exit /B 0
 )
 echo.
@@ -128,7 +159,7 @@ echo.
 exit /B 1
 
 :copyrt
-if /I "%JAVA_VERSION%" GEQ "9" (
+if /I %JAVA_VERSION% GEQ 9 (
   set rtexport=!SBT_HOME!java9-rt-export.jar
 
   "%_JAVACMD%" %_JAVA_OPTS% %SBT_OPTS% -jar "!rtexport!" --rt-ext-dir > "%TEMP%.\rtext.txt"
@@ -158,13 +189,13 @@ if "%INIT_SBT_VERSION%"=="" (
   )
 )
 set PRELOAD_SBT_JAR="%UserProfile%\.sbt\preloaded\org.scala-sbt\sbt\%INIT_SBT_VERSION%\jars\sbt.jar"
-if /I "%JAVA_VERSION%" GEQ "1.8" (
+if /I %JAVA_VERSION% GEQ 8 (
   where robocopy >nul 2>nul
   if %ERRORLEVEL% equ 0 (
     REM echo %PRELOAD_SBT_JAR%
     if not exist %PRELOAD_SBT_JAR% (
       if exist "%SBT_HOME%\..\lib\local-preloaded\" (
-        echo 'about to robocopy'
+        echo "about to robocopy"
         robocopy "%SBT_HOME%\..\lib\local-preloaded" "%UserProfile%\.sbt\preloaded" /E
       )
     )

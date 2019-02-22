@@ -1,0 +1,4 @@
+The contents of this directory are extracted from
+<https://github.com/sbt/sbt/releases/download/v1.2.8/sbt-1.2.8.tgz>
+which was download from <https://www.scala-sbt.org/download.html>
+and is also available at <https://piccolo.link/sbt-1.2.8.tgz>
