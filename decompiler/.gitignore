@@ -1,0 +1,3 @@
+*.class
+target
+lib/jade/jade.jar

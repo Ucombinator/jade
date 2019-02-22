@@ -10,15 +10,3 @@
 .DS_Store
 # Git
 *.orig
-# Scala Worksheet
-*.sc
-# Python
-__pycache__
-
-### Compilation results
-*.class
-target
-lib/jade/jade.jar
-
-### Downloaded files
-__ignored__
