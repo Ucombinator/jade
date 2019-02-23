@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.jar.{JarEntry, JarFile}
 
 import scala.collection.JavaConverters._
-import org.apache.commons.io.FileUtils
 import org.rogach.scallop.{ScallopConf, ScallopOption}
 
 object Main extends App {
@@ -24,9 +23,6 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   banner("Usage: jade [subcommand] [options]")
   addSubcommand(DecompileClass)
   addSubcommand(Decompile)
-  addSubcommand(UpdateIndexes)
-  addSubcommand(ListArtifacts)
-  addSubcommand(TestArtifact)
   verify()
 }
 
@@ -82,7 +78,7 @@ object Decompile extends JadeSubcommand("decompile") {
   private def createProjectDirectory(directory: File)
   : Unit = {
     // TODO: Ask the user to decide what to do about this exist same name folder
-    if (directory.exists) { FileUtils.deleteDirectory(directory) }
+    //if (directory.exists) { FileUtils.deleteDirectory(directory) }
     assert(directory.mkdir(), s"CANNOT create folder $directory!")
   }
 
@@ -112,26 +108,4 @@ object Decompile extends JadeSubcommand("decompile") {
            path = Paths.get(outputDirectoryName, d.getName)) {
         Files.copy(jarFile.getInputStream(d), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
       }
-}
-
-object UpdateIndexes extends JadeSubcommand("update-indexes") {
-  val indexDir = opt[java.io.File](default = Some(new java.io.File("maven-indexes")))
-  val url = trailArg[List[String]](default = Some(List()))
-
-  def run(): Unit = { Maven.updateIndexes(indexDir(), url()) }
-}
-
-object ListArtifacts extends JadeSubcommand("list-artifacts") {
-  val indexDir = opt[java.io.File](default = Some(new java.io.File("maven-indexes")))
-  val url = trailArg[List[String]](default = Some(List()))
-
-  def run(): Unit = { Maven.listArtifacts(indexDir(), url()) }
-}
-
-object TestArtifact extends JadeSubcommand("test-artifact") {
-  //val repoUrl = trailArg[String]()
-  //val groupId = trailArg[String]()
-  //val artifactId = trailArg[String]()
-
-  def run(): Unit = { Maven.testArtifact() }
 }

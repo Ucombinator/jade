@@ -13,7 +13,7 @@ case class Identifier(id: Int, copyVersion: Int, basicValue: BasicValue) extends
 }
 
 class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
-  extends Interpreter[Identifier](Opcodes.ASM6) {
+  extends Interpreter[Identifier](Opcodes.ASM7) {
 
   private var identifierCount = this.identifierAnalyzer.method.instructions.size
 
