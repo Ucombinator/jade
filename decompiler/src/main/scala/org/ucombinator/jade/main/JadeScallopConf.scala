@@ -1,4 +1,4 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.main
 
 import org.rogach.scallop._
 

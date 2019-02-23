@@ -1,11 +1,13 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.main
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.util.jar.{JarEntry, JarFile}
 
-import scala.collection.JavaConverters._
 import org.rogach.scallop.{ScallopConf, ScallopOption}
+import org.ucombinator.jade.{DecompileOneClass, Decompiler}
+
+import scala.collection.JavaConverters._
 
 object Main extends App {
   val conf: Main = new Main(this.args)
