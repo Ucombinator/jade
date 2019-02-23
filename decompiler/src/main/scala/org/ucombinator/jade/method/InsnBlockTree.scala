@@ -3,7 +3,7 @@ package org.ucombinator.jade.method
 import com.google.common.collect.ImmutableBiMap
 import org.jgrapht.{Graph, Graphs}
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
-import org.jgrapht.graph.DefaultDirectedGraph
+import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm.tree.{AbstractInsnNode, JumpInsnNode, MethodNode}
 
 import scala.annotation.tailrec
@@ -36,11 +36,11 @@ final class InsnBlockTree(className: String, method: MethodNode) {
 
   private val insnIndexPairs: List[(AbstractInsnNode, Int)] = method.instructions.toArray.zipWithIndex.toList
 
-  private val controlFlowGraph: DefaultDirectedGraph[AbstractInsnNode, Edge] =
-    new org.ucombinator.jade.method.IdentifierAnalyzer(className, method).edges
+  private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, Edge] =
+    new IdentifierAnalyzer(className, method).edges
 
-  private val reverseControlFlowGraph: DefaultDirectedGraph[AbstractInsnNode, Edge] = {
-    val result = new DefaultDirectedGraph[AbstractInsnNode, Edge](classOf[Edge])
+  private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, Edge] = {
+    val result = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
     controlFlowGraph.vertexSet.asScala.foreach(result.addVertex)
     controlFlowGraph.edgeSet.asScala.map {
       case Edge(s, t, e) => Edge(t, s, e)

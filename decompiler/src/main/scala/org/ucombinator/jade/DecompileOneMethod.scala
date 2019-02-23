@@ -3,6 +3,7 @@ package org.ucombinator.jade
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.objectweb.asm.tree.analysis.Frame
 import org.objectweb.asm.tree.{AbstractInsnNode, MethodNode, _}
+import org.ucombinator.jade.method.{Identifier, IdentifierAnalyzer}
 import org.ucombinator.jade.util.DebugUtil
 import org.ucombinator.jade.util.DebugUtil.translator
 

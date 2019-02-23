@@ -1,19 +1,17 @@
-package org.ucombinator.jade.method
+package org.ucombinator.jade.interpreter
 
-import org.jgrapht.graph.DirectedPseudograph
+import org.jgrapht.graph.DefaultDirectedGraph
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
+import org.ucombinator.jade.interpreter.ir.Identifier
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-case class Identifier(id: Int, copyVersion: Int, basicValue: BasicValue) extends Value {
-  override def getSize: Int = basicValue.getSize
-}
 
 class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
-  extends Interpreter[Identifier](Opcodes.ASM7) {
+  extends Interpreter[Identifier](/*TODO: api*/Opcodes.ASM6) {
 
   private var identifierCount = this.identifierAnalyzer.method.instructions.size
 
@@ -265,33 +263,37 @@ class IdentifierAnalyzer(val owner: String, val method: MethodNode) {
   var instructionArguments = immutable.Map.empty[AbstractInsnNode, List[Identifier]]
   var ssaMap = immutable.Map.empty[Identifier, Set[Identifier]]
 
-  val edges = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
+  val edges = new DefaultDirectedGraph[AbstractInsnNode, Edge](classOf[Edge])
   val interpreter = new IdentifierInterpreter(this)
   val analyzer = new IdentifierAnalyzerImpl(this)
   val frames: Array[Frame[Identifier]] = analyzer.analyze(owner, method)
 
-  println(f"method: ${method.signature} ${method.desc}")
-  println("frames: " + frames.length)
-  frames.foreach(f => println(f"frame: ${f}"))
+//  println(f"method: ${method.signature} ${method.desc}")
+//  println("frames: " + frames.length)
+//  frames.foreach(f => println(f"frame: ${f}"))
 
   for {i <- 0 until method.instructions.size
        insn = method.instructions.get(i)} {
-    println(f"args(${i}): ${insn.getOpcode} ${instructionArguments.get(insn)}")
+//    println(f"args(${i}): ${insn.getOpcode} ${instructionArguments.get(insn)}")
   }
 
   for ((key, value) <- caughtExceptionIdentifiers) {
-    println(f"handler: $key -> $value")
+//    println(f"handler: $key -> $value")
   }
 
   for ((key, value) <- ssaMap) {
-    println(s"$key -> $value")
+//    println(s"$key -> $value")
   }
 
 }
 
-final case class Edge(val source: AbstractInsnNode, val target: AbstractInsnNode, val isException: Boolean) {
+final case class Edge( source: AbstractInsnNode,  target: AbstractInsnNode,  isException: Boolean) {
   override def toString = f"Edge($source, $target, $isException)"
 }
+
+//final class Edge(val source: AbstractInsnNode, val target: AbstractInsnNode, val isException: Boolean) {
+//  override def toString = f"Edge($source, $target, $isException)"
+//}
 
 class IdentifierAnalyzerImpl(identifierAnalyzer: IdentifierAnalyzer)
   extends Analyzer[Identifier](identifierAnalyzer.interpreter) {
@@ -303,7 +305,7 @@ class IdentifierAnalyzerImpl(identifierAnalyzer: IdentifierAnalyzer)
     this.identifierAnalyzer.edges.addVertex(source)
     this.identifierAnalyzer.edges.addVertex(target)
     this.identifierAnalyzer.edges.addEdge(source, target, new Edge(source, target, false))
-    println(f"newControlFlowEdge: ${insn} -> ${successor}")
+//    println(f"newControlFlowEdge: ${insn} -> ${successor}")
   }
 
   override protected def newControlFlowExceptionEdge(insn: Int, successor: Int): Boolean = ??? // Should never be called
@@ -316,7 +318,7 @@ class IdentifierAnalyzerImpl(identifierAnalyzer: IdentifierAnalyzer)
     this.identifierAnalyzer.edges.addVertex(source)
     this.identifierAnalyzer.edges.addVertex(target)
     this.identifierAnalyzer.edges.addEdge(source, target, new Edge(source, target, false))
-    println(f"newControlFlowEdge: ${insn} -> ${successor}")
+//    println(f"newControlFlowEdge: ${insn} -> ${successor}")
     true // the edge must always be considered by the analyzer
   }
 }
