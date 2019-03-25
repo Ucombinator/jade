@@ -31,7 +31,10 @@ object DecompileOneClass {
 //    val byteArray = Files.readAllBytes(path)
 //    val cr = new ClassReader(byteArray)
 
-    val cr = new ClassReader(className)
+    //val cr = new ClassReader(className)
+    val byteArray = Files.readAllBytes(Paths.get(className)) //Full path class name
+    val cr = new ClassReader(byteArray)
+
     cr.accept(cn, 0)
 
     // cn.version
