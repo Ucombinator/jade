@@ -1,0 +1,89 @@
+file = sep(nt, '\n')
+nt = nt-name ':' \n production*
+nt-name = 'A-Z' 'a-zA-Z'*
+production = nonTerminalProduction | CompoundProduction
+
+NonTerminalProduction = '  ' ??? '\n'
+CompoundProduction = ...
+
+echo 'ClassDeclaration:'
+TODO: support comment #
+
+
+sealed trait ClassDeclaration
+case class NormalClassDeclaration(
+  classModifier: List[ClassModifier],
+  identifier: Identifier,
+  typeParameters: Option[TypeParameters],
+  superclass: Option[Superclass],
+  superinterfaces: Option[Superinterfaces],
+  classBody: ClassBody) extends ClassDeclaration
+
+
+
+ClassDeclaration:
+  NormalClassDeclaration
+  EnumDeclaration
+
+NormalClassDeclaration:
+  {ClassModifier} class Identifier [TypeParameters] [Superclass] [Superinterfaces] ClassBody
+
+ClassModifier:
+(one of)
+Annotation public protected private
+abstract static final strictfp
+
+TypeParameters:
+  "<" TypeParameterList >
+  """
+
+TypeParameterList:
+  TypeParameter {, TypeParameter}
+
+Superclass:
+  extends ClassType
+
+Superinterfaces:
+  implements InterfaceTypeList
+
+InterfaceTypeList:
+  InterfaceType {, InterfaceType}
+
+interfaceType1 interfaceType2
+
+ClassBody:
+  { {ClassBodyDeclaration} }
+
+ClassBodyDeclaration:
+  ClassMemberDeclaration
+  InstanceInitializer
+  StaticInitializer
+  ConstructorDeclaration
+
+ClassMemberDeclaration:
+  FieldDeclaration
+  MethodDeclaration
+  ClassDeclaration
+  InterfaceDeclaration
+  ;
+
+FieldDeclaration:
+  {FieldModifier} UnannType VariableDeclaratorList ;
+
+FieldModifier:
+  (one of)
+  Annotation public protected private
+  static final transient volatile
+
+VariableDeclaratorList:
+  VariableDeclarator {, VariableDeclarator}
+
+VariableDeclarator:
+  VariableDeclaratorId [= VariableInitializer]
+
+VariableDeclaratorId:
+  Identifier [Dims]
+
+VariableInitializer:
+  Expression
+  ArrayInitializer

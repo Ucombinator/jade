@@ -25,6 +25,7 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   banner("Usage: jade [subcommand] [options]")
   addSubcommand(DecompileClass)
   addSubcommand(Decompile)
+  addSubcommand(GenerateASTTypes)
   verify()
 }
 
@@ -110,4 +111,14 @@ object Decompile extends JadeSubcommand("decompile") {
            path = Paths.get(outputDirectoryName, d.getName)) {
         Files.copy(jarFile.getInputStream(d), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
       }
+}
+
+object GenerateASTTypes extends JadeSubcommand("generate-ast-types") {
+//  val jarFile = trailArg[String]()
+//  val destinationFolder = trailArg[String]()
+
+  override def run(): Unit = {
+    org.ucombinator.jade.main.generateASTTypes.Main.main()
+    // TODO: accept a directory that includes .class files
+  }
 }
