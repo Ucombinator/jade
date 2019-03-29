@@ -11,7 +11,7 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 object Main {
-  def decompileOne(className: String): Unit = {
+  def main(className: String): Unit = {
     require(className != null, "the given class file name is actually `null`!")
     val cn = new ClassNode
     // TODO: It seems in my test case the given names are only the class in Java standard library like
