@@ -1,4 +1,4 @@
-package org.ucombinator.jade.main.decompileOneClass
+package org.ucombinator.jade.main.decompile
 
 import java.nio.file.{Files, Paths}
 
@@ -18,19 +18,6 @@ object Main {
     // TODO (CONTINUE): "java.lang.Runnable" and "java.util.HashMap"
     // TODO (CONTINUE): try other cases later
 
-//    val path = {
-//      try {
-//        Paths.get("C:\\Users\\lanjian\\__Research__\\Main\\JavaDecompiler\\jade\\src\\test\\resources\\HashMap.class")
-//      } catch {
-//        case _: NoSuchFileException =>
-//          Paths.get("/mnt/c/Users/lanjian/__Research__/Main/JavaDecompiler/jade/src/test/resources/HashMap.class")
-//      }
-//    }
-//
-//    val byteArray = Files.readAllBytes(path)
-//    val cr = new ClassReader(byteArray)
-
-    //val cr = new ClassReader(fileName)
     val byteArray = Files.readAllBytes(Paths.get(fileName)) //Full path class name
     val cr = new ClassReader(byteArray)
 

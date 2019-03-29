@@ -25,7 +25,7 @@ object Decompile extends JadeSubcommand("decompile") {
   val fileName = trailArg[String]()
 
   override def run(): Unit = {
-    org.ucombinator.jade.main.decompileOneClass.Main.main(fileName())
+    decompile.Main.main(fileName())
   }
 }
 
@@ -34,7 +34,7 @@ object GenerateASTTypes extends JadeSubcommand("generate-ast-types") {
 //  val destinationFolder = trailArg[String]()
 
   override def run(): Unit = {
-    org.ucombinator.jade.main.generateASTTypes.Main.main()
+    generateASTTypes.Main.main()
     // TODO: accept a directory that includes .class files
   }
 }
