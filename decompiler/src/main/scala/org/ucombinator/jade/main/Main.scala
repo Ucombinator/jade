@@ -16,16 +16,16 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   shortSubcommandsHelp(true)
 
   banner("Usage: jade [subcommand] [options]")
-  addSubcommand(DecompileClass)
+  addSubcommand(Decompile)
   addSubcommand(GenerateASTTypes)
   verify()
 }
 
-object DecompileClass extends JadeSubcommand("decompile-class") {
-  val className = trailArg[String]()
+object Decompile extends JadeSubcommand("decompile") {
+  val fileName = trailArg[String]()
 
   override def run(): Unit = {
-    org.ucombinator.jade.main.decompileOneClass.Main.main(className())
+    org.ucombinator.jade.main.decompileOneClass.Main.main(fileName())
   }
 }
 

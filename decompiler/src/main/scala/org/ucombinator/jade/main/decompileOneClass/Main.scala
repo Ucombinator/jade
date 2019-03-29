@@ -11,8 +11,8 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 object Main {
-  def main(className: String): Unit = {
-    require(className != null, "the given class file name is actually `null`!")
+  def main(fileName: String): Unit = {
+    require(fileName != null, "the given class file name is actually `null`!")
     val cn = new ClassNode
     // TODO: It seems in my test case the given names are only the class in Java standard library like
     // TODO (CONTINUE): "java.lang.Runnable" and "java.util.HashMap"
@@ -30,8 +30,8 @@ object Main {
 //    val byteArray = Files.readAllBytes(path)
 //    val cr = new ClassReader(byteArray)
 
-    //val cr = new ClassReader(className)
-    val byteArray = Files.readAllBytes(Paths.get(className)) //Full path class name
+    //val cr = new ClassReader(fileName)
+    val byteArray = Files.readAllBytes(Paths.get(fileName)) //Full path class name
     val cr = new ClassReader(byteArray)
 
     cr.accept(cn, 0)
@@ -76,7 +76,7 @@ object Main {
 
     for (method <- methods) {
       println(method.name)
-      new IdentifierAnalyzer(className, method)
+      new IdentifierAnalyzer(fileName, method)
     }
 
     println("\n}")
