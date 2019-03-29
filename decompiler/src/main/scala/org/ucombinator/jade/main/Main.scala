@@ -17,7 +17,6 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
 
   banner("Usage: jade [subcommand] [options]")
   addSubcommand(DecompileClass)
-  addSubcommand(Decompile)
   addSubcommand(GenerateASTTypes)
   verify()
 }
@@ -27,16 +26,6 @@ object DecompileClass extends JadeSubcommand("decompile-class") {
 
   override def run(): Unit = {
     org.ucombinator.jade.main.decompileOneClass.Main.main(className())
-  }
-}
-
-object Decompile extends JadeSubcommand("decompile") {
-  val jarFile = trailArg[String]()
-  val destinationFolder = trailArg[String]()
-
-  override def run(): Unit = {
-    // TODO: accept a directory that includes .class files
-    org.ucombinator.jade.main.decompiler.Main.main(jarFile(), destinationFolder())
   }
 }
 
