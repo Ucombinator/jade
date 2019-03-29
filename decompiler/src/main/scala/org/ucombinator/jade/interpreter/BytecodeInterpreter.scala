@@ -6,7 +6,7 @@ import org.objectweb.asm.tree.analysis.{Frame, BasicValue => AsmBasicValue}
 import org.ucombinator.jade.interpreter.ir._
 import org.ucombinator.jade.classfile.descriptor.DescriptorParser
 import org.ucombinator.jade.interpreter.frame.RichFrameOperations
-import org.ucombinator.jade.util.DebugUtil.printInsnNode
+import org.ucombinator.jade.util.Debug.printInsnNode
 
 import scala.annotation.tailrec
 

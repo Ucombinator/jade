@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.jar.{JarEntry, JarFile}
 
 import org.rogach.scallop.{ScallopConf, ScallopOption}
-import org.ucombinator.jade.{DecompileOneClass, Decompiler}
 
 import scala.collection.JavaConverters._
 
@@ -33,7 +32,7 @@ object DecompileClass extends JadeSubcommand("decompile-class") {
   val className: ScallopOption[String] = trailArg[String]()
 
   override def run(): Unit = {
-      DecompileOneClass.decompileOne(className())
+    org.ucombinator.jade.main.decompileOneClass.Main.decompileOne(className())
   }
 }
 
@@ -93,7 +92,7 @@ object Decompile extends JadeSubcommand("decompile") {
     val (classFiles, nonClassFiles) = files.partition(_.getName.endsWith(".class"))
     cloneNonClassFilesInJar(jarFile, nonClassFiles, projectDirectory.toString)
 
-    val decompiler: Decompiler = new Decompiler(jarFile, classFiles)
+    val decompiler = new org.ucombinator.jade.main.decompiler.Main(jarFile, classFiles)
     decompiler.decompileToFiles()
   }
 

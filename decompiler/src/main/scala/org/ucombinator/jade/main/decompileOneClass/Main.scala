@@ -1,17 +1,16 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.main.decompileOneClass
 
-import org.objectweb.asm._
+import java.nio.file.{Files, Paths}
+
+import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import java.nio.file.{Files, NoSuchFileException, Paths}
-
 import org.ucombinator.jade.classfile.AccessFlag
 import org.ucombinator.jade.method.IdentifierAnalyzer
 
+import scala.collection.mutable
+import scala.collection.JavaConverters._
 
-object DecompileOneClass {
+object Main {
   def decompileOne(className: String): Unit = {
     require(className != null, "the given class file name is actually `null`!")
     val cn = new ClassNode
@@ -21,10 +20,10 @@ object DecompileOneClass {
 
 //    val path = {
 //      try {
-//        Paths.get("C:\\Users\\lanjian\\__Research__\\Decompiler\\JavaDecompiler\\jade\\src\\test\\resources\\HashMap.class")
+//        Paths.get("C:\\Users\\lanjian\\__Research__\\Main\\JavaDecompiler\\jade\\src\\test\\resources\\HashMap.class")
 //      } catch {
 //        case _: NoSuchFileException =>
-//          Paths.get("/mnt/c/Users/lanjian/__Research__/Decompiler/JavaDecompiler/jade/src/test/resources/HashMap.class")
+//          Paths.get("/mnt/c/Users/lanjian/__Research__/Main/JavaDecompiler/jade/src/test/resources/HashMap.class")
 //      }
 //    }
 //

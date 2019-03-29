@@ -1,11 +1,10 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.main.decompiler
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.jar.JarFile
-import java.util.jar.JarEntry
+import java.util.jar.{JarEntry, JarFile}
 
 
-class Decompiler(val jarFile: JarFile, val classFiles: Iterator[JarEntry]) {
+class Main(val jarFile: JarFile, val classFiles: Iterator[JarEntry]) {
   def decompileToFiles() : Unit =
     for ((k, grp) <- classFilesGroupedBySourceFile) {
       val bytes: List[Byte] = decompile(sortClassFilesByLineNumber(grp))

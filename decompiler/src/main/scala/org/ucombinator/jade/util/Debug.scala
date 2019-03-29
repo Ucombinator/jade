@@ -7,8 +7,7 @@ import org.jgrapht._
 import org.jgrapht.io.{DOTExporter, StringComponentNameProvider}
 import org.objectweb.asm.tree._
 
-
-object DebugUtil {
+object Debug {
 
   class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
     override def getName(component: N): String = {
@@ -30,7 +29,7 @@ object DebugUtil {
   }
 
   def printInsnNode(i: AbstractInsnNode): Unit = {
-    val op = org.ucombinator.jade.util.DebugUtil.translator(i)
+    val op = org.ucombinator.jade.util.Debug.translator(i)
 
     val message =
       i match {
