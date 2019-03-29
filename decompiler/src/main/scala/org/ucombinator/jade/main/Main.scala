@@ -1,6 +1,7 @@
 package org.ucombinator.jade.main
 
 import org.rogach.scallop.ScallopConf
+import org.ucombinator.jade.util.{JadeScallopConf, JadeSubcommand}
 
 object Main extends App {
   val conf: Main = new Main(this.args)

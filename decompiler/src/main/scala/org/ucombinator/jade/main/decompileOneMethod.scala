@@ -1,4 +1,4 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.main.decompileOneMethod
 
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.objectweb.asm.tree.analysis.Frame
