@@ -31,11 +31,14 @@ object Decompile extends JadeSubcommand("decompile") {
 }
 
 object GenerateASTTypes extends JadeSubcommand("generate-ast-types") {
-//  val jarFile = trailArg[String]()
-//  val destinationFolder = trailArg[String]()
+  val fileName = trailArg[String]()
+  //   val inputStr = trailArg[String]()
+  //   //val jarFile = trailArg[String]()
+  //  //  val destinationFolder = trailArg[String]()
 
   override def run(): Unit = {
-    generateASTTypes.Main.main()
+    generateASTTypes.Main.main(fileName())
+    //generateASTTypes.Main.main()
     // TODO: accept a directory that includes .class files
   }
 }

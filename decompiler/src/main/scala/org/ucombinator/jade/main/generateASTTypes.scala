@@ -2,6 +2,8 @@ package org.ucombinator.jade.main.generateASTTypes
 
 import scala.collection.mutable
 import scala.util.parsing.combinator._
+import java.nio.file.{Files, Paths}
+
 
 case class Grammar(nonTerminals: List[NonTerminal])
 
@@ -17,10 +19,21 @@ case class OptionalElement(e: Option[Element])
 
 
 object Main {
-  def main(): Unit = {
+  def main(fileName: String): Unit = {
     // read all of stdin
-    val input: String = io.Source.stdin.getLines().mkString // TODO: find a better way to do this
+    //val input: String = io.Source.stdin.getLines().mkString //
+    //Input is fileName
+    require(fileName != null, "the given class file name is actually `null`!")
+
+    val source = scala.io.Source.fromFile(fileName)
+    val input = try source.mkString finally source.close()
+
+   // val fileInput = Files.readAllLines(Paths.get(fileName))
+   // val input = fileInput
+
+  //  val input: String = inputStr
     // parse using scala parsers
+
     Grammar.main(input)
     val extend = mutable.HashMap[String, Set[String]]()
     val grammar: Grammar = ???
@@ -48,7 +61,8 @@ object Main {
   }
 }
 
-object Grammar extends RegexParsers {
+object Grammar extends RegexParsers
+{
   override val skipWhitespace = false
   private val eol = sys.props("line.separator")
 
@@ -62,9 +76,11 @@ object Grammar extends RegexParsers {
   def production: Parser[Production] = nonTerminalProduction
   def nonTerminalProduction : Parser[Production] = "  " ~> nonTerminalName <~ "\n" ^^ { name => NonTerminalProduction(name) }
 
-  def main(input: String) {
+  def main(input: String)
+  {
     val result = Grammar.parse(Grammar.nonTerminal, input)
-    result match {
+    result match
+    {
       case Success(matched, next) => println("success"); println(matched); println("next:" + next)
       case Failure(msg, _) => println(f"failure ${msg}")
       case Error(msg, _) => println("error")
