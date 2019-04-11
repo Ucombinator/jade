@@ -1,26 +1,3 @@
-file = sep(nt, '\n')
-nt = nt-name ':' \n production*
-nt-name = 'A-Z' 'a-zA-Z'*
-production = nonTerminalProduction | CompoundProduction
-
-NonTerminalProduction = '  ' ??? '\n'
-CompoundProduction = ...
-
-echo 'ClassDeclaration:'
-TODO: support comment #
-
-
-sealed trait ClassDeclaration
-case class NormalClassDeclaration(
-  classModifier: List[ClassModifier],
-  identifier: Identifier,
-  typeParameters: Option[TypeParameters],
-  superclass: Option[Superclass],
-  superinterfaces: Option[Superinterfaces],
-  classBody: ClassBody) extends ClassDeclaration
-
-
-
 ClassDeclaration:
   NormalClassDeclaration
   EnumDeclaration
@@ -29,13 +6,12 @@ NormalClassDeclaration:
   {ClassModifier} class Identifier [TypeParameters] [Superclass] [Superinterfaces] ClassBody
 
 ClassModifier:
-(one of)
-Annotation public protected private
-abstract static final strictfp
+  (one of)
+  Annotation public protected private
+  abstract static final strictfp
 
 TypeParameters:
-  "<" TypeParameterList >
-  """
+  < TypeParameterList >
 
 TypeParameterList:
   TypeParameter {, TypeParameter}
@@ -48,8 +24,6 @@ Superinterfaces:
 
 InterfaceTypeList:
   InterfaceType {, InterfaceType}
-
-interfaceType1 interfaceType2
 
 ClassBody:
   { {ClassBodyDeclaration} }
