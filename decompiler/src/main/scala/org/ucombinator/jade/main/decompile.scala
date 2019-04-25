@@ -1,37 +1,26 @@
-package org.ucombinator.jade
+package org.ucombinator.jade.main.decompile
 
-import org.objectweb.asm._
+import java.nio.file.{Files, Paths}
+
+import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import java.nio.file.{Files, NoSuchFileException, Paths}
-
 import org.ucombinator.jade.classfile.AccessFlag
 import org.ucombinator.jade.method.IdentifierAnalyzer
 
+import scala.collection.mutable
+import scala.collection.JavaConverters._
 
-object DecompileOneClass {
-  def decompileOne(className: String): Unit = {
-    require(className != null, "the given class file name is actually `null`!")
+object Main {
+  def main(fileName: String): Unit = {
+    require(fileName != null, "the given class file name is actually `null`!")
     val cn = new ClassNode
     // TODO: It seems in my test case the given names are only the class in Java standard library like
     // TODO (CONTINUE): "java.lang.Runnable" and "java.util.HashMap"
     // TODO (CONTINUE): try other cases later
 
-//    val path = {
-//      try {
-//        Paths.get("C:\\Users\\lanjian\\__Research__\\Decompiler\\JavaDecompiler\\jade\\src\\test\\resources\\HashMap.class")
-//      } catch {
-//        case _: NoSuchFileException =>
-//          Paths.get("/mnt/c/Users/lanjian/__Research__/Decompiler/JavaDecompiler/jade/src/test/resources/HashMap.class")
-//      }
-//    }
-//
-//    val byteArray = Files.readAllBytes(path)
-//    val cr = new ClassReader(byteArray)
+    val byteArray = Files.readAllBytes(Paths.get(fileName)) //Full path class name
+    val cr = new ClassReader(byteArray)
 
-    val cr = new ClassReader(className)
     cr.accept(cn, 0)
 
     // cn.version
@@ -74,7 +63,7 @@ object DecompileOneClass {
 
     for (method <- methods) {
       println(method.name)
-      new IdentifierAnalyzer(className, method)
+      new IdentifierAnalyzer(fileName, method)
     }
 
     println("\n}")
