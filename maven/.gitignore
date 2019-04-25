@@ -120,3 +120,4 @@ auth-file.json
 
 # Ignore Maven indexing files and their derivatives
 maven-indexes/
+__ignored__/
