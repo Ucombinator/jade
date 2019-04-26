@@ -72,6 +72,4 @@ if __name__ == '__main__':
 			rhsProcessed = process(rhs)
 			outputFile.writelines("\n")
 			print()
-	# break;
-	# break;
 	outputFile.close()

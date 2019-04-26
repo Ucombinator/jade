@@ -23,4 +23,3 @@ Input: page_link of the java language specification source as command line argum
 Output: The file with extracted html page contents
 	Example: outputFile = open("./javaGrammar.txt", "w+")
 	    The output will also be printed to the console.
-
