@@ -18,8 +18,10 @@ Special cases:
 else the entire tag is skipped.
 4) The productions for "Lexical Structure" block is skipped since the entities are not required while AST generation.
 
-Input: page_link of the java language specification source as command line argument
-	Example: page_link = 'https://docs.oracle.com/javase/specs/jls/se12/html/jls-19.html'
-Output: The file with extracted html page contents
-	Example: outputFile = open("./javaGrammar.txt", "w+")
-	    The output will also be printed to the console.
+Input: 
+URL of the java language specification source as command line argument
+Example: python webScrapper.py https://docs.oracle.com/javase/specs/jls/se12/html/jls-19.html
+Output: 
+1) The file with extracted html page contents
+Example: outputFile = open("./javaGrammar.txt", "w+")
+2) The output will also be printed to the console.
