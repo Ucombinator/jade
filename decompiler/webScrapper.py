@@ -62,6 +62,8 @@ if __name__ == '__main__':
 	prodset = soup.find_all('div', attrs={'class': 'productionset'})
 
 	for ps in prodset:
+		if str(ps.get_text()).__contains__("Lexical Structure"):
+			continue;
 		prodrecap = ps.find_all('div', attrs={'class': 'productionrecap'})
 		for pr in prodrecap:
 			prod = pr.find('div', attrs={'class': 'production'})
