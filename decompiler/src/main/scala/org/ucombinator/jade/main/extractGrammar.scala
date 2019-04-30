@@ -6,8 +6,8 @@ import org.jsoup.nodes.{Element, Node, TextNode}
 import scala.collection.JavaConverters._
 
 object Main {
-  def main(url: String): Unit = {
-    val html = scala.io.Source.fromURL(url).mkString
+  def main(): Unit = {
+    val html = scala.io.Source.fromInputStream(System.in).mkString
     val document = Jsoup.parse(html)
     for (d <- document.select(".productionset").asScala) {
       if (!d.attr("title").contains("Lexical Structure")) {
@@ -18,6 +18,7 @@ object Main {
         }
       }
     }
+    println()
   }
 
   var oneOf = false
