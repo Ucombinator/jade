@@ -12,13 +12,14 @@ libraryDependencies ++= Seq(
   "org.jgrapht" % "jgrapht-guava" % "1.3.0",
   "org.jgrapht" % "jgrapht-io" % "1.3.0",
   "org.jgrapht" % "jgrapht-opt" % "1.3.0",
+  "org.jsoup" % "jsoup" % "1.11.3", // HTML parsing
   "org.ow2.asm" % "asm" % "7.0",
   "org.ow2.asm" % "asm-analysis" % "7.0",
   "org.ow2.asm" % "asm-commons" % "7.0",
   "org.ow2.asm" % "asm-test" % "7.0",
   "org.ow2.asm" % "asm-tree" % "7.0",
   "org.ow2.asm" % "asm-util" % "7.0",
-  "org.rogach" %% "scallop" % "3.1.5",
+  "org.rogach" %% "scallop" % "3.1.5", // Command-line argument parsing
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1",
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
