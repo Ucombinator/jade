@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import re
+import sys
 
 html_escape_table = {
 	"&amp;": "&",
@@ -17,7 +18,7 @@ def translateHTMLCodes(result):
 		for key in html_escape_table:
 			if (line.__contains__(key)):
 				line = line.replace(key, html_escape_table[key])
-		#print(line)
+		print(line)
 		outputFile.writelines(line + "\n")
 
 
@@ -49,24 +50,28 @@ def process(rhs):
 
 
 if __name__ == '__main__':
-	page_link = 'https://docs.oracle.com/javase/specs/jls/se12/html/jls-19.html'
+	if(len(sys.argv)!=2):
+		print("Requires the java SE URL as input Argument !\n");
+		exit();
+	#page_link = 'https://docs.oracle.com/javase/specs/jls/se12/html/jls-19.html'
+	page_link = sys.argv[1];
 	# outputFile to write output
-	outputFile = open("./javaGrammar-se12.txt", "w+")
+	outputFile = open("./javaGrammar.txt", "w+")
 	page_response = requests.get(page_link, timeout=5)
 	soup = BeautifulSoup(page_response.content, "html.parser")
 	prodset = soup.find_all('div', attrs={'class': 'productionset'})
 
 	for ps in prodset:
+		if str(ps.get_text()).__contains__("Lexical Structure"):
+			continue;
 		prodrecap = ps.find_all('div', attrs={'class': 'productionrecap'})
 		for pr in prodrecap:
 			prod = pr.find('div', attrs={'class': 'production'})
 			lhs = prod.find('div', attrs={'class': 'lhs'})
-			#print(lhs.get_text())
+			print(lhs.get_text())
 			outputFile.writelines(str(lhs.get_text()) + "\n")
 			rhs = prod.find('div', attrs={'class': 'rhs'})
 			rhsProcessed = process(rhs)
 			outputFile.writelines("\n")
-			#print()
-	# break;
-	# break;
+			print()
 	outputFile.close()
