@@ -7,10 +7,9 @@ import java.io._
 
 case class Grammar(nonTerminals: List[NonTerminalDeclaration])
 
-sealed trait Production
-trait CompoundProduction extends Production
+sealed trait CompoundProduction
 
-case class NonTerminalDeclaration(name: String, productions: List[Production]) extends CompoundProduction
+case class NonTerminalDeclaration(name: String, productions: List[CompoundProduction]) extends CompoundProduction
 case class NonTerminal(name: String) extends CompoundProduction
 case class Terminal(name: String) extends CompoundProduction
 case class Sequence(elements: List[CompoundProduction]) extends CompoundProduction
@@ -179,7 +178,7 @@ object Main {
     val traits = mutable.Set[String]()
     val caseClassExtend = mutable.HashMap[String, Set[String]]()
     val caseObjectExtend = mutable.HashMap[String, Set[String]]()
-    val printWriter = new PrintWriter(new File("AST.scala"))
+    val printWriter = new PrintWriter(System.out)
     //builds the above maps from the nonTerminal grammar
     buildAstTypes(nonTerminals,traits, caseClassExtend, caseObjectExtend)
     //print each of the generated types
@@ -198,50 +197,41 @@ object Main {
 
 }
 
-object Grammar extends RegexParsers
-{
+object Grammar extends RegexParsers {
   override val skipWhitespace = false
-  private val eol = sys.props("line.separator")
 
-  def nonTerminalName: Parser[String] = """[A-Z][a-zA-Z]*""".r ^^ { _.toString }
-  def terminalName: Parser[String] = """[a-z;,?][a-zA-Z]*""".r ^^ { _.toString }
-  def terminalOperators : Parser[String] = """[&><|=.*^@:%+!~\-\/]+""".r ^^ { _.toString }
-  def startTerminalSymbols : Parser[String] = """[<{(\[]""".r ^^ { _.toString }
-  def endTerminalSymbols : Parser[String] = """[>})\]]""".r ^^ { _.toString }
+  def eol: Parser[Unit] = sys.props("line.separator") ^^ { _ => Unit }
+  def s:   Parser[Unit] = """ *""".r  ^^ { _ => Unit }
+  def s1:  Parser[Unit] = """ +""".r  ^^ { _ => Unit }
+  def ws:  Parser[Unit] = """\s*""".r ^^ { _ => Unit }
 
-  def nonTerminalDeclaration: Parser[NonTerminalDeclaration] =
-    nonTerminalName ~ (":" ~ eol ~> repsep(production, eol)) ^^ { case name ~ productions => NonTerminalDeclaration(name, productions) }
+  def name:    Parser[String] = regex("""[A-Z][a-zA-Z]*""".r)
+  def literal: Parser[String] = "'" ~> """[^']+""".r <~ "'"
 
-  def nonTerminalProduction:Parser[NonTerminal] =
-    nonTerminalName ^^ { name => NonTerminal(name) }
+  def term : Parser[CompoundProduction] =
+    literal                    ^^ { Terminal } |
+    name                       ^^ { NonTerminal } |
+    "{" ~ s ~> expr <~ s ~ "}" ^^ { Repeat } |
+    "[" ~ s ~> expr <~ s ~ "]" ^^ { Optional }
 
-  def terminalProduction: Parser[Terminal] =
-    (terminalName | terminalOperators | startTerminalSymbols | endTerminalSymbols ) ^^ { name => Terminal(name)}
+  def expr: Parser[Sequence] = repsep(term, s1) ^^ { Sequence }
 
-  def repetitionProduction: Parser[Repeat] =
-    "{" ~ repsep(compoundProduction, " ") ~ "}" ^^ {case  _ ~ compoundProductions ~ _ => Repeat(Sequence(compoundProductions)) }
+  def production : Parser[CompoundProduction] = s1 ~> expr <~ s
 
-  def optionalProduction: Parser[Optional] =
-    "[" ~ repsep(compoundProduction, " ") ~ "]" ^^ {case  _ ~ compoundProductions ~ _ => Optional(Sequence(compoundProductions)) }
+  def declaration: Parser[NonTerminalDeclaration] =
+    (name <~ s ~ ":" ~ s) ~ rep(eol ~> production) ^^
+      { case name ~ productions => NonTerminalDeclaration(name, productions) }
 
-  def compoundProduction : Parser[CompoundProduction] =
-    (nonTerminalProduction | repetitionProduction | optionalProduction | terminalProduction) ^^ { compoundProduction => compoundProduction}
+  def declarationList: Parser[List[NonTerminalDeclaration]] =
+    repsep(declaration, eol ~ (s ~ eol).*)
 
-  def oneOfProduction: Parser[CompoundProduction] =
-    """[ ]{1,}""".r ~> "(one of)" ~ (eol ~> repsep(normalProduction, eol)) ^^ {case _ ~ compoundProductions => OneOf(compoundProductions)}
-
-  def normalProduction : Parser[CompoundProduction] =
-    """[ ]{1,}""".r ~> repsep(compoundProduction, """[ ]+""".r) <~ """[ ]*""".r ^^ { compoundProductions => Sequence(compoundProductions) }
-
-  def production : Parser[Production] = (oneOfProduction | normalProduction) ^^ { production => production}
-
-  def nonTerminalList : Parser[List[NonTerminalDeclaration]] = repsep(nonTerminalDeclaration, eol ~ eol) ^^ { nonTerminals => nonTerminals }
-
+  def grammar: Parser[List[NonTerminalDeclaration]] =
+    phrase(ws ~> declarationList <~ ws)
 
   def main(input: String) : Option[List[NonTerminalDeclaration]] = {
-    val result : ParseResult[List[NonTerminalDeclaration]] = Grammar.parse(Grammar.nonTerminalList, input)
+    val result : ParseResult[List[NonTerminalDeclaration]] = parse(grammar, input)
     result match {
-      case Success(matched, _) => println("success"); Some(matched)
+      case Success(matched, _) => println(f"success ${matched.length}"); Some(matched)
       case Failure(msg, _) => println(f"failure $msg"); None
       case Error(msg, _) => println(f"error $msg"); None
     }
