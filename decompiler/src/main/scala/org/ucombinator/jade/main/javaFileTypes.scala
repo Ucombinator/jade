@@ -4,23 +4,20 @@ import scala.collection.mutable
 import scala.util.parsing.combinator._
 import java.io._
 
+case class Grammar(declarations: List[Declaration])
+case class Declaration(name: String, productions: List[Production])
+case class Production(exprs: List[Expr])
 
-case class Grammar(nonTerminals: List[NonTerminalDeclaration])
-
-sealed trait CompoundProduction
-
-case class NonTerminalDeclaration(name: String, productions: List[CompoundProduction]) extends CompoundProduction
-case class NonTerminal(name: String) extends CompoundProduction
-case class Terminal(name: String) extends CompoundProduction
-case class Sequence(elements: List[CompoundProduction]) extends CompoundProduction
-case class Repeat(prod: CompoundProduction) extends CompoundProduction
-case class Optional(prod: CompoundProduction) extends CompoundProduction
-case class OneOf(elements:List[CompoundProduction]) extends CompoundProduction
+sealed trait Expr
+case class NonTerminal(name: String) extends Expr
+case class Terminal(name: String) extends Expr
+case class Repeat(prod: List[Expr]) extends Expr
+case class Optional(prod: List[Expr]) extends Expr
 
 object Main {
   def main(): Unit = {
     val input = scala.io.Source.fromInputStream(System.in).mkString
-    val grammar: Grammar.ParseResult[List[NonTerminalDeclaration]] = Grammar.parseString(input)
+    val grammar: Grammar.ParseResult[List[Declaration]] = Grammar.parseString(input)
     grammar match {
       case Grammar.Success(matched, _) => convertGrammarToAST(matched)
       case Grammar.Failure(msg, _) => println(f"failure $msg")
@@ -37,8 +34,7 @@ object Main {
   }
 
   def generateRepetition(rep: Repeat, caseClassElements: mutable.HashMap[String, String]): Unit = {
-    val seq: Sequence = rep.prod.asInstanceOf[Sequence]
-    for (element <- seq.elements) {
+    for (element <- rep.prod) {
       element match {
         case nonTerminal: NonTerminal =>
           //remove any existing entry with same name, since we'll add the same var as a list
@@ -55,8 +51,7 @@ object Main {
   }
 
   def generateOptional(optional: Optional, caseClassElements: mutable.HashMap[String, String]): Unit = {
-    val seq: Sequence = optional.prod.asInstanceOf[Sequence]
-    for (element <- seq.elements) {
+    for (element <- optional.prod) {
       element match {
         case nonTerminal: NonTerminal =>
           //remove any existing entry with same name, since we'll add the same var as a list
@@ -71,41 +66,16 @@ object Main {
     }
   }
 
-  def buildAstTypes(nonTerminals: List[NonTerminalDeclaration], traits: mutable.Set[String], caseClassExtend: mutable.HashMap[String, Set[String]], caseObjectExtend: mutable.HashMap[String, Set[String]]): Unit = {
+  def buildAstTypes(nonTerminals: List[Declaration], traits: mutable.Set[String], caseClassExtend: mutable.HashMap[String, Set[String]], caseObjectExtend: mutable.HashMap[String, Set[String]]): Unit = {
     for (nonTerminal <- nonTerminals) {
       nonTerminal.productions match {
-        case List(oneOf@OneOf(_)) =>
-          if (!(traits contains nonTerminal.name)) {
-            traits += nonTerminal.name
-          }
-
-          for (sequence: Sequence <- oneOf.elements.asInstanceOf[List[Sequence]]) {
-            for (seqElement <- sequence.elements) {
-              seqElement match {
-                case nonTerminalElement: NonTerminal =>
-                  if (caseClassExtend.getOrElse(nonTerminalElement.name, None) != None) {
-                    caseClassExtend += nonTerminalElement.name -> (caseClassExtend(nonTerminalElement.name) + nonTerminal.name)
-                  } else {
-                    caseClassExtend += nonTerminalElement.name -> Set(nonTerminal.name)
-                  }
-                case terminalElement: Terminal =>
-                  val terminalElementName = toPascalCase(terminalElement.name)
-                  if (caseObjectExtend.getOrElse(terminalElementName, None) != None) {
-                    caseObjectExtend += terminalElementName -> (caseObjectExtend(terminalElementName) + nonTerminal.name)
-                  } else {
-                    caseObjectExtend += terminalElementName -> Set(nonTerminal.name)
-                  }
-                case _ => None
-              }
-            }
-          }
-        case sequences: List[Sequence] =>
+        case sequences: List[Production] =>
           if (sequences.forall(containsOnlyNonTerminals(_))) {
             if (!(traits contains nonTerminal.name)) {
               traits += nonTerminal.name
             }
             for (sequence <- sequences) {
-              val elements: List[NonTerminal] = sequence.elements.asInstanceOf[List[NonTerminal]]
+              val elements: List[NonTerminal] = sequence.exprs.asInstanceOf[List[NonTerminal]]
               if (caseClassExtend.getOrElse(elements.head.name, None) != None) {
                 caseClassExtend += elements.head.name -> (caseClassExtend(elements.head.name) + nonTerminal.name)
               } else {
@@ -130,17 +100,16 @@ object Main {
     }
   }
 
-  def printCaseClasses(nonTerminals: List[NonTerminalDeclaration], extend: mutable.HashMap[String, Set[String]], printWriter: PrintWriter): Unit = {
+  def printCaseClasses(nonTerminals: List[Declaration], extend: mutable.HashMap[String, Set[String]], printWriter: PrintWriter): Unit = {
     for (nonTerminal <- nonTerminals) {
       nonTerminal.productions match {
-        case List(OneOf(_)) => None
-        case sequences: List[Sequence] =>
+        case sequences: List[Production] =>
           if (!sequences.forall(containsOnlyNonTerminals(_))) {
             printWriter.write(f"case class ${nonTerminal.name}(\n")
             val caseClassElements = mutable.HashMap[String, String]()
 
             for (sequence <- sequences) {
-              for (element <- sequence.elements) {
+              for (element <- sequence.exprs) {
 
                 element match {
                   case nonTerminal: NonTerminal => caseClassElements += nonTerminal.name -> nonTerminal.name
@@ -171,7 +140,7 @@ object Main {
     }
   }
 
-  def convertGrammarToAST(nonTerminals: List[NonTerminalDeclaration]): Unit = {
+  def convertGrammarToAST(nonTerminals: List[Declaration]): Unit = {
     val traits = mutable.Set[String]()
     val caseClassExtend = mutable.HashMap[String, Set[String]]()
     val caseObjectExtend = mutable.HashMap[String, Set[String]]()
@@ -185,9 +154,9 @@ object Main {
     printWriter.close()
   }
 
-  def containsOnlyNonTerminals(sequence: Sequence): Boolean = {
+  def containsOnlyNonTerminals(sequence: Production): Boolean = {
     sequence match {
-      case Sequence(List(NonTerminal(_))) => true
+      case Production(List(NonTerminal(_))) => true
       case _ => false
     }
   }
@@ -205,27 +174,28 @@ object Grammar extends RegexParsers {
   def name:    Parser[String] = regex("""[A-Z][a-zA-Z]*""".r)
   def literal: Parser[String] = "'" ~> """[^']+""".r <~ "'"
 
-  def term : Parser[CompoundProduction] =
+  def term : Parser[Expr] =
     literal                    ^^ { Terminal } |
     name                       ^^ { NonTerminal } |
-    "{" ~ s ~> expr <~ s ~ "}" ^^ { Repeat } |
-    "[" ~ s ~> expr <~ s ~ "]" ^^ { Optional }
+    "{" ~ s ~> list <~ s ~ "}" ^^ { Repeat } |
+    "[" ~ s ~> list <~ s ~ "]" ^^ { Optional }
 
-  def expr: Parser[Sequence] = repsep(term, s1) ^^ { Sequence }
+  def list: Parser[List[Expr]] = repsep(term, s1)
+  def expr: Parser[Production] = list ^^ { Production }
 
-  def production : Parser[CompoundProduction] = s1 ~> expr <~ s
+  def production : Parser[Production] = s1 ~> list <~ s ^^ { Production }
 
-  def declaration: Parser[NonTerminalDeclaration] =
+  def declaration: Parser[Declaration] =
     (name <~ s ~ ":" ~ s) ~ rep(eol ~> production) ^^
-      { case name ~ productions => NonTerminalDeclaration(name, productions) }
+      { case name ~ productions => Declaration(name, productions) }
 
-  def declarationList: Parser[List[NonTerminalDeclaration]] =
+  def declarationList: Parser[List[Declaration]] =
     repsep(declaration, eol ~ (s ~ eol).*)
 
-  def grammar: Parser[List[NonTerminalDeclaration]] =
+  def grammar: Parser[List[Declaration]] =
     phrase(ws ~> declarationList <~ ws)
 
-  def parseString(input: String) : ParseResult[List[NonTerminalDeclaration]] = {
+  def parseString(input: String) : ParseResult[List[Declaration]] = {
     // TODO: allow `#` comments
     parse(grammar, input)
   }
