@@ -21,7 +21,7 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   addSubcommand(Decompile)
   addSubcommand(DownloadGrammar)
   addSubcommand(ExtractGrammar)
-  addSubcommand(GenerateASTTypes)
+  addSubcommand(JavaFileTypes)
   verify()
 }
 
@@ -47,10 +47,8 @@ object ExtractGrammar extends JadeSubcommand("extract-grammar") {
   }
 }
 
-object GenerateASTTypes extends JadeSubcommand("generate-ast-types") {
-  val fileName = trailArg[String]()
-
+object JavaFileTypes extends JadeSubcommand("java-file-types") {
   override def run(): Unit = {
-    generateASTTypes.Main.main(fileName())
+    javaFileTypes.Main.main()
   }
 }

@@ -1,4 +1,4 @@
-package org.ucombinator.jade.main.generateASTTypes
+package org.ucombinator.jade.main.javaFileTypes
 
 import scala.collection.mutable
 import scala.util.parsing.combinator._
@@ -18,16 +18,13 @@ case class Optional(prod: CompoundProduction) extends CompoundProduction
 case class OneOf(elements:List[CompoundProduction]) extends CompoundProduction
 
 object Main {
-  def main(fileName: String): Unit = {
-    require(fileName != null, "the given class file name is actually `null`!")
-
-    val source = scala.io.Source.fromFile(fileName)
-    val input = try source.mkString finally source.close()
-
-    val grammar: Option[List[NonTerminalDeclaration]] = Grammar.main(input)
+  def main(): Unit = {
+    val input = scala.io.Source.fromInputStream(System.in).mkString
+    val grammar: Grammar.ParseResult[List[NonTerminalDeclaration]] = Grammar.parseString(input)
     grammar match {
-      case Some(nonTerminals) => convertGrammarToAST(nonTerminals)
-      case _ => println("Could not parse grammar")
+      case Grammar.Success(matched, _) => convertGrammarToAST(matched)
+      case Grammar.Failure(msg, _) => println(f"failure $msg")
+      case Grammar.Error(msg, _) => println(f"error $msg")
     }
   }
 
@@ -228,12 +225,8 @@ object Grammar extends RegexParsers {
   def grammar: Parser[List[NonTerminalDeclaration]] =
     phrase(ws ~> declarationList <~ ws)
 
-  def main(input: String) : Option[List[NonTerminalDeclaration]] = {
-    val result : ParseResult[List[NonTerminalDeclaration]] = parse(grammar, input)
-    result match {
-      case Success(matched, _) => println(f"success ${matched.length}"); Some(matched)
-      case Failure(msg, _) => println(f"failure $msg"); None
-      case Error(msg, _) => println(f"error $msg"); None
-    }
+  def parseString(input: String) : ParseResult[List[NonTerminalDeclaration]] = {
+    // TODO: allow `#` comments
+    parse(grammar, input)
   }
 }
