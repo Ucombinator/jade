@@ -2,7 +2,6 @@ package org.ucombinator.jade.main.javaFileTypes
 
 import scala.collection.mutable
 import scala.util.parsing.combinator._
-import java.io._
 
 case class Grammar(declarations: List[Declaration])
 case class Declaration(name: String, productions: List[Production])
@@ -18,47 +17,31 @@ object Main {
   def main(): Unit = {
     val input = scala.io.Source.fromInputStream(System.in).mkString
     val grammar: Grammar.ParseResult[List[Declaration]] = Grammar.parseString(input)
-    grammar match {
-      case Grammar.Error(msg, _) => println(f"error $msg")
-      case Grammar.Failure(msg, _) => println(f"failure $msg")
-      case Grammar.Success(declarations, _) =>
-        val traits = mutable.Set[String]()
-        val caseClassExtend = mutable.HashMap[String, Set[String]]()
-        val caseObjectExtend = mutable.HashMap[String, Set[String]]()
-        //builds the above maps from the nonTerminal grammar
-        for (d <- declarations) {
-          buildAstTypes(d, traits, caseClassExtend, caseObjectExtend)
-        }
-        //print each of the generated types
-        val printWriter = new PrintWriter(System.out)
-        printTraits(traits, printWriter)
-        printCaseObjects(caseObjectExtend, printWriter)
-        for (d <- declarations) {
-          printCaseClasses(d, caseClassExtend, printWriter)
-        }
-        printWriter.close()
+    val declarations = grammar match {
+      case Grammar.Error(msg, _) => throw new Exception(f"parse error: $msg")
+      case Grammar.Failure(msg, _) => throw new Exception(f"parse failure: $msg")
+      case Grammar.Success(declarations, _) => declarations
+    }
+    val traits = mutable.Set[String]()
+    val caseClassExtend = mutable.Map[String, Set[String]]().withDefaultValue(Set())
+    //builds the above maps from the declaration grammar
+    for (d <- declarations) {
+      buildAstTypes(d, traits, caseClassExtend)
+    }
+    //print each of the generated types
+    printTraits(traits)
+    for (d <- declarations) {
+      printCaseClasses(d, caseClassExtend)
     }
   }
 
-  def toCamelCase(string: String): String = {
-    Character.toLowerCase(string.charAt(0)) + string.substring(1)
-  }
-
-  def toPascalCase(string: String): String = {
-    Character.toUpperCase(string.charAt(0)) + string.substring(1)
-  }
-
-  def buildAstTypes(declaration: Declaration, traits: mutable.Set[String], caseClassExtend: mutable.HashMap[String, Set[String]], caseObjectExtend: mutable.HashMap[String, Set[String]]): Unit = {
+  def buildAstTypes(declaration: Declaration, traits: mutable.Set[String], caseClassExtend: mutable.Map[String, Set[String]]): Unit = {
     val productions = declaration.productions
     containsOnlyNonTerminals(productions) match {
       case Some(nonTerminals) =>
         traits += declaration.name
-        for (nonTerminal: NonTerminal <- nonTerminals) {
-          if (caseClassExtend.getOrElse(nonTerminal.name, None) != None) {
-            caseClassExtend += nonTerminal.name -> (caseClassExtend(nonTerminal.name) + declaration.name)
-          } else {
-            caseClassExtend += nonTerminal.name -> Set(declaration.name)
-          }
+        for (nonTerminal <- nonTerminals) {
+          caseClassExtend(nonTerminal.name) += declaration.name
         }
       case None => /* Do nothing */
     }
@@ -71,7 +54,21 @@ object Main {
     }
   }
 
-  def generateRepetition(rep: Repeat, caseClassElements: mutable.HashMap[String, String]): Unit = {
+  def printTraits(traits: mutable.Set[String]): Unit = {
+    for (traitName <- traits) {
+      print(f"sealed trait $traitName\n\n")
+    }
+  }
+
+  def toCamelCase(string: String): String = {
+    Character.toLowerCase(string.charAt(0)) + string.substring(1)
+  }
+
+  def toPascalCase(string: String): String = {
+    Character.toUpperCase(string.charAt(0)) + string.substring(1)
+  }
+
+  def generateRepetition(rep: Repeat, caseClassElements: mutable.Map[String, String]): Unit = {
     for (element <- rep.prod) {
       element match {
         case nonTerminal: NonTerminal =>
@@ -88,7 +85,7 @@ object Main {
     }
   }
 
-  def generateOptional(optional: Optional, caseClassElements: mutable.HashMap[String, String]): Unit = {
+  def generateOptional(optional: Optional, caseClassElements: mutable.Map[String, String]): Unit = {
     for (element <- optional.prod) {
       element match {
         case nonTerminal: NonTerminal =>
@@ -104,53 +101,38 @@ object Main {
     }
   }
 
-  def printTraits(traits: mutable.Set[String], printWriter: PrintWriter): Unit = {
-    for (traitName <- traits) {
-      printWriter.write(f"sealed trait $traitName\n\n")
-    }
-  }
-
-
-  def printCaseObjects(caseObjectExtend: mutable.HashMap[String, Set[String]], printWriter: PrintWriter): Unit = {
-    for ((key, value) <- caseObjectExtend) {
-      printWriter.write(f"case object $key extends ${value.mkString(" with ")}\n\n")
-    }
-  }
-
-  def printCaseClasses(nonTerminal: Declaration, extend: mutable.HashMap[String, Set[String]], printWriter: PrintWriter): Unit = {
-    val productions = nonTerminal.productions
-    containsOnlyNonTerminals(productions) match {
+  def printCaseClasses(declaration: Declaration, extend: mutable.Map[String, Set[String]]): Unit = {
+    containsOnlyNonTerminals(declaration.productions) match {
       case Some(_) => /* Do nothing */
       case None =>
-        printWriter.write(f"case class ${nonTerminal.name}(\n")
-        val caseClassElements = mutable.HashMap[String, String]()
+        print(f"case class ${declaration.name}(\n")
+        val caseClassElements = mutable.Map[String, String]()
 
-        for (production <- productions) {
-          for (element <- production.exprs) {
-
-            element match {
-              case nonTerminal: NonTerminal => caseClassElements += nonTerminal.name -> nonTerminal.name
-              case rep: Repeat => generateRepetition(rep, caseClassElements)
-              case opt: Optional => generateOptional(opt, caseClassElements)
-              case _ => None
+        for (production <- declaration.productions) {
+          for (expr <- production.exprs) {
+            expr match {
+              case expr: NonTerminal => caseClassElements += expr.name -> expr.name
+              case expr: Repeat => generateRepetition(expr, caseClassElements)
+              case expr: Optional => generateOptional(expr, caseClassElements)
+              case _ => /* Do nothing */
             }
           }
         }
 
         for((key,value) <- caseClassElements){
           if(key.equalsIgnoreCase("finally")){
-            printWriter.write(f"  $key: $value,\n")
+            print(f"  $key: $value,\n")
           }else{
-            printWriter.write(f"  ${toCamelCase(key)}: $value,\n")
+            print(f"  ${toCamelCase(key)}: $value,\n")
           }
         }
 
-        printWriter.write(")")
-        if (extend.getOrElse(nonTerminal.name, None) != None) {
-          printWriter.write(" extends ")
-          printWriter.write(extend(nonTerminal.name).mkString(" with "))
+        print(")")
+        if (extend.getOrElse(declaration.name, None) != None) {
+          print(" extends ")
+          print(extend(declaration.name).mkString(" with "))
         }
-        printWriter.write("\n\n")
+        print("\n\n")
     }
   }
 }
