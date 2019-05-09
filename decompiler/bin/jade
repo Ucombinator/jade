@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 
-: ${JADE_dir:="$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd -P)"}
+# Auto detect `JADE_dir` if it is not already set
+if [ -z "$JADE_dir" ]; then
+  # See https://stackoverflow.com/a/246128 or https://stackoverflow.com/questions/59895/get-the-source-directory-of-a-bash-script-from-within-the-script-itself/246128#246128
+  : ${JADE_source:="${BASH_SOURCE[0]}"}
+  while [ -h "$JADE_source" ]; do # resolve $JADE_source until the file is no longer a symlink
+    JADE_dir="$( cd -P "$( dirname "$JADE_source" )" >/dev/null 2>&1 && pwd )"
+    JADE_source="$(readlink "$JADE_source")"
+    [[ $JADE_source != /* ]] && JADE_source="$JADE_dir/$JADE_source" # if $JADE_source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  done
+  JADE_dir="$( cd -P "$( dirname "$JADE_source" )/.." >/dev/null 2>&1 && pwd )"
+fi
+
 : ${JADE_jar:="$JADE_dir/lib/jade/jade.jar"}
 : ${JADE_java:="java"}
 : ${JADE_java_opts:=""}
