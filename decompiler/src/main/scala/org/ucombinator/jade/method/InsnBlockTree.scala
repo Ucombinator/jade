@@ -38,7 +38,7 @@ final class InsnBlockTree(className: String, method: MethodNode) {
   private val insnIndexPairs: List[(AbstractInsnNode, Int)] = method.instructions.toArray.zipWithIndex.toList
 
   private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, Edge] =
-    ControlFlowGraph.create(className, method).graph
+    ControlFlowGraph(className, method).graph
 
   private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, Edge] = {
     val result = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])

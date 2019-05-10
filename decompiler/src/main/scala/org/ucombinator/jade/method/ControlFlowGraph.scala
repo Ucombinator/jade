@@ -16,8 +16,7 @@ case class ControlFlowGraph(
   frames: Array[Frame[BasicValue]])
 
 case object ControlFlowGraph {
-//  type t = DirectedPseudograph[AbstractInsnNode, Edge] // TODO: lift into package
-  def create(owner: String, method: MethodNode): ControlFlowGraph = {
+  def apply(owner: String, method: MethodNode): ControlFlowGraph = {
     val edges = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
     for (i <- method.instructions.toArray) {
       edges.addVertex(i)

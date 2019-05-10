@@ -5,7 +5,7 @@ import java.nio.file.{Files, Paths}
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.AccessFlag
-import org.ucombinator.jade.method.IdentifierAnalyzer
+import org.ucombinator.jade.method.Identifiers
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 
 import scala.collection.mutable
@@ -61,19 +61,31 @@ object Main {
     println(methodsCode.mkString("\n"))
 
     for (method <- methods) {
+      println("!!!!!!!!!!!!")
       println(f"method: ${method.name} ${method.signature} ${method.desc}")
       println("**** ControlFlowGraph ****")
-      val cfg = ControlFlowGraph.create(fileName, method)
+      val cfg = ControlFlowGraph(fileName, method)
       for (v <- cfg.graph.vertexSet().asScala) {
-        print(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: ")
-        v match {
-          case v: JumpInsnNode => println(f"$v ${method.instructions.indexOf(v.label)} ${v.label.getLabel}")
-          case v: LabelNode => println(f"$v ${v.getLabel}")
-          case _ => println(f"$v")
-        }
+        println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
       }
       println("**** Identifiers ****")
-      new IdentifierAnalyzer(fileName, method, cfg)
+      val ids = Identifiers(fileName, method, cfg)
+
+      println("frames: " + ids.frames.length)
+      for (i <- 0 until method.instructions.size) {
+        println(f"frame($i): ${ids.frames(i)}")
+      }
+
+      println("args")
+      for (i <- 0 until method.instructions.size) {
+        val insn = method.instructions.get(i)
+        println(f"args(${i}): ${insn.getOpcode} ${ids.instructionArguments.get(insn)}")
+      }
+
+      println("ssa")
+      for ((key, value) <- ids.ssaMap) {
+        println(s"ssa: $key -> $value")
+      }
     }
 
     println("\n}")
