@@ -29,9 +29,9 @@ case object EmptyValue                                                          
 
 class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
   var copyVersion: Int = 0 // For `copyOperation`
-  var insnIndex: Int = -1 // For `merge`
+  var sourceInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, List[Identifier]]
-  var ssaMap = Map.empty[Identifier, Set[(Int, Identifier)]]
+  var ssaMap = Map.empty[Identifier, Set[(AbstractInsnNode, Identifier)]]
 
   /**
    * Creates a new value that represents the given type.
@@ -269,7 +269,7 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   override def merge(value1: Identifier, value2: Identifier): Identifier = {
     if (value1.isInstanceOf[Phi]) {
-      val entry = (this.insnIndex, value2)
+      val entry = (this.sourceInsn, value2)
       val ids = this.ssaMap.getOrElse(value1, Set.empty)
       this.ssaMap += (value1 -> (ids + entry))
       value1
@@ -317,7 +317,7 @@ class IdentifierAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter:
 case class Identifiers(
   frames: Array[Frame[Identifier]],
   instructionArguments: Map[AbstractInsnNode, List[Identifier]],
-  ssaMap: Map[Identifier, Set[(Int, Identifier)]])
+  ssaMap: Map[Identifier, Set[(AbstractInsnNode, Identifier)]])
 
 case object Identifiers {
   val basicInterpreter = new BasicInterpreter
@@ -327,9 +327,10 @@ case object Identifiers {
     val oldInstructions = method.instructions
     method.instructions = new InsnList {
       override def get(index: Int): AbstractInsnNode = {
-        interpreter.insnIndex = index
+        val insn = super.get(index)
         interpreter.copyVersion = 0
-        super.get(index)
+        interpreter.sourceInsn = insn
+        insn
       }
     }
 
