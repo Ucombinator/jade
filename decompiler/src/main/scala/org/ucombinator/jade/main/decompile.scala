@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.AccessFlag
 import org.ucombinator.jade.method.IdentifierAnalyzer
+import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
@@ -13,12 +14,10 @@ import scala.collection.JavaConverters._
 object Main {
   def main(fileName: String): Unit = {
     require(fileName != null, "the given class file name is actually `null`!")
-    val cn = new ClassNode
-    // TODO: It seems in my test case the given names are only the class in Java standard library like
-    // TODO (CONTINUE): "java.lang.Runnable" and "java.util.HashMap"
-    // TODO (CONTINUE): try other cases later
 
     val byteArray = Files.readAllBytes(Paths.get(fileName)) //Full path class name
+
+    val cn = new ClassNode
     val cr = new ClassReader(byteArray)
 
     cr.accept(cn, 0)
@@ -62,8 +61,19 @@ object Main {
     println(methodsCode.mkString("\n"))
 
     for (method <- methods) {
-      println(method.name)
-      new IdentifierAnalyzer(fileName, method)
+      println(f"method: ${method.name} ${method.signature} ${method.desc}")
+      println("**** ControlFlowGraph ****")
+      val cfg = ControlFlowGraph.create(fileName, method)
+      for (v <- cfg.graph.vertexSet().asScala) {
+        print(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: ")
+        v match {
+          case v: JumpInsnNode => println(f"$v ${method.instructions.indexOf(v.label)} ${v.label.getLabel}")
+          case v: LabelNode => println(f"$v ${v.getLabel}")
+          case _ => println(f"$v")
+        }
+      }
+      println("**** Identifiers ****")
+      new IdentifierAnalyzer(fileName, method, cfg)
     }
 
     println("\n}")

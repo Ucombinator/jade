@@ -1,15 +1,19 @@
 package org.ucombinator.jade.method
 
-import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
+import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 case class Identifier(id: Int, copyVersion: Int, basicValue: BasicValue) extends Value {
   override def getSize: Int = basicValue.getSize
+}
+
+class Phi(_id: Int, _copyVersion: Int, _basicValue: BasicValue) extends Identifier(_id, _copyVersion, _basicValue) {
+  override def toString(): String = "Phi" + super.toString
 }
 
 class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
@@ -30,12 +34,13 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
         Identifier(this.identifierCount - 1, 0, basicValue)
       }
 
+/*
     if (this.identifierAnalyzer.tryCatchBlockNode != null) {
       // It is the caught exception
       this.identifierAnalyzer.caughtExceptionIdentifiers += this.identifierAnalyzer.tryCatchBlockNode.handler -> id
       this.identifierAnalyzer.tryCatchBlockNode = null
     }
-
+*/
     id
   }
 
@@ -54,8 +59,66 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     *         value must be equal to the size of the given type.
     */
   override def newValue(typ: Type): Identifier = {
-    val basicValue = this.basicInterpreter.newValue(typ)
-    this.identifier(basicValue)
+    // TODO: ???
+    this.identifier(this.basicInterpreter.newValue(typ))
+  }
+
+  /**
+    * Creates a new value that represents the given parameter type. This method is called to
+    * initialize the value of a local corresponding to a method parameter in a frame.
+    *
+    * <p>By default, calls <code>newValue(type)</code>.
+    *
+    * @param isInstanceMethod { @literal true} if the method is non-static.
+    * @param local the local variable index.
+    * @param type  a primitive or reference type.
+    * @return a value that represents the given type. The size of the returned value must be equal to
+    *         the size of the given type.
+    */
+  override def newParameterValue(isInstanceMethod: Boolean, local: Int, `type`: Type): Identifier = newValue(`type`)
+
+  /**
+    * Creates a new value that represents the given return type. This method is called to initialize
+    * the return type value of a frame.
+    *
+    * <p>By default, calls <code>newValue(type)</code>.
+    *
+    * @param type a primitive or reference type.
+    * @return a value that represents the given type. The size of the returned value must be equal to
+    *         the size of the given type.
+    */
+  override def newReturnTypeValue(`type`: Type): Identifier = newValue(`type`)
+
+  /**
+    * Creates a new uninitialized value for a local variable. This method is called to initialize the
+    * value of a local that does not correspond to a method parameter, and to reset one half of a
+    * size-2 value when the other half is assigned a size-1 value.
+    *
+    * <p>By default, calls <code>newValue(null)</code>.
+    *
+    * @param local the local variable index.
+    * @return a value representing an uninitialized value. The size of the returned value must be
+    *         equal to 1.
+    */
+  override def newEmptyValue(local: Int): Identifier = {
+    Identifier(-1, 0, this.basicInterpreter.newValue(null))
+  }
+
+  /**
+    * Creates a new value that represents the given exception type. This method is called to
+    * initialize the exception value on the call stack at the entry of an exception handler.
+    *
+    * <p>By default, calls <code>newValue(exceptionType)</code>.
+    *
+    * @param tryCatchBlockNode the exception handler.
+    * @param handlerFrame      the exception handler frame.
+    * @param exceptionType     the exception type handled by this handler.
+    * @return a value that represents the given { @code exceptionType}. The size of the returned value
+    *                                                   must be equal to 1.
+    */
+  override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[Identifier], exceptionType: Type): Identifier = {
+    val basicValue = this.basicInterpreter.newExceptionValue(tryCatchBlockNode, handlerFrame.asInstanceOf[Frame[BasicValue]], exceptionType)
+    this.identifier(tryCatchBlockNode.handler, basicValue)
   }
 
   /** Interprets a bytecode instruction without arguments. This method is
@@ -93,11 +156,9 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     */
   override def copyOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
     val basicValue = this.basicInterpreter.copyOperation(insn, value.basicValue)
-    // TODO
+    // TODO: copyVersion = value.insn << 1 + 1 (because of the DUP instruction)
     this.identifierAnalyzer.copyVersion += 1
     val result = Identifier(this.identifierAnalyzer.method.instructions.indexOf(insn), this.identifierAnalyzer.copyVersion, basicValue)
-    //    println(s"Before copy: $value")
-    //    println(s"After copy: $result")
     result
   }
 
@@ -149,7 +210,6 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     this.identifierAnalyzer.instructionArguments += insn -> List(value1, value2)
     this.identifier(insn, basicValue)
   }
-
 
   /** Interprets a bytecode instruction with three arguments. This method is
     * called for the following opcodes:
@@ -210,7 +270,7 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     */
   override def returnOperation(insn: AbstractInsnNode, value: Identifier, expected: Identifier): Unit = {
     // TODO: noop since already is a unary operation
-    this.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
+    //this.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
     this.identifierAnalyzer.instructionArguments += insn -> List(value)
   }
 
@@ -228,28 +288,19 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
     *         this method <i>must</i> return <tt>v</tt>.
     */
   override def merge(v: Identifier, w: Identifier): Identifier = {
-    val basicValue = this.basicInterpreter.merge(v.basicValue, w.basicValue)
-
-    //    println(s"v: $v, w: $w")
-
-    if (v == w) {
-      //      println(s"== branch: $v")
+    if (v.isInstanceOf[Phi]) {
+      val entry = (this.identifierAnalyzer.insnIndex, w)
+      val ids = this.identifierAnalyzer.ssaMap.getOrElse(v, Set.empty)
+      this.identifierAnalyzer.ssaMap += (v -> (ids + entry))
       v
-    }
-    else if (this.identifierAnalyzer.ssaMap.getOrElse(v, Set.empty).contains(w)) {
-      //      println(s"contains w branch: $v")
-      v
-    }
-    else if (this.identifierAnalyzer.ssaMap.getOrElse(w, Set.empty).contains(v)) {
-      //      println(s"contains v branch: $w")
+    } else if (v.id == -1) {
       w
-    }
-    else {
-      val result = this.identifier(basicValue)
-      val ids = this.identifierAnalyzer.ssaMap.getOrElse(result, Set.empty) + (v, w)
-      this.identifierAnalyzer.ssaMap += (result -> ids)
-      //      println(s"new identifier branch: $result")
-      result
+    } else if (w.id == -1) {
+      v
+    } else if (v == w) {
+      v
+    } else {
+      throw new Exception(f"unexpected merge: v: $v w: $w")
     }
   }
 }
@@ -257,67 +308,82 @@ class IdentifierInterpreter(identifierAnalyzer: IdentifierAnalyzer)
 // NOOP, GOTO, RET, RETURN
 // JSR (exception?)
 
-class IdentifierAnalyzer(val owner: String, val method: MethodNode) {
+class IdentifierAnalyzer(val owner: String, val method: MethodNode, val cfg: ControlFlowGraph) {
   var copyVersion: Int = 0
+  var insnIndex: Int = -1
 
-  var tryCatchBlockNode: TryCatchBlockNode = _
-  var caughtExceptionIdentifiers = immutable.Map.empty[AbstractInsnNode, Identifier]
+  val oldInstructions = method.instructions
+  method.instructions = new InsnList {
+    override def get(index: Int): AbstractInsnNode = {
+      insnIndex = index
+      copyVersion = 0
+      super.get(index)
+    }
+  }
+
+  for (i <- oldInstructions.toArray) {
+    method.instructions.add(i)
+  }
+
+//  var tryCatchBlockNode: TryCatchBlockNode = _
+//  var caughtExceptionIdentifiers = immutable.Map.empty[AbstractInsnNode, Identifier]
   var instructionArguments = immutable.Map.empty[AbstractInsnNode, List[Identifier]]
-  var ssaMap = immutable.Map.empty[Identifier, Set[Identifier]]
-
-  val edges = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
+  var ssaMap = immutable.Map.empty[Identifier, Set[(Int, Identifier)]]
   val interpreter = new IdentifierInterpreter(this)
   val analyzer = new IdentifierAnalyzerImpl(this)
+
   val frames: Array[Frame[Identifier]] = analyzer.analyze(owner, method)
 
-  println(f"method: ${method.signature} ${method.desc}")
   println("frames: " + frames.length)
-  frames.foreach(f => println(f"frame: ${f}"))
+  for (i <- 0 until method.instructions.size) {
+    println(f"frame($i): ${frames(i)}") //frames.foreach(f => println(f"frame: ${f}"))
+  }
 
+  println("args")
   for {i <- 0 until method.instructions.size
        insn = method.instructions.get(i)} {
+       insn.getType
     println(f"args(${i}): ${insn.getOpcode} ${instructionArguments.get(insn)}")
   }
 
-  for ((key, value) <- caughtExceptionIdentifiers) {
-    println(f"handler: $key -> $value")
-  }
+//  println("handlers")
+//  for ((key, value) <- caughtExceptionIdentifiers) {
+//    println(f"handler: $key -> $value")
+//  }
 
+  println("ssa")
   for ((key, value) <- ssaMap) {
-    println(s"$key -> $value")
+    println(s"ssa: $key -> $value")
   }
-
-}
-
-final case class Edge(val source: AbstractInsnNode, val target: AbstractInsnNode, val isException: Boolean) {
-  override def toString = f"Edge($source, $target, $isException)"
+  println("!!!!!!!!!!!!")
 }
 
 class IdentifierAnalyzerImpl(identifierAnalyzer: IdentifierAnalyzer)
   extends Analyzer[Identifier](identifierAnalyzer.interpreter) {
 
-  override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
-    this.identifierAnalyzer.copyVersion = 0
-    val source = this.identifierAnalyzer.method.instructions.get(insn)
-    val target = this.identifierAnalyzer.method.instructions.get(successor)
-    this.identifierAnalyzer.edges.addVertex(source)
-    this.identifierAnalyzer.edges.addVertex(target)
-    this.identifierAnalyzer.edges.addEdge(source, target, new Edge(source, target, false))
-    println(f"newControlFlowEdge: ${insn} -> ${successor}")
-  }
+  override protected def newFrame(numLocals: Int, numStack: Int): Frame[Identifier] = {
+    // We override this method because it run near the start of `Analyzer.analyze`
+    // but after the `Analyzer.frames` array is created.
+    // We use this method to initialize the frames at join points
+    for (i <- this.identifierAnalyzer.method.instructions.toArray) {
+      val insnIndex = this.identifierAnalyzer.method.instructions.indexOf(i)
+      // If i is a join point
+      if (this.identifierAnalyzer.cfg.graph.incomingEdgesOf(i).size() > 1) {
+        val frame = this.identifierAnalyzer.cfg.frames(insnIndex)
+        // TODO: rename newFrame
+        val newFrame = new Frame[Identifier](frame.getLocals, frame.getStackSize)
+        // Note that we leave Frame.returnValue at null
+        for (i <- 0 until frame.getLocals) {
+          newFrame.setLocal(i, new Phi(insnIndex, i, frame.getLocal(i)))
+        }
+        for (i <- 0 until frame.getStackSize) {
+          newFrame.push(new Phi(insnIndex, i + newFrame.getLocals, frame.getStack(i))) // TODO: note that setStack is invalid if haven't pushed
+        }
+        this.getFrames()(insnIndex) = newFrame
+      }
+    }
 
-  override protected def newControlFlowExceptionEdge(insn: Int, successor: Int): Boolean = ??? // Should never be called
-
-  override protected def newControlFlowExceptionEdge(insn: Int, successor: TryCatchBlockNode): Boolean = {
-    this.identifierAnalyzer.tryCatchBlockNode = successor
-
-    val source = this.identifierAnalyzer.method.instructions.get(insn)
-    val target = this.identifierAnalyzer.method.instructions.get(this.identifierAnalyzer.method.instructions.indexOf(successor.handler))
-    this.identifierAnalyzer.edges.addVertex(source)
-    this.identifierAnalyzer.edges.addVertex(target)
-    this.identifierAnalyzer.edges.addEdge(source, target, new Edge(source, target, false))
-    println(f"newControlFlowEdge: ${insn} -> ${successor}")
-    true // the edge must always be considered by the analyzer
+    super.newFrame(numLocals, numStack)
   }
 }
 
