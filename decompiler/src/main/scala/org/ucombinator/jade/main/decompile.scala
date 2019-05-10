@@ -76,7 +76,7 @@ object Main {
         println(f"frame($i): ${ids.frames(i)}")
       }
 
-      println("args")
+      println("results and arguments")
       for (i <- 0 until method.instructions.size) {
         val insn = method.instructions.get(i)
         println(f"args(${i}): ${insn.getOpcode} ${ids.instructionArguments.get(insn)}")

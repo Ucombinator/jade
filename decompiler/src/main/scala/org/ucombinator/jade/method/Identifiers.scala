@@ -29,9 +29,15 @@ case object EmptyValue                                                          
 
 class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
   var copyVersion: Int = 0 // For `copyOperation`
-  var sourceInsn: AbstractInsnNode = _ // For `merge`
-  var instructionArguments = Map.empty[AbstractInsnNode, List[Identifier]]
+  var originInsn: AbstractInsnNode = _ // For `merge`
+  var instructionArguments = Map.empty[AbstractInsnNode, (Identifier, List[Identifier])]
   var ssaMap = Map.empty[Identifier, Set[(AbstractInsnNode, Identifier)]]
+
+  def record(insn: AbstractInsnNode, args: List[Identifier], ret: Identifier): Identifier = {
+    val x = (ret, args)
+    this.instructionArguments += insn -> x
+    ret
+  }
 
   /**
    * Creates a new value that represents the given type.
@@ -131,8 +137,7 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   @throws[AnalyzerException]
   override def newOperation(insn: AbstractInsnNode): Identifier = {
-    this.instructionArguments += insn -> List.empty
-    InstructionIdentifier(insn, Identifiers.basicInterpreter.newOperation(insn))
+    record(insn, List(), InstructionIdentifier(insn, Identifiers.basicInterpreter.newOperation(insn)))
   }
 
 
@@ -151,9 +156,8 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   @throws[AnalyzerException]
   override def copyOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
-    this.instructionArguments += insn -> List(value)
     this.copyVersion += 1
-    CopyIdentifier(insn, this.copyVersion, Identifiers.basicInterpreter.copyOperation(insn, value.basicValue))
+    record(insn, List(value), CopyIdentifier(insn, this.copyVersion, Identifiers.basicInterpreter.copyOperation(insn, value.basicValue)))
   }
 
   /**
@@ -172,8 +176,7 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   @throws[AnalyzerException]
   override def unaryOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
-    this.instructionArguments += insn -> List(value)
-    InstructionIdentifier(insn, Identifiers.basicInterpreter.unaryOperation(insn, value.basicValue))
+    record(insn, List(value), InstructionIdentifier(insn, Identifiers.basicInterpreter.unaryOperation(insn, value.basicValue)))
   }
 
   /**
@@ -194,8 +197,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   @throws[AnalyzerException]
   override def binaryOperation(insn: AbstractInsnNode, value1: Identifier, value2: Identifier): Identifier = {
-    this.instructionArguments += insn -> List(value1, value2)
-    InstructionIdentifier(insn, Identifiers.basicInterpreter.binaryOperation(insn, value1.basicValue, value2.basicValue))
+    record(insn, List(value1, value2),
+      InstructionIdentifier(insn,
+        Identifiers.basicInterpreter.binaryOperation(
+          insn, value1.basicValue, value2.basicValue)))
   }
 
   /**
@@ -213,10 +218,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   @throws[AnalyzerException]
   override def ternaryOperation(insn: AbstractInsnNode, value1: Identifier, value2: Identifier, value3: Identifier): Identifier = {
-    this.instructionArguments += insn -> List(value1, value2, value3)
-    InstructionIdentifier(insn,
-      Identifiers.basicInterpreter.ternaryOperation(
-        insn, value1.basicValue, value2.basicValue, value3.basicValue))
+    record(insn, List(value1, value2, value3),
+      InstructionIdentifier(insn,
+        Identifiers.basicInterpreter.ternaryOperation(
+          insn, value1.basicValue, value2.basicValue, value3.basicValue)))
   }
 
   /**
@@ -233,10 +238,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   @throws[AnalyzerException]
   override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: Identifier]): Identifier = {
-    this.instructionArguments += insn -> values.asScala.toList
-    InstructionIdentifier(insn,
-      Identifiers.basicInterpreter.naryOperation(
-        insn, values.asScala.map(_.basicValue).asJava))
+    record(insn, values.asScala.toList,
+      InstructionIdentifier(insn,
+        Identifiers.basicInterpreter.naryOperation(
+          insn, values.asScala.map(_.basicValue).asJava)))
   }
 
   /**
@@ -253,7 +258,7 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
   override def returnOperation(insn: AbstractInsnNode, value: Identifier, expected: Identifier): Unit = {
     // Note that `unaryOperation` is also called whenever `returnOperation` is called
     Identifiers.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
-    this.instructionArguments += insn -> List(value)
+    record(insn, List(value), null)
   }
 
   /**
@@ -269,7 +274,7 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    */
   override def merge(value1: Identifier, value2: Identifier): Identifier = {
     if (value1.isInstanceOf[Phi]) {
-      val entry = (this.sourceInsn, value2)
+      val entry = (this.originInsn, value2)
       val ids = this.ssaMap.getOrElse(value1, Set.empty)
       this.ssaMap += (value1 -> (ids + entry))
       value1
@@ -316,7 +321,7 @@ class IdentifierAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter:
 
 case class Identifiers(
   frames: Array[Frame[Identifier]],
-  instructionArguments: Map[AbstractInsnNode, List[Identifier]],
+  instructionArguments: Map[AbstractInsnNode, (Identifier, List[Identifier])],
   ssaMap: Map[Identifier, Set[(AbstractInsnNode, Identifier)]])
 
 case object Identifiers {
@@ -329,7 +334,7 @@ case object Identifiers {
       override def get(index: Int): AbstractInsnNode = {
         val insn = super.get(index)
         interpreter.copyVersion = 0
-        interpreter.sourceInsn = insn
+        interpreter.originInsn = insn
         insn
       }
     }
