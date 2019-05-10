@@ -5,8 +5,8 @@ import java.nio.file.{Files, Paths}
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.AccessFlag
-import org.ucombinator.jade.method.Identifiers
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
+import org.ucombinator.jade.method.ssa.SSA
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
@@ -68,8 +68,8 @@ object Main {
       for (v <- cfg.graph.vertexSet().asScala) {
         println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
       }
-      println("**** Identifiers ****")
-      val ids = Identifiers(fileName, method, cfg)
+      println("**** SSA ****")
+      val ids = SSA(fileName, method, cfg)
 
       println("frames: " + ids.frames.length)
       for (i <- 0 until method.instructions.size) {

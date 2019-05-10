@@ -1,4 +1,4 @@
-package org.ucombinator.jade.method
+package org.ucombinator.jade.method.ssa
 
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
@@ -8,32 +8,28 @@ import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 
 import scala.collection.JavaConverters._
 
-// TODO: put in package
-// TODO: rename "identifier" to "variables/vars" or "ssa" ?
-// TODO: AbstractInsnNode vs integer index?
-
-sealed trait Identifier extends Value {
+sealed trait Var extends Value {
   def basicValue: BasicValue
   override def getSize: Int = basicValue.getSize
 }
 
-case class ParameterIdentifier  (                        local: Int,   basicValue: BasicValue) extends Identifier
-case class ReturnIdentifier     (                                      basicValue: BasicValue) extends Identifier
-case class CopyIdentifier       (insn: AbstractInsnNode, version: Int, basicValue: BasicValue) extends Identifier
-case class InstructionIdentifier(insn: AbstractInsnNode,               basicValue: BasicValue) extends Identifier
-case class ExceptionIdentifier  (insn: AbstractInsnNode,               basicValue: BasicValue) extends Identifier
-case class Phi                  (insn: AbstractInsnNode, index: Int,   basicValue: BasicValue) extends Identifier
-case object EmptyValue                                                                         extends Identifier {
+case class ParameterVar  (                        local: Int,   basicValue: BasicValue) extends Var
+case class ReturnVar     (                                      basicValue: BasicValue) extends Var
+case class CopyVar       (insn: AbstractInsnNode, version: Int, basicValue: BasicValue) extends Var
+case class InstructionVar(insn: AbstractInsnNode,               basicValue: BasicValue) extends Var
+case class ExceptionVar  (insn: AbstractInsnNode,               basicValue: BasicValue) extends Var
+case class Phi           (insn: AbstractInsnNode, index: Int,   basicValue: BasicValue) extends Var
+case object EmptyVar                                                                    extends Var {
   override val basicValue: BasicValue = BasicValue.UNINITIALIZED_VALUE
 }
 
-class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
+class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
   var copyVersion: Int = 0 // For `copyOperation`
   var originInsn: AbstractInsnNode = _ // For `merge`
-  var instructionArguments = Map.empty[AbstractInsnNode, (Identifier, List[Identifier])]
-  var ssaMap = Map.empty[Identifier, Set[(AbstractInsnNode, Identifier)]]
+  var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]
+  var ssaMap = Map.empty[Var, Set[(AbstractInsnNode, Var)]]
 
-  def record(insn: AbstractInsnNode, args: List[Identifier], ret: Identifier): Identifier = {
+  def record(insn: AbstractInsnNode, args: List[Var], ret: Var): Var = {
     val x = (ret, args)
     this.instructionArguments += insn -> x
     ret
@@ -56,7 +52,7 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @return a value that represents the given type. The size of the returned value must be equal to
    *     the size of the given type.
    */
-  override def newValue(`type`: Type): Identifier = ??? // Should never be called
+  override def newValue(`type`: Type): Var = ??? // Should never be called
 
   /**
    * Creates a new value that represents the given parameter type. This method is called to
@@ -70,8 +66,8 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @return a value that represents the given type. The size of the returned value must be equal to
    *     the size of the given type.
    */
-  override def newParameterValue(isInstanceMethod: Boolean, local: Int, `type`: Type): Identifier = {
-    ParameterIdentifier(local, Identifiers.basicInterpreter.newValue(`type`))
+  override def newParameterValue(isInstanceMethod: Boolean, local: Int, `type`: Type): Var = {
+    ParameterVar(local, SSA.basicInterpreter.newValue(`type`))
   }
 
   /**
@@ -84,10 +80,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @return a value that represents the given type. The size of the returned value must be equal to
    *         the size of the given type.
    */
-  override def newReturnTypeValue(`type`: Type): Identifier = {
+  override def newReturnTypeValue(`type`: Type): Var = {
     // ASM requires that we return null when `type` is Type.VOID_TYPE
     if (`type` == Type.VOID_TYPE) { null }
-    else { ReturnIdentifier(Identifiers.basicInterpreter.newValue(`type`)) }
+    else { ReturnVar(SSA.basicInterpreter.newValue(`type`)) }
   }
 
   /**
@@ -101,8 +97,8 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @return a value representing an uninitialized value. The size of the returned value must be
    *     equal to 1.
    */
-  override def newEmptyValue(local: Int): Identifier = {
-    EmptyValue
+  override def newEmptyValue(local: Int): Var = {
+    EmptyVar
   }
 
   /**
@@ -117,9 +113,9 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @return a value that represents the given { @code exceptionType}. The size of the returned value
    *     must be equal to 1.
    */
-  override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[Identifier], exceptionType: Type): Identifier = {
-    ExceptionIdentifier(tryCatchBlockNode.handler,
-      Identifiers.basicInterpreter.newExceptionValue(
+  override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[Var], exceptionType: Type): Var = {
+    ExceptionVar(tryCatchBlockNode.handler,
+      SSA.basicInterpreter.newExceptionValue(
         tryCatchBlockNode, handlerFrame.asInstanceOf[Frame[BasicValue]], exceptionType))
   }
 
@@ -136,8 +132,8 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def newOperation(insn: AbstractInsnNode): Identifier = {
-    record(insn, List(), InstructionIdentifier(insn, Identifiers.basicInterpreter.newOperation(insn)))
+  override def newOperation(insn: AbstractInsnNode): Var = {
+    record(insn, List(), InstructionVar(insn, SSA.basicInterpreter.newOperation(insn)))
   }
 
 
@@ -155,9 +151,9 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def copyOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
+  override def copyOperation(insn: AbstractInsnNode, value: Var): Var = {
     this.copyVersion += 1
-    record(insn, List(value), CopyIdentifier(insn, this.copyVersion, Identifiers.basicInterpreter.copyOperation(insn, value.basicValue)))
+    record(insn, List(value), CopyVar(insn, this.copyVersion, SSA.basicInterpreter.copyOperation(insn, value.basicValue)))
   }
 
   /**
@@ -175,8 +171,8 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def unaryOperation(insn: AbstractInsnNode, value: Identifier): Identifier = {
-    record(insn, List(value), InstructionIdentifier(insn, Identifiers.basicInterpreter.unaryOperation(insn, value.basicValue)))
+  override def unaryOperation(insn: AbstractInsnNode, value: Var): Var = {
+    record(insn, List(value), InstructionVar(insn, SSA.basicInterpreter.unaryOperation(insn, value.basicValue)))
   }
 
   /**
@@ -196,10 +192,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def binaryOperation(insn: AbstractInsnNode, value1: Identifier, value2: Identifier): Identifier = {
+  override def binaryOperation(insn: AbstractInsnNode, value1: Var, value2: Var): Var = {
     record(insn, List(value1, value2),
-      InstructionIdentifier(insn,
-        Identifiers.basicInterpreter.binaryOperation(
+      InstructionVar(insn,
+        SSA.basicInterpreter.binaryOperation(
           insn, value1.basicValue, value2.basicValue)))
   }
 
@@ -217,10 +213,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def ternaryOperation(insn: AbstractInsnNode, value1: Identifier, value2: Identifier, value3: Identifier): Identifier = {
+  override def ternaryOperation(insn: AbstractInsnNode, value1: Var, value2: Var, value3: Var): Var = {
     record(insn, List(value1, value2, value3),
-      InstructionIdentifier(insn,
-        Identifiers.basicInterpreter.ternaryOperation(
+      InstructionVar(insn,
+        SSA.basicInterpreter.ternaryOperation(
           insn, value1.basicValue, value2.basicValue, value3.basicValue)))
   }
 
@@ -237,10 +233,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: Identifier]): Identifier = {
+  override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: Var]): Var = {
     record(insn, values.asScala.toList,
-      InstructionIdentifier(insn,
-        Identifiers.basicInterpreter.naryOperation(
+      InstructionVar(insn,
+        SSA.basicInterpreter.naryOperation(
           insn, values.asScala.map(_.basicValue).asJava)))
   }
 
@@ -255,9 +251,9 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @throws AnalyzerException if an error occurred during the interpretation.
    */
   @throws[AnalyzerException]
-  override def returnOperation(insn: AbstractInsnNode, value: Identifier, expected: Identifier): Unit = {
+  override def returnOperation(insn: AbstractInsnNode, value: Var, expected: Var): Unit = {
     // Note that `unaryOperation` is also called whenever `returnOperation` is called
-    Identifiers.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
+    SSA.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
     record(insn, List(value), null)
   }
 
@@ -272,15 +268,15 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
    * @return the merged value. If the merged value is equal to {@code value1}, this method
    *     <i>must</i> return { @code value1}.
    */
-  override def merge(value1: Identifier, value2: Identifier): Identifier = {
+  override def merge(value1: Var, value2: Var): Var = {
     if (value1.isInstanceOf[Phi]) {
       val entry = (this.originInsn, value2)
       val ids = this.ssaMap.getOrElse(value1, Set.empty)
       this.ssaMap += (value1 -> (ids + entry))
       value1
-    } else if (value1 == EmptyValue) {
+    } else if (value1 == EmptyVar) {
       value2
-    } else if (value2 == EmptyValue) {
+    } else if (value2 == EmptyVar) {
       value1
     } else if (value1 == value2) {
       value1
@@ -290,10 +286,10 @@ class IdentifierInterpreter extends Interpreter[Identifier](Opcodes.ASM7) {
   }
 }
 
-class IdentifierAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interpreter[Identifier])
-  extends Analyzer[Identifier](interpreter) {
+class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interpreter[Var])
+  extends Analyzer[Var](interpreter) {
 
-  override protected def newFrame(numLocals: Int, numStack: Int): Frame[Identifier] = {
+  override protected def newFrame(numLocals: Int, numStack: Int): Frame[Var] = {
     // We override this method because it runs near the start of `Analyzer.analyze`
     // but after the `Analyzer.frames` array is created.
     // We use this method to initialize the frames at join points.
@@ -302,7 +298,7 @@ class IdentifierAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter:
       if (cfg.graph.incomingEdgesOf(insn).size() > 1) {
         // We are at a join point
         val frame = cfg.frames(insnIndex)
-        val newFrame = new Frame[Identifier](frame.getLocals, frame.getStackSize)
+        val newFrame = new Frame[Var](frame.getLocals, frame.getStackSize)
         // Note that we leave Frame.returnValue at null
         for (i <- 0 until frame.getLocals) {
           newFrame.setLocal(i, Phi(insn, i, frame.getLocal(i)))
@@ -319,15 +315,15 @@ class IdentifierAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter:
   }
 }
 
-case class Identifiers(
-  frames: Array[Frame[Identifier]],
-  instructionArguments: Map[AbstractInsnNode, (Identifier, List[Identifier])],
-  ssaMap: Map[Identifier, Set[(AbstractInsnNode, Identifier)]])
+case class SSA(
+  frames: Array[Frame[Var]],
+  instructionArguments: Map[AbstractInsnNode, (Var, List[Var])],
+  ssaMap: Map[Var, Set[(AbstractInsnNode, Var)]])
 
-case object Identifiers {
+case object SSA {
   val basicInterpreter = new BasicInterpreter
-  def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): Identifiers = {
-    val interpreter = new IdentifierInterpreter()
+  def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): SSA = {
+    val interpreter = new SSAInterpreter()
 
     val oldInstructions = method.instructions
     method.instructions = new InsnList {
@@ -343,8 +339,8 @@ case object Identifiers {
       method.instructions.add(i)
     }
 
-    val frames = new IdentifierAnalyzer(method, cfg, interpreter).analyze(owner, method)
+    val frames = new SSAAnalyzer(method, cfg, interpreter).analyze(owner, method)
 
-    Identifiers(frames, interpreter.instructionArguments, interpreter.ssaMap)
+    SSA(frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
 }
