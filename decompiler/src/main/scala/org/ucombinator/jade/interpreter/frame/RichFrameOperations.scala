@@ -1,6 +1,5 @@
 package org.ucombinator.jade.interpreter.frame
 
-import org.objectweb.asm.tree.analysis.Frame
 import org.ucombinator.jade.interpreter.ir.{Identifier, Value}
 
 import scala.annotation.tailrec

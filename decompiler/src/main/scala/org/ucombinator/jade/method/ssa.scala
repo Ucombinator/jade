@@ -281,7 +281,7 @@ class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
     } else if (value1 == value2) {
       value1
     } else {
-      throw new Exception(f"unexpected merge: v: $value1 w: $value2")
+      throw new Exception(f"unexpected merge: value1: $value1 value2: $value2")
     }
   }
 }
@@ -325,6 +325,7 @@ case object SSA {
   def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): SSA = {
     val interpreter = new SSAInterpreter()
 
+    // Hook into a method that is called whenever `analyze` starts working on a new instruction
     val oldInstructions = method.instructions
     method.instructions = new InsnList {
       override def get(index: Int): AbstractInsnNode = {

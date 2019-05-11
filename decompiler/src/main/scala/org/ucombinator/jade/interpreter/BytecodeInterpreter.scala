@@ -2,10 +2,10 @@ package org.ucombinator.jade.interpreter
 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.objectweb.asm.tree.analysis.{Frame, BasicValue => AsmBasicValue}
+import org.objectweb.asm.tree.analysis.{BasicValue => AsmBasicValue}
 import org.ucombinator.jade.interpreter.ir._
 import org.ucombinator.jade.classfile.descriptor.DescriptorParser
-import org.ucombinator.jade.interpreter.frame.RichFrameOperations
+import org.ucombinator.jade.interpreter.frame.{Frame, RichFrameOperations}
 import org.ucombinator.jade.util.Debug.printInsnNode
 
 import scala.annotation.tailrec
@@ -23,8 +23,8 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
   val localVariableMap: Map[Identifier, Value] =
     insnFramePairs.head match {
       case (_, frame) =>
-        (0 until frame.getLocals).map(frame.getLocal).
-          filter(_.basicValue != AsmBasicValue.UNINITIALIZED_VALUE).
+        frame.local.
+          filter(_.v.basicValue != AsmBasicValue.UNINITIALIZED_VALUE).
           map(id => id -> id).toMap
   }
 
@@ -65,8 +65,8 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
 
         /** Debug print - Start */
         printInsnNode(insn)
-        println(s"nLocals: ${frame.getLocals}")
-        println(s"nStack: ${frame.getStackSize}")
+        println(s"nLocals: ${frame.local.length}")
+        println(s"nStack: ${frame.stack.length}")
         println(s"frame: $frame")
         println("--------------------------------------------------------------------------")
         /** Debug print - End */
@@ -159,7 +159,7 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
 
           case  Opcodes.POP2 /* 88 */ => // POP2 is a little bit tricky, please check the JVMS!
             topStack(frame) match {
-              case Identifier(_, _, AsmBasicValue.LONG_VALUE) | Identifier(_, _, AsmBasicValue.DOUBLE_VALUE)
+              case Identifier(v) if v.basicValue == AsmBasicValue.LONG_VALUE || v.basicValue == AsmBasicValue.DOUBLE_VALUE
               =>
                 interp(leftInsns, stackMap, localVariableMap)
 
@@ -337,8 +337,8 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
           =>
             val value = getInvokeValue(insn.asInstanceOf[MethodInsnNode], frame, stackMap, localVariableMap)
             val isOnlyForSideEffect = {
-              val isEmptyStack = nextFrame.getStackSize == 0
-              val isDroppedValue = nextFrame.getStackSize == 1 &&
+              val isEmptyStack = nextFrame.stack.length == 0
+              val isDroppedValue = nextFrame.stack.length == 1 &&
                 (nextInsn.getOpcode == Opcodes.POP || nextInsn.getOpcode == Opcodes.POP2)
               // POP2 is a little bit tricky, please check the JVMS to understand this part!
               isEmptyStack && isDroppedValue

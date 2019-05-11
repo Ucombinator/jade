@@ -1,8 +1,6 @@
 package org.ucombinator.jade.interpreter.frame
 
-import org.objectweb.asm.tree.analysis.Frame
 import org.ucombinator.jade.interpreter.ir.Identifier
-
 
 /** Frame Operations:
   * 1. Local Variable Operations;
@@ -12,12 +10,12 @@ trait BasicFrameOperations {
   /** Local Variable */
   final def nthLocalVariable(frame: Frame[Identifier], index: Int): Identifier = {
     println(s"frame index: $index")
-    frame.getLocal(index)
+    frame.local(index)
   }
 
   /** Stack */
   final def nthStack(frame: Frame[Identifier])(index: Int): Identifier =
-    frame.getStack(frame.getStackSize - index - 1)
+    frame.stack(frame.stack.length - index - 1)
 
   final def topNStacks(frame: Frame[Identifier], n: Int): List[Identifier] =
     (0 until n).map(nthStack(frame)).toList
