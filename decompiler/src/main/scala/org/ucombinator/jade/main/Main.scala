@@ -22,6 +22,8 @@ class Main(args: Seq[String]) extends ScallopConf(args = args) with JadeScallopC
   addSubcommand(DownloadGrammar)
   addSubcommand(ExtractGrammar)
   addSubcommand(JavaFileTypes)
+  addSubcommand(ExtractAsmTypes)
+  addSubcommand(ExtractAsmOpcodes)
   verify()
 }
 
@@ -44,6 +46,18 @@ object DownloadGrammar extends JadeSubcommand("download-grammar") {
 object ExtractGrammar extends JadeSubcommand("extract-grammar") {
   override def run(): Unit = {
     extractGrammar.Main.main()
+  }
+}
+
+object ExtractAsmTypes extends JadeSubcommand("extract-asm-types") {
+  override def run(): Unit = {
+    extractAsmTypes.Main.main()
+  }
+}
+
+object ExtractAsmOpcodes extends JadeSubcommand("extract-asm-opcodes") {
+  override def run(): Unit = {
+    extractAsmOpcodes.Main.main()
   }
 }
 
