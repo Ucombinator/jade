@@ -1,16 +1,13 @@
 package org.ucombinator.jade.interpreter.ir
 
-import org.objectweb.asm.tree.analysis.{BasicValue => AsmBasicValue, Value => AsmValue}
 import org.ucombinator.jade.classfile.descriptor.Descriptor.FieldDescriptor
+import org.ucombinator.jade.method.ssa.Var
 
 
 /** Value */
 abstract class Value
 
-case class Identifier(id: Int, copyVersion: Int, basicValue: AsmBasicValue)
-  extends Value with AsmValue {
-  override def getSize: Int = basicValue.getSize
-}
+case class Identifier(v: Var) extends Value
 
 /** Used by the opcodes of Loads and Stores - Array Elements */
 case class ArrayElementV(array: Value, dimension: Value) extends Value with ArrayOperationT {

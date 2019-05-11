@@ -6,7 +6,8 @@ import org.objectweb.asm.tree.analysis.{BasicValue => AsmBasicValue}
 package object ir {
   def isInt(v: Value): Boolean =
     v match {
-      case _: IV | Identifier(_, _, AsmBasicValue.INT_VALUE) => true
+      case _: IV => true
+      case Identifier(v) if v.basicValue == AsmBasicValue.INT_VALUE => true
       case _ => false
     }
 
@@ -14,7 +15,7 @@ package object ir {
     v match {
       case _: ClassV                                       => true
       case _: ArrayReferenceT                              => true
-      case Identifier(_, _, AsmBasicValue.REFERENCE_VALUE) => true
+      case Identifier(v) if v.basicValue == AsmBasicValue.REFERENCE_VALUE => true
       case _                                               => false
     }
 
