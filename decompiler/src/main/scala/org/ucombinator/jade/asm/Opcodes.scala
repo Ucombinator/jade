@@ -1,3 +1,4 @@
+/*Automatically built by extractAsmOpcodes.scala to reflect values in Opcodes. Last checked against ASM 7.0*/
 package org.ucombinator.jade.asm
 import org.objectweb.asm.{Opcodes=>AsmOpcodes}
 object Opcodes{
