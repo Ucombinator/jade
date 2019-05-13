@@ -1,11 +1,17 @@
 package org.ucombinator.jade.asm
 
-import org.objectweb.asm.Handle
 import org.objectweb.asm.tree._
 
-import scala.collection.JavaConverters._
+object Instructions {
+  def toString(l: InsnList, i: AbstractInsnNode): String = {
+    val index = l.indexOf(i)
+    val typ = InstructionTypes.fromInt(i.getType)
+    val opcode = if (i.getOpcode == -1) { "no_opcode" } else Opcodes.fromInt(i.getOpcode)
+    f"$index $typ $opcode"
+  }
+}
 
-
+/*
 /** A node that represents a bytecode instruction. */
 abstract class AbstractInstructionNode(opcode: Int) {
   def isInsn: Boolean = true
@@ -150,3 +156,4 @@ object Instructions {
 
 //TryCatchBlockNode A node that represents a try catch block.
 
+*/

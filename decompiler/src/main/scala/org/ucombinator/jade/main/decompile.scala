@@ -4,6 +4,7 @@ import java.nio.file.{Files, Paths}
 
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
+import org.ucombinator.jade.asm.Instructions
 import org.ucombinator.jade.classfile.AccessFlag
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.method.ssa.SSA
@@ -79,7 +80,7 @@ object Main {
       println("results and arguments")
       for (i <- 0 until method.instructions.size) {
         val insn = method.instructions.get(i)
-        println(f"args(${i}): ${insn.getOpcode} ${ids.instructionArguments.get(insn)}")
+        println(f"args(${i}): ${Instructions.toString(method.instructions, insn)} ${ids.instructionArguments.get(insn)}")
       }
 
       println("ssa")
