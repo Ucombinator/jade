@@ -295,7 +295,8 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
     // We use this method to initialize the frames at join points.
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
-      if (cfg.graph.incomingEdgesOf(insn).size() > 1) {
+      // TODO: cache this computation?
+      if (cfg.graph.incomingEdgesOf(insn).size() > 1 || cfg.handlers.exists(p => p.handler == insn)) {
         // We are at a join point
         val frame = cfg.frames(insnIndex)
         val newFrame = new Frame[Var](frame.getLocals, frame.getStackSize)
