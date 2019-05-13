@@ -1,3 +1,4 @@
+/*Automatically built by extractAsmTypes.scala to reflect values in AbstractInsnNode. Last checked against ASM 7.0*/
 package org.ucombinator.jade.asm
 import org.objectweb.asm.tree.AbstractInsnNode
 object InstructionTypes{
