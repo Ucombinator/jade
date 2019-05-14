@@ -5,22 +5,20 @@ version := "0.1-SNAPSHOT"
 scalaVersion := "2.12.8"
 
 libraryDependencies ++= Seq(
-  //"com.google.guava" % "guava" % ???,
-  //"commons-io" % "commons-io" % ???,
-  "org.jgrapht" % "jgrapht-core" % "1.3.0",
-  "org.jgrapht" % "jgrapht-ext" % "1.3.0",
-  "org.jgrapht" % "jgrapht-guava" % "1.3.0",
-  "org.jgrapht" % "jgrapht-io" % "1.3.0",
-  "org.jgrapht" % "jgrapht-opt" % "1.3.0",
+  "info.picocli" % "picocli" % "4.0.0-alpha-3", // Command-line argument parsing
+  "org.jgrapht" % "jgrapht-core" % "1.3.0", // Vertex and edge graphs
+  "org.jgrapht" % "jgrapht-ext" % "1.3.0", // (See `jgrapht-core`)
+  "org.jgrapht" % "jgrapht-guava" % "1.3.0", // (See `jgrapht-core`)
+  "org.jgrapht" % "jgrapht-io" % "1.3.0", // (See `jgrapht-core`)
+  "org.jgrapht" % "jgrapht-opt" % "1.3.0", // (See `jgrapht-core`)
   "org.jsoup" % "jsoup" % "1.11.3", // HTML parsing
-  "org.ow2.asm" % "asm" % "7.0",
-  "org.ow2.asm" % "asm-analysis" % "7.0",
-  "org.ow2.asm" % "asm-commons" % "7.0",
-  "org.ow2.asm" % "asm-test" % "7.0",
-  "org.ow2.asm" % "asm-tree" % "7.0",
-  "org.ow2.asm" % "asm-util" % "7.0",
-  "org.rogach" %% "scallop" % "3.1.5", // Command-line argument parsing
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1",
+  "org.ow2.asm" % "asm" % "7.0", // `.class` file parsing
+  "org.ow2.asm" % "asm-analysis" % "7.0", // (See `asm`)
+  "org.ow2.asm" % "asm-commons" % "7.0", // (See `asm`)
+  "org.ow2.asm" % "asm-test" % "7.0", // (See `asm`)
+  "org.ow2.asm" % "asm-tree" % "7.0", // (See `asm`)
+  "org.ow2.asm" % "asm-util" % "7.0", // (See `asm`)
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1", // General parsing framework
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
 )
