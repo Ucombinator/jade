@@ -1,9 +1,11 @@
 package org.ucombinator.jade.main.decompile
 
+import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
+import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.asm.Instructions
 import org.ucombinator.jade.classfile.AccessFlag
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
@@ -23,7 +25,8 @@ object Main {
 
     cr.accept(cn, 0)
 
-    // cn.version
+    val traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out))
+    cn.accept(traceClassVisitor)
 
     /* -- annotations -- */
     val visibleAnnotationsString: String = annotationText(cn.visibleAnnotations.asScala)
