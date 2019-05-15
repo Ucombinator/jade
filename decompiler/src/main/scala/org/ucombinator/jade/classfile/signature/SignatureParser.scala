@@ -1,7 +1,5 @@
 package org.ucombinator.jade.classfile.signature
 
-import scala.language.implicitConversions
-
 import org.ucombinator.jade.classfile._
 import org.ucombinator.jade.classfile.TypeCommons._
 

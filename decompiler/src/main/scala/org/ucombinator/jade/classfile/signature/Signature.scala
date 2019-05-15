@@ -1,7 +1,5 @@
 package org.ucombinator.jade.classfile.signature
 
-import scala.language.implicitConversions
-
 import org.ucombinator.jade.classfile.TypeCommons._
 
 /** JVM signatures as Specified in "The Java Virtual Machine Specification", Section 4.7.9.1

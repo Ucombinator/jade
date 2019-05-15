@@ -1,13 +1,13 @@
 package org.ucombinator.jade.util
 
-import org.jgrapht.{Graph, Graphs}
+import org.jgrapht.{Graph => JGraph, Graphs}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 object Graph {
   // Returns a mapping from nodes to the set of nodes that dominate them
-  def dominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
+  def dominators[V,E](graph: JGraph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
     val vs = graph.vertexSet.asScala.toSet
     var dom: immutable.Map[V, immutable.Set[V]]  = Map.empty
 
@@ -31,11 +31,11 @@ object Graph {
       }
     } while (old_dom != dom)
 
-    return dom
+    dom
   }
 
   // Returns a mapping from nodes to the node that is its immediate dominator
-  def immediateDominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, V] = {
+  def immediateDominators[V,E](graph: JGraph[V,E], start: V): immutable.Map[V, V] = {
     val dom = dominators(graph, start)
 
     object O extends Ordering[V] {
