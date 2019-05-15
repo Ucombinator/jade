@@ -1,6 +1,5 @@
 package org.ucombinator.jade.method
 
-import com.google.common.collect.ImmutableBiMap
 import org.jgrapht.{Graph, Graphs}
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.jgrapht.graph.DirectedPseudograph
@@ -100,15 +99,7 @@ final class InsnBlockTree(className: String, method: MethodNode) {
   private val postDominators: Map[AbstractInsnNode, AbstractInsnNode] =
     immediateDominators(reverseControlFlowGraph, method.instructions.getLast)
 
-  val insnIndexBiMap: ImmutableBiMap[AbstractInsnNode, Int] = {
-    val builder: ImmutableBiMap.Builder[AbstractInsnNode, Int] = ImmutableBiMap.builder()
-
-    for ((insn, idx) <- insnIndexPairs) {
-      builder.put(insn, idx)
-    }
-
-    builder.build()
-  }
+  val insnToOffset: Map[AbstractInsnNode, Int] = insnIndexPairs.toMap
 
   val jumpInsnIndexPair: List[(JumpInsnNode, Int)] =
     for {(j, idx) <- insnIndexPairs if j.isInstanceOf[JumpInsnNode]
@@ -134,8 +125,8 @@ final class InsnBlockTree(className: String, method: MethodNode) {
 
   private val cycleBlocks  =
     cycles map { l =>
-      val start = insnIndexBiMap.get(l.head)
-      val end = insnIndexBiMap.get(l.last)
+      val start = insnToOffset(l.head)
+      val end = insnToOffset(l.last)
       val forwardJumpInsn = findFirstJumpAfter(l.head)
       val backwardJumpInsn = findFirstJumpBefore(l.last)
       CycleBlock(start, end, forwardJumpInsn, backwardJumpInsn)
@@ -149,7 +140,7 @@ final class InsnBlockTree(className: String, method: MethodNode) {
 
   private val branchBlocks: List[JumpBlock] =
     for {(jmp, start) <- jumpInsnIndexPair if !cycleJumpInsnNodes(jmp)
-         end = insnIndexBiMap.get(postDominators(jmp))}
+         end = insnToOffset(postDominators(jmp))}
       yield BranchBlock(start, end, jmp)
 
   private val jumpBlocks: List[JumpBlock] = (cycleBlocks ++ branchBlocks).sortBy(_.start)
