@@ -4,7 +4,7 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis.{BasicValue => AsmBasicValue}
 import org.ucombinator.jade.interpreter.ir._
-import org.ucombinator.jade.classfile.descriptor.DescriptorParser
+import org.ucombinator.jade.interpreter.descriptor.DescriptorParser
 import org.ucombinator.jade.interpreter.frame.{Frame, RichFrameOperations}
 import org.ucombinator.jade.util.Debug.printInsnNode
 

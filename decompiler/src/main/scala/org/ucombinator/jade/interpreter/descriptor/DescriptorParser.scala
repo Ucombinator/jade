@@ -1,8 +1,9 @@
-package org.ucombinator.jade.classfile.descriptor
+package org.ucombinator.jade.interpreter.descriptor
 
 import org.ucombinator.jade.classfile._
-import org.ucombinator.jade.classfile.TypeCommons._
-import org.ucombinator.jade.classfile.descriptor.Descriptor._
+import org.ucombinator.jade.interpreter.classfile.TypeCommons._
+import org.ucombinator.jade.interpreter.classfile.JavaTokenParsersOpt
+import org.ucombinator.jade.interpreter.descriptor.Descriptor._
 
 
 object DescriptorParser extends JavaTokenParsersOpt {

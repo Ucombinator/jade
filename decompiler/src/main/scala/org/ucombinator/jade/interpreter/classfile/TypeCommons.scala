@@ -1,7 +1,7 @@
-package org.ucombinator.jade.classfile
+package org.ucombinator.jade.interpreter.classfile
 
-import org.ucombinator.jade.classfile.signature.JavaTypeSignature
-import org.ucombinator.jade.classfile.descriptor.Descriptor.PrimitiveType
+import org.ucombinator.jade.interpreter.descriptor.Descriptor.PrimitiveType
+import org.ucombinator.jade.interpreter.signature.JavaTypeSignature
 
 object TypeCommons {
   // The grammar includes the terminal symbol Identifier to denote the name of a

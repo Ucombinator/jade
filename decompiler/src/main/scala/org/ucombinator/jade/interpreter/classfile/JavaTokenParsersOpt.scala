@@ -1,10 +1,8 @@
-package org.ucombinator.jade.classfile
+package org.ucombinator.jade.interpreter.classfile
 
-import org.ucombinator.jade.classfile.TypeCommons.JavaIdentifier
+import TypeCommons.JavaIdentifier
 
-import scala.language.implicitConversions
 import scala.util.parsing.combinator.JavaTokenParsers
-
 
 trait JavaTokenParsersOpt extends JavaTokenParsers {
   // The grammar includes the terminal symbol Identifier to denote the name of a
@@ -35,4 +33,3 @@ trait JavaTokenParsersOpt extends JavaTokenParsers {
     case a ~ b ~ c ~ d => f(a, b, c, d)
   }
 }
-

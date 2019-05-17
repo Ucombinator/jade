@@ -1,6 +1,6 @@
-package org.ucombinator.jade.classfile.descriptor
+package org.ucombinator.jade.interpreter.descriptor
 
-import org.ucombinator.jade.classfile.TypeCommons.JavaIdentifier
+import org.ucombinator.jade.interpreter.classfile.TypeCommons.JavaIdentifier
 
 import scala.annotation.tailrec
 

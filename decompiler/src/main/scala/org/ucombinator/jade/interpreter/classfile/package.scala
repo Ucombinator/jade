@@ -1,7 +1,4 @@
-package org.ucombinator.jade
-
-import scala.language.implicitConversions
-
+package org.ucombinator.jade.interpreter
 
 package object classfile {
   import TypeCommons.JavaIdentifier

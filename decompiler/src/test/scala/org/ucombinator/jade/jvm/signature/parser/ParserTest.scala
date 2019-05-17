@@ -1,7 +1,7 @@
 package org.ucombinator.jade.jvm.signature.parser
 
 import org.scalatest.FunSuite
-import org.ucombinator.jade.classfile.signature._
+import org.ucombinator.jade.interpreter.signature._
 
 class ParserTest extends FunSuite {
   test("A class signature after parsing should be equal to the result we manually construct") {

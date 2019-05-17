@@ -1,7 +1,8 @@
-package org.ucombinator.jade.classfile.signature
+package org.ucombinator.jade.interpreter.signature
 
 import org.ucombinator.jade.classfile._
-import org.ucombinator.jade.classfile.TypeCommons._
+import org.ucombinator.jade.interpreter.classfile.TypeCommons._
+import org.ucombinator.jade.interpreter.classfile.JavaTokenParsersOpt
 
 
 object SignatureParser extends JavaTokenParsersOpt {

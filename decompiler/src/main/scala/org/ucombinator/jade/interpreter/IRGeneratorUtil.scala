@@ -3,8 +3,8 @@ package org.ucombinator.jade.interpreter
 import org.objectweb.asm.tree._
 import org.objectweb.asm.{Opcodes, Type}
 import org.ucombinator.jade.interpreter.ir._
-import org.ucombinator.jade.classfile.TypeCommons._
-import org.ucombinator.jade.classfile.descriptor.DescriptorParser
+import org.ucombinator.jade.interpreter.classfile.TypeCommons._
+import org.ucombinator.jade.interpreter.descriptor.DescriptorParser
 
 import scala.collection.mutable.ListBuffer
 

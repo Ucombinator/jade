@@ -1,6 +1,6 @@
-package org.ucombinator.jade.classfile.signature
+package org.ucombinator.jade.interpreter.signature
 
-import org.ucombinator.jade.classfile.TypeCommons._
+import org.ucombinator.jade.interpreter.classfile.TypeCommons._
 
 /** JVM signatures as Specified in "The Java Virtual Machine Specification", Section 4.7.9.1
   * <https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.9.1>

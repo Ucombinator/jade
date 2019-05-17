@@ -1,6 +1,6 @@
 package org.ucombinator.jade.interpreter.ir
 
-import org.ucombinator.jade.classfile.descriptor.Descriptor.ObjectType
+import org.ucombinator.jade.interpreter.descriptor.Descriptor.ObjectType
 
 
 abstract class ConstantReferenceValue(v: Any) extends Value with ReferenceT with ConstantT {

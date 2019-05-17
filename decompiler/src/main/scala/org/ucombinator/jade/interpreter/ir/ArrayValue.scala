@@ -1,7 +1,7 @@
 package org.ucombinator.jade.interpreter.ir
 
-import org.ucombinator.jade.classfile.TypeCommons.BaseType
-import org.ucombinator.jade.classfile.descriptor.Descriptor.{FieldDescriptor, ObjectType}
+import org.ucombinator.jade.interpreter.classfile.TypeCommons.BaseType
+import org.ucombinator.jade.interpreter.descriptor.Descriptor.{FieldDescriptor, ObjectType}
 
 
 abstract class ArrayValue[T <: FieldDescriptor, D](typ: T, dimension: D)
