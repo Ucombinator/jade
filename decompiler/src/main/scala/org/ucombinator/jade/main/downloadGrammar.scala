@@ -1,6 +1,8 @@
 package org.ucombinator.jade.main.downloadGrammar
 
 object Main {
+  private def jvms(version: Int, chapter: Int) = f"https://docs.oracle.com/javase/specs/jvms/se$version/html/jvms-$chapter.html"
+  private def jls(version: Int, chapter: Int) = f"https://docs.oracle.com/javase/specs/jls/se$version/html/jls-$chapter.html"
   val versions = Map(
     //"6" -> "https://docs.oracle.com/javase/specs/jls/se6/html/syntax.html",
     //"7" -> "https://docs.oracle.com/javase/specs/jls/se7/html/jls-18.html",

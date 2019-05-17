@@ -2,6 +2,25 @@ package org.ucombinator.jade.asm
 
 import org.objectweb.asm.tree._
 
+/*
+import org.objectweb.asm.util.{TraceMethodVisitor, Textifier => ASMTextifier}
+
+class Textifier(method: MethodNode) extends ASMTextifier {
+  def foo(insn: AbstractInsnNode): Unit = {
+    val p = new Textifier()
+    val mv = new TraceMethodVisitor(p)
+    insn.accept(???)
+
+  }
+
+  override def visitInsn(opcode: Int): Unit = {
+    this.tab2 = "+"
+    super.visitInsn(opcode)
+  }
+
+}
+ */
+
 object Instructions {
   def toString(l: InsnList, i: AbstractInsnNode): String = {
     val index = l.indexOf(i)

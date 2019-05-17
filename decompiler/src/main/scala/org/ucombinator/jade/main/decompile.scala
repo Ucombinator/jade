@@ -3,11 +3,17 @@ package org.ucombinator.jade.main.decompile
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 
-import org.objectweb.asm.ClassReader
+import com.github.javaparser.{StaticJavaParser, TokenRange}
+import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type, TypeParameter}
+import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Modifier, NodeList, PackageDeclaration}
+import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, Name, NormalAnnotationExpr, SimpleName, SingleMemberAnnotationExpr, StringLiteralExpr}
+import com.github.javaparser.ast.modules.ModuleDeclaration
+import org.objectweb.asm.{ClassReader, Opcodes}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.asm.Instructions
-import org.ucombinator.jade.classfile.AccessFlag
+import org.ucombinator.jade.classfile.{AccessFlag, Descriptor, Signature}
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.method.ssa.SSA
 
@@ -33,6 +39,9 @@ object Main {
     val invisibleAnnotationsString: String = annotationText(cn.invisibleAnnotations.asScala)
 
     println(visibleAnnotationsString +"\n" + invisibleAnnotationsString)
+
+    val cu = astToJavaparser(cn)
+    println(cu)
 
     val classHeader: String = constructClassHeader(
       cn.access, cn.name,
@@ -95,6 +104,76 @@ object Main {
     println("\n}")
   }
 
+  private def typeToJavaparser(desc: String, signature: String): Type = {
+    println(f"desc: $desc sig: $signature")
+    if (signature == null) { Descriptor.fieldDescriptor(desc) }
+    else { Signature.javaTypeSignature(signature) }
+  }
+
+  private def literalToJavaparser(node: Object): LiteralExpr = node match {
+    // TODO: improve formatting of literals?
+    case null => null
+    case node: java.lang.Integer => new IntegerLiteralExpr(String.valueOf(node))
+    case node: java.lang.Float => ???
+    case node: java.lang.Long => new LongLiteralExpr(String.valueOf(node))
+    case node: java.lang.Double => new DoubleLiteralExpr(String.valueOf(node))
+    case node: java.lang.String => new StringLiteralExpr(node)
+  }
+
+  private def astToJavaparser(node: AnnotationNode): AnnotationExpr = {
+    val name = StaticJavaParser.parseName(node.desc)
+    node.values.asScala match {
+      case List() => new MarkerAnnotationExpr(name)
+      case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaparser(v))
+      case vs => new NormalAnnotationExpr(name, ???)
+    }
+  }
+
+  private def astToJavaparser(node: FieldNode): FieldDeclaration = {
+    val tokenRange: TokenRange = null // TODO
+    val modifiers: NodeList[Modifier] = new NodeList() // TODO
+    val annotations: NodeList[AnnotationExpr] = new NodeList()
+    // TODO
+    //annotations.addAll(node.visibleAnnotations.asScala.map(astToJavaparser).asJava)
+    //annotations.addAll(node.invisibleAnnotations.asScala.map(astToJavaparser).asJava)
+    //annotations.addAll(node.visibleTypeAnnotations.asScala.map(astToJavaparser).asJava)
+    //annotations.addAll(node.invisibleTypeAnnotations.asScala.map(astToJavaparser).asJava)
+    val variables: NodeList[VariableDeclarator] = new NodeList({
+      val `type`: Type = typeToJavaparser(node.desc, node.signature)
+      val name: SimpleName = new SimpleName(node.name)
+      val initializer: Expression = literalToJavaparser(node.value)
+      new VariableDeclarator(tokenRange: TokenRange, `type`: Type, name: SimpleName, initializer: Expression)})
+
+    new FieldDeclaration(tokenRange, modifiers, annotations, variables)
+  }
+
+  private def astToJavaparser(node: ClassNode): CompilationUnit = {
+    val fullClassName = StaticJavaParser.parseName(node.name.replace('/', '.'))
+
+    val packageDeclaration: PackageDeclaration = new PackageDeclaration(new NodeList[AnnotationExpr]() /*TODO*/, fullClassName.getQualifier.orElse(new Name()))
+    val imports: NodeList[ImportDeclaration] = new NodeList() // TODO
+
+    val classOrInterfaceDeclaration = {
+      val modifiers: NodeList[Modifier] = new NodeList() // TODO
+      val annotations: NodeList[AnnotationExpr] = new NodeList() // TODO
+      val isInterface: Boolean = (node.access & Opcodes.ACC_INTERFACE) != 0
+      val simpleName: SimpleName = new SimpleName(fullClassName.getIdentifier)
+      val typeParameters: NodeList[TypeParameter] = new NodeList() // TODO
+      val extendedTypes: NodeList[ClassOrInterfaceType] = new NodeList() // TODO
+      val implementedTypes: NodeList[ClassOrInterfaceType] = new NodeList() // TODO
+      val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
+
+      members.addAll(node.fields.asScala.map(astToJavaparser).asJava)
+
+      new ClassOrInterfaceDeclaration(modifiers, annotations, isInterface, simpleName, typeParameters, extendedTypes, implementedTypes, members)}
+
+    val types: NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]] = new NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]]()
+    types.add(classOrInterfaceDeclaration)
+
+    val module: ModuleDeclaration = null // TODO
+
+    new CompilationUnit(packageDeclaration, imports, types, module)
+  }
 
   private def constructClassHeader(access: Int, name: String, superName: Option[String],
                                    interfaces: List[String], signature: String, isInner: Boolean): String = {
