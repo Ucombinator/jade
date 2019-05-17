@@ -4,14 +4,27 @@ import scala.collection.mutable
 import scala.util.parsing.combinator._
 
 case class Grammar(declarations: List[Declaration])
-case class Declaration(name: String, productions: List[Production])
-case class Production(exprs: List[Expr])
+case class Declaration(name: String, productions: List[Production]) {
+  override def toString: String = { f"$name:\n " + productions.mkString("\n ") }
+}
+case class Production(exprs: List[Expr]) {
+  override def toString: String = { exprs.mkString(" ") }
+}
 
 sealed trait Expr
-case class NonTerminal(name: String) extends Expr
-case class Terminal(name: String) extends Expr
-case class Repeat(prod: List[Expr]) extends Expr
-case class Optional(prod: List[Expr]) extends Expr
+sealed trait Atomic extends Expr
+case class NonTerminal(name: String) extends Atomic {
+  override def toString: String = { name }
+}
+case class Terminal(name: String) extends Atomic {
+  override def toString: String = { f"'$name'" }
+}
+case class Repeat(prod: List[Expr]) extends Expr {
+  override def toString: String = { f"{ ${prod.mkString(" ")} }"}
+}
+case class Optional(prod: List[Expr]) extends Expr {
+  override def toString: String = { f"[ ${prod.mkString(" ")} ]"}
+}
 
 object Main {
   def main(): Unit = {
@@ -20,43 +33,34 @@ object Main {
     val declarations = grammar match {
       case Grammar.Error(msg, _) => throw new Exception(f"parse error: $msg")
       case Grammar.Failure(msg, _) => throw new Exception(f"parse failure: $msg")
-      case Grammar.Success(declarations, _) => declarations
+      case Grammar.Success(ds, _) => ds
     }
-    val traits = mutable.Set[String]()
+
+    // TODO: ordered map?
+    // Maps classes to traits that they extend
     val caseClassExtend = mutable.Map[String, Set[String]]().withDefaultValue(Set())
-    //builds the above maps from the declaration grammar
+    // Populate these tables
     for (d <- declarations) {
-      buildAstTypes(d, traits, caseClassExtend)
+      println("????\n"+d)
+      val productions = d.productions
+      singleAtomics(productions) match {
+        case Some(atomics) =>
+          for (a <- atomics) {
+            caseClassExtend(a.toString) += d.name
+          }
+        case None => /* Do nothing */
+      }
     }
-    //print each of the generated types
-    printTraits(traits)
+
     for (d <- declarations) {
       printCaseClasses(d, caseClassExtend)
     }
   }
 
-  def buildAstTypes(declaration: Declaration, traits: mutable.Set[String], caseClassExtend: mutable.Map[String, Set[String]]): Unit = {
-    val productions = declaration.productions
-    containsOnlyNonTerminals(productions) match {
-      case Some(nonTerminals) =>
-        traits += declaration.name
-        for (nonTerminal <- nonTerminals) {
-          caseClassExtend(nonTerminal.name) += declaration.name
-        }
-      case None => /* Do nothing */
-    }
-  }
-
-  def containsOnlyNonTerminals(productions: List[Production]): Option[List[NonTerminal]] = {
-    productions.foldRight[Option[List[NonTerminal]]](Some(List())) {
-      case (Production(List(nt : NonTerminal)), Some(nts)) => Some(nt :: nts)
+  def singleAtomics(productions: List[Production]): Option[List[Atomic]] = {
+    productions.foldRight[Option[List[Atomic]]](Some(List())) {
+      case (Production(List(a : Atomic)), Some(as)) => Some(a :: as)
       case _ => None
-    }
-  }
-
-  def printTraits(traits: mutable.Set[String]): Unit = {
-    for (traitName <- traits) {
-      print(f"sealed trait $traitName\n\n")
     }
   }
 
@@ -102,37 +106,50 @@ object Main {
   }
 
   def printCaseClasses(declaration: Declaration, extend: mutable.Map[String, Set[String]]): Unit = {
-    containsOnlyNonTerminals(declaration.productions) match {
-      case Some(_) => /* Do nothing */
+    singleAtomics(declaration.productions) match {
+      case Some(as) =>
+      /*
+        print(f"sealed trait ${declaration.name}\n\n")
+        for (Terminal(name) <- as) {
+          print(f"case class `$name` extends ${declaration.name}\n\n")
+        }
+       */
       case None =>
-        print(f"case class ${declaration.name}(\n")
-        val caseClassElements = mutable.Map[String, String]()
+        declaration.productions match {
+          case List(p) => /* TODO */
+          case ps =>
+            println(f"$declaration\n\n")
+            /*
+            print(f"case class ${declaration.name}(\n")
+            val caseClassElements = mutable.Map[String, String]()
 
-        for (production <- declaration.productions) {
-          for (expr <- production.exprs) {
-            expr match {
-              case expr: NonTerminal => caseClassElements += expr.name -> expr.name
-              case expr: Repeat => generateRepetition(expr, caseClassElements)
-              case expr: Optional => generateOptional(expr, caseClassElements)
-              case _ => /* Do nothing */
+            for (production <- declaration.productions) {
+              for (expr <- production.exprs) {
+                expr match {
+                  case expr: NonTerminal => caseClassElements += expr.name -> expr.name
+                  case expr: Repeat => generateRepetition(expr, caseClassElements)
+                  case expr: Optional => generateOptional(expr, caseClassElements)
+                  case expr: Terminal => println(f"Terminal: ${expr.name}")
+                }
+              }
             }
-          }
-        }
 
-        for((key,value) <- caseClassElements){
-          if(key.equalsIgnoreCase("finally")){
-            print(f"  $key: $value,\n")
-          }else{
-            print(f"  ${toCamelCase(key)}: $value,\n")
-          }
-        }
+            for((key,value) <- caseClassElements){
+              if(key.equalsIgnoreCase("finally")){
+                print(f"  $key: $value,\n")
+              }else{
+                print(f"  ${toCamelCase(key)}: $value,\n")
+              }
+            }
 
-        print(")")
-        if (extend.getOrElse(declaration.name, None) != None) {
-          print(" extends ")
-          print(extend(declaration.name).mkString(" with "))
+            print(")")
+            if (extend.getOrElse(declaration.name, None) != None) {
+              print(" extends ")
+              print(extend(declaration.name).mkString(" with "))
+            }
+            print("\n\n")
+            */
         }
-        print("\n\n")
     }
   }
 }
