@@ -4,6 +4,8 @@ import TypeCommons.JavaIdentifier
 
 import scala.util.parsing.combinator.JavaTokenParsers
 
+import scala.language.implicitConversions
+
 trait JavaTokenParsersOpt extends JavaTokenParsers {
   // The grammar includes the terminal symbol Identifier to denote the name of a
   // type, field, method, formal parameter, local variable, or type variable, as

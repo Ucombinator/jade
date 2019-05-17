@@ -1,6 +1,5 @@
 package org.ucombinator.jade.interpreter.descriptor
 
-import org.ucombinator.jade.classfile._
 import org.ucombinator.jade.interpreter.classfile.TypeCommons._
 import org.ucombinator.jade.interpreter.classfile.JavaTokenParsersOpt
 import org.ucombinator.jade.interpreter.descriptor.Descriptor._
