@@ -20,7 +20,7 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 object Main {
-  def main(fileName: String): Unit = {
+  def main(fileName: String, printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean): Unit = {
     require(fileName != null, "the given class file name is actually `null`!")
 
     val byteArray = Files.readAllBytes(Paths.get(fileName)) //Full path class name
@@ -30,58 +30,64 @@ object Main {
 
     cr.accept(cn, 0)
 
-    val traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out))
-    cn.accept(traceClassVisitor)
-
-    val cu = asmToJavaparser(cn)
-    println(cu)
-
-    // TODO: cn.sourceFile, cn.sourceDebug
-
-    println("class {")
-
-    // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
-
-    // TODO: Inner classes
-    val inners: List[InnerClassNode] = cn.innerClasses.asScala.toList
-    inners.foreach { c =>
-      println(c.name)
+    if (printAsm) {
+      val traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out))
+      cn.accept(traceClassVisitor)
     }
 
-    val methods: List[MethodNode] = cn.methods.asScala.toList
-    val methodsCode: List[String] = methods.map(methodText)
-
-    println(methodsCode.mkString("\n"))
-
-    for (method <- methods) {
-      println("!!!!!!!!!!!!")
-      println(f"method: ${method.name} ${method.signature} ${method.desc}")
-      println("**** ControlFlowGraph ****")
-      val cfg = ControlFlowGraph(fileName, method)
-      for (v <- cfg.graph.vertexSet().asScala) {
-        println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
-      }
-      println("**** SSA ****")
-      val ids = SSA(fileName, method, cfg)
-
-      println("frames: " + ids.frames.length)
-      for (i <- 0 until method.instructions.size) {
-        println(f"frame($i): ${ids.frames(i)}")
-      }
-
-      println("results and arguments")
-      for (i <- 0 until method.instructions.size) {
-        val insn = method.instructions.get(i)
-        println(f"args(${i}): ${Instructions.toString(method.instructions, insn)} ${ids.instructionArguments.get(insn)}")
-      }
-
-      println("ssa")
-      for ((key, value) <- ids.ssaMap) {
-        println(s"ssa: $key -> $value")
-      }
+    if (printJavaparser) {
+      val cu = asmToJavaparser(cn)
+      println(cu)
     }
 
-    println("\n}")
+    if (printMethods) {
+      // TODO: cn.sourceFile, cn.sourceDebug
+
+      println("class {")
+
+      // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
+
+      // TODO: Inner classes
+      val inners: List[InnerClassNode] = cn.innerClasses.asScala.toList
+      inners.foreach { c =>
+        println(c.name)
+      }
+
+      val methods: List[MethodNode] = cn.methods.asScala.toList
+      val methodsCode: List[String] = methods.map(methodText)
+
+      println(methodsCode.mkString("\n"))
+
+      for (method <- methods) {
+        println("!!!!!!!!!!!!")
+        println(f"method: ${method.name} ${method.signature} ${method.desc}")
+        println("**** ControlFlowGraph ****")
+        val cfg = ControlFlowGraph(fileName, method)
+        for (v <- cfg.graph.vertexSet().asScala) {
+          println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
+        }
+        println("**** SSA ****")
+        val ids = SSA(fileName, method, cfg)
+
+        println("frames: " + ids.frames.length)
+        for (i <- 0 until method.instructions.size) {
+          println(f"frame($i): ${ids.frames(i)}")
+        }
+
+        println("results and arguments")
+        for (i <- 0 until method.instructions.size) {
+          val insn = method.instructions.get(i)
+          println(f"args(${i}): ${Instructions.toString(method.instructions, insn)} ${ids.instructionArguments.get(insn)}")
+        }
+
+        println("ssa")
+        for ((key, value) <- ids.ssaMap) {
+          println(s"ssa: $key -> $value")
+        }
+      }
+
+      println("\n}")
+    }
   }
 
   private def accessToJavaparser(access: Int): NodeList[Modifier] = {

@@ -4,7 +4,7 @@ import java.util.concurrent.Callable
 import java.util.jar.Attributes
 
 import picocli.CommandLine
-import picocli.CommandLine.{Command, HelpCommand, ParameterException, Parameters, ParentCommand}
+import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
 
 import scala.collection.JavaConverters._
 
@@ -48,12 +48,21 @@ class Main() extends Cmd[Unit] {
 
 @Command(name="decompile")
 class Decompile extends Cmd[Unit] {
+  @Option(names = Array("--print-asm"))
+  var printAsm = false
+
+  @Option(names = Array("--print-javaparser"))
+  var printJavaparser = false
+
+  @Option(names = Array("--print-methods"))
+  var printMethods = false
+
   // TODO: java.io.file or java.nio.path?
   @Parameters(paramLabel = "<file>", description = Array("The .class file to decompile")) // TODO: FILE?
   var fileName: String = _
 
   override def call(): Unit = {
-    decompile.Main.main(fileName)
+    decompile.Main.main(fileName, printAsm, printJavaparser, printMethods)
   }
 }
 
