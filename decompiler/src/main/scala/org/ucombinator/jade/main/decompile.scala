@@ -3,12 +3,11 @@ package org.ucombinator.jade.main.decompile
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 
-import com.github.javaparser.{StaticJavaParser, TokenRange}
+import com.github.javaparser.StaticJavaParser
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type, TypeParameter}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Modifier, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, Name, NormalAnnotationExpr, SimpleName, SingleMemberAnnotationExpr, StringLiteralExpr}
-import com.github.javaparser.ast.modules.ModuleDeclaration
 import org.objectweb.asm.{ClassReader, Opcodes}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
@@ -34,23 +33,12 @@ object Main {
     val traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out))
     cn.accept(traceClassVisitor)
 
-    /* -- annotations -- */
-    val visibleAnnotationsString: String = annotationText(cn.visibleAnnotations.asScala)
-    val invisibleAnnotationsString: String = annotationText(cn.invisibleAnnotations.asScala)
-
-    println(visibleAnnotationsString +"\n" + invisibleAnnotationsString)
-
-    val cu = astToJavaparser(cn)
+    val cu = asmToJavaparser(cn)
     println(cu)
-
-    val classHeader: String = constructClassHeader(
-      cn.access, cn.name,
-      Option(cn.superName),
-      cn.interfaces.asScala.toList, cn.signature, isInner = cn.outerClass != null)
 
     // TODO: cn.sourceFile, cn.sourceDebug
 
-    println(classHeader + " {")
+    println("class {")
 
     // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
 
@@ -59,14 +47,6 @@ object Main {
     inners.foreach { c =>
       println(c.name)
     }
-
-    // This is non-standard attributes, I'm not sure if I need them.
-    // TODO: cn.attrs
-
-    val fields: List[FieldNode] = cn.fields.asScala.toList
-    val fieldsCode: List[String] = fields.map(fieldText)
-
-    println(fieldsCode.mkString("\n"))
 
     val methods: List[MethodNode] = cn.methods.asScala.toList
     val methodsCode: List[String] = methods.map(methodText)
@@ -104,8 +84,11 @@ object Main {
     println("\n}")
   }
 
+  private def accessToJavaparser(access: Int): NodeList[Modifier] = {
+    new NodeList() // TODO
+  }
+
   private def typeToJavaparser(desc: String, signature: String): Type = {
-    println(f"desc: $desc sig: $signature")
     if (signature == null) { Descriptor.fieldDescriptor(desc) }
     else { Signature.javaTypeSignature(signature) }
   }
@@ -114,147 +97,105 @@ object Main {
     // TODO: improve formatting of literals?
     case null => null
     case node: java.lang.Integer => new IntegerLiteralExpr(String.valueOf(node))
-    case node: java.lang.Float => ???
+    case node: java.lang.Float => new DoubleLiteralExpr(String.valueOf(node)) // Note that `javaparser` uses Double for Floats
     case node: java.lang.Long => new LongLiteralExpr(String.valueOf(node))
     case node: java.lang.Double => new DoubleLiteralExpr(String.valueOf(node))
     case node: java.lang.String => new StringLiteralExpr(node)
   }
 
-  private def astToJavaparser(node: AnnotationNode): AnnotationExpr = {
+  private def asmToJavaparser(node: AnnotationNode): AnnotationExpr = {
     val name = StaticJavaParser.parseName(node.desc)
     node.values.asScala match {
       case List() => new MarkerAnnotationExpr(name)
       case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaparser(v))
-      case vs => new NormalAnnotationExpr(name, ???)
+      case vs => new NormalAnnotationExpr(name, ???) // TODO
     }
   }
 
-  private def astToJavaparser(node: FieldNode): FieldDeclaration = {
-    val tokenRange: TokenRange = null // TODO
-    val modifiers: NodeList[Modifier] = new NodeList() // TODO
-    val annotations: NodeList[AnnotationExpr] = new NodeList()
-    // TODO
-    //annotations.addAll(node.visibleAnnotations.asScala.map(astToJavaparser).asJava)
-    //annotations.addAll(node.invisibleAnnotations.asScala.map(astToJavaparser).asJava)
-    //annotations.addAll(node.visibleTypeAnnotations.asScala.map(astToJavaparser).asJava)
-    //annotations.addAll(node.invisibleTypeAnnotations.asScala.map(astToJavaparser).asJava)
-    val variables: NodeList[VariableDeclarator] = new NodeList({
+  private def asmToJavaparser(node: FieldNode): FieldDeclaration = {
+    val modifiers = accessToJavaparser(node.access)
+    val annotations: NodeList[AnnotationExpr] = {
+      val list = new NodeList[AnnotationExpr]()
+      val as = List(
+        node.visibleAnnotations,
+        node.invisibleAnnotations,
+        node.visibleTypeAnnotations,
+        node.invisibleTypeAnnotations)
+      for (a <- as) {
+        if (a != null) { list.addAll(a.asScala.map(asmToJavaparser).asJava) }
+      }
+      list
+    }
+    val variables = new NodeList[VariableDeclarator]({
       val `type`: Type = typeToJavaparser(node.desc, node.signature)
-      val name: SimpleName = new SimpleName(node.name)
+      val name = new SimpleName(node.name)
       val initializer: Expression = literalToJavaparser(node.value)
-      new VariableDeclarator(tokenRange: TokenRange, `type`: Type, name: SimpleName, initializer: Expression)})
+      new VariableDeclarator(`type`, name, initializer)})
 
-    new FieldDeclaration(tokenRange, modifiers, annotations, variables)
+    new FieldDeclaration(modifiers, annotations, variables)
   }
 
-  private def astToJavaparser(node: ClassNode): CompilationUnit = {
-    val fullClassName = StaticJavaParser.parseName(node.name.replace('/', '.'))
+  private def asmToJavaparser(node: ClassNode): CompilationUnit = {
+    val fullClassName: Name = StaticJavaParser.parseName(node.name.replace('/', '.'))
 
-    val packageDeclaration: PackageDeclaration = new PackageDeclaration(new NodeList[AnnotationExpr]() /*TODO*/, fullClassName.getQualifier.orElse(new Name()))
-    val imports: NodeList[ImportDeclaration] = new NodeList() // TODO
+    val packageDeclaration = new PackageDeclaration(
+      new NodeList[AnnotationExpr]() /*TODO*/, fullClassName.getQualifier.orElse(new Name()))
+    val imports = new NodeList[ImportDeclaration]() // TODO
 
     val classOrInterfaceDeclaration = {
-      val modifiers: NodeList[Modifier] = new NodeList() // TODO
-      val annotations: NodeList[AnnotationExpr] = new NodeList() // TODO
+      val modifiers = accessToJavaparser(node.access)
+      val annotations: NodeList[AnnotationExpr] = {
+        val list = new NodeList[AnnotationExpr]()
+        val as = List(
+          node.visibleAnnotations,
+          node.invisibleAnnotations,
+          node.visibleTypeAnnotations,
+          node.invisibleTypeAnnotations)
+        for (a <- as) {
+          if (a != null) { list.addAll(a.asScala.map(asmToJavaparser).asJava) }
+        }
+        list
+      }
       val isInterface: Boolean = (node.access & Opcodes.ACC_INTERFACE) != 0
-      val simpleName: SimpleName = new SimpleName(fullClassName.getIdentifier)
-      val typeParameters: NodeList[TypeParameter] = new NodeList() // TODO
-      val extendedTypes: NodeList[ClassOrInterfaceType] = new NodeList() // TODO
-      val implementedTypes: NodeList[ClassOrInterfaceType] = new NodeList() // TODO
-      val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
+      val simpleName = new SimpleName(fullClassName.getIdentifier)
+      // `extendedTypes` may be multiple if on an interface
+      // TODO: test if should be Descriptor.className
+      val (typeParameters, extendedTypes, implementedTypes):
+        (NodeList[TypeParameter], NodeList[ClassOrInterfaceType], NodeList[ClassOrInterfaceType]) = {
+        if (node.signature != null) {
+          val s = Signature.classSignature(node.signature)
+          (new NodeList(s._1.asJava), new NodeList(s._2), new NodeList(s._3.asJava))
+        } else {
+          (new NodeList(),
+           new NodeList(Descriptor.className(node.superName)),
+           new NodeList[ClassOrInterfaceType](node.interfaces.asScala.map(Descriptor.className).asJava))
+        }
+      }
+      val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
+        val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
+        list.addAll(node.fields.asScala.map(asmToJavaparser).asJava)
+        // TODO
+        list
+      }
 
-      members.addAll(node.fields.asScala.map(astToJavaparser).asJava)
+      new ClassOrInterfaceDeclaration(
+        modifiers, annotations, isInterface, simpleName, typeParameters, extendedTypes, implementedTypes, members) }
 
-      new ClassOrInterfaceDeclaration(modifiers, annotations, isInterface, simpleName, typeParameters, extendedTypes, implementedTypes, members)}
+    if (classOrInterfaceDeclaration.isInterface) {
+      classOrInterfaceDeclaration.setExtendedTypes(classOrInterfaceDeclaration.getImplementedTypes)
+      classOrInterfaceDeclaration.setImplementedTypes(new NodeList())
+    }
 
-    val types: NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]] = new NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]]()
+    val types = new NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]]()
     types.add(classOrInterfaceDeclaration)
 
-    val module: ModuleDeclaration = null // TODO
+    val module = null // TODO
 
     new CompilationUnit(packageDeclaration, imports, types, module)
   }
 
-  private def constructClassHeader(access: Int, name: String, superName: Option[String],
-                                   interfaces: List[String], signature: String, isInner: Boolean): String = {
-
-    /* -- modifiers, which may include `interface` -- */
-
-    val modifiers = if (isInner) AccessFlag.extractNestedClassAccessFlags(access)
-                    else         AccessFlag.extractClassAccessFlags(access)
-    val isInterface = modifiers.contains("interface")
-
-    val modifiersAndTypeString: String =
-      if (isInterface) modifiers.mkString(" ")
-      else             modifiers.mkString(" ") + " " + "class"
-
-
-    /* -- superclass and interfaces -- */
-    val inheritanceString: String = inheritanceRelations(superName, interfaces)
-
-    // TODO: signature
-
-      modifiersAndTypeString + " " + name + " " + inheritanceString  // TODO: use triple quotes
-  }
-
-//  private def allAnnotationText(obj: {val visibleAnnotations: java.util.List[AnnotationNode]
-//                                      val invisibleAnnotations: java.util.List[AnnotationNode]})
-//  : String = {
-//
-//    val visibleAnnotationsString = annotationText(obj.visibleAnnotations.asScala.toList)
-//    val invisibleAnnotationsString = annotationText(obj.invisibleAnnotations.asScala.toList)
-//    List(visibleAnnotationsString, invisibleAnnotationsString).mkString("\n")
-//  }
-
-  private def annotationText(annotations: mutable.Buffer[AnnotationNode])
-  : String =
-  // TODO: eliminate `null`
-    if (annotations != null && annotations.nonEmpty)
-      annotations.map {
-        // TODO: Annotation can only be class ????!!!?? I don't know!!!
-        "@" + _.desc.stripPrefix("L").stripSuffix(";")
-      }.mkString("\n")
-    else ""
-
-  private def inheritanceRelations(superName: Option[String], interfaces: List[String])
-  : String = {
-    val extendsSuperName = superName match {
-      case None | Some("java/lang/Object") => ""
-      case Some(s)                         => s"extends $s"
-    }
-
-    val implementsInterfaces =
-      if (interfaces.isEmpty) { "" }
-      else                    { s"implements ${interfaces.mkString(", ")}" }
-
-    List(extendsSuperName, implementsInterfaces).
-      mkString("\n")
-  }
-
-
-  /** Get field Text */
-  private def fieldText(field: FieldNode): String = {
-    val visibleAnnotationsString = annotationText(field.visibleAnnotations.asScala)
-    val invisibleAnnotationsString = annotationText(field.invisibleAnnotations.asScala)
-
-    /* -- modifiers, which may include `interface` -- */
-    val modifiers = AccessFlag.extractFieldAccessFlags(field.access)
-    val isAbstract = modifiers.contains("abstract")
-
-    visibleAnnotationsString + "\n" +
-      invisibleAnnotationsString + "\n" +
-      // TODO: signature
-      modifiers + " " + /* signatureString +*/ " " + field.name + (
-      if (isAbstract || field.value == null) ""
-      else                                   " = " + field.value
-      )
-  }
-
   /** Get method Text */
   private def methodText(method: MethodNode): String = {
-    val visibleAnnotationsString = annotationText(method.visibleAnnotations.asScala)
-    val invisibleAnnotationsString = annotationText(method.invisibleAnnotations.asScala)
-
     /* -- modifiers, which may include `interface` -- */
     val modifiers = AccessFlag.extractMethodAccessFlags(method.access)
     val isAbstract = modifiers.contains("abstract")
@@ -271,8 +212,6 @@ object Main {
 //        AccessFlag.extractParameterAccessFlags(p.access).mkString(" ") + p.name
 //      }.mkString(", ")
 
-    visibleAnnotationsString + "\n" +
-      invisibleAnnotationsString + "\n" +
       // TODO: signature
       modifiers + " " + /* signatureString +*/ " " + method.name + "(" + parameterList + ")" +
       " " + (if (checkedExceptions.isEmpty) "" else "throws" + " " + checkedExceptions) +

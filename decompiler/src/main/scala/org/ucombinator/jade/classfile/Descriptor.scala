@@ -4,28 +4,26 @@ import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, Primit
 
 import scala.util.parsing.combinator.RegexParsers
 
+// Grammar defined by JVMS 4.3
 object Descriptor extends RegexParsers {
-  def fieldDescriptor(string: String): Type = {
-    println(f"fieldDescriptor: $string")
-    parseAll(FieldDescriptor, string) match {
-      case Error(msg, _) => throw new Exception(f"parse error '$msg' in field descriptor '$string'")
-      case Failure(msg, _) => throw new Exception(f"parse failure '$msg' in field descriptor '$string'")
-      case Success(typ, _) => typ
-    }
+  private def parse[T](p: Parser[T], name: String): String => T = {
+    string: String =>
+      parseAll(p, string) match {
+        case Error(msg, _) => throw new Exception(f"parse error '$msg' in $name '$string'")
+        case Failure(msg, _) => throw new Exception(f"parse failure '$msg' in $name '$string'")
+        case Success(typ, _) => typ
+      }
   }
+  val fieldDescriptor: String => Type = { parse(FieldDescriptor, "field descriptor") }
+  val methodDescriptor: String => (List[Type], Type) = { parse(MethodDescriptor, "method descriptor") }
+  val className: String => ClassOrInterfaceType = { parse(ClassName, "class name") }
 
-  def methodDescriptor(string: String): (List[Type], Type) = {
-    parseAll(MethodDescriptor, string) match {
-      case Error(msg, _) => throw new Exception(f"parse error '$msg' in method descriptor '$string'")
-      case Failure(msg, _) => throw new Exception(f"parse failure '$msg' in method descriptor '$string'")
-      case Success(typ, _) => typ
-    }
-  }
+  // Used by `className`
+  private lazy val ClassName: Parser[ClassOrInterfaceType] =
+    rep1sep("[^;\\[/]+".r, '/') ^^ {
+      _.foldLeft(null: ClassOrInterfaceType){ (scope, name) => new ClassOrInterfaceType(scope, name) } }
 
-  // JVMS 4.3
-  private lazy val ClassName: Parser[List[String]] =
-    rep1sep("[^;\\[/]+".r, '/')
-
+  // Used by `fieldDescriptor`
   private lazy val FieldDescriptor: Parser[Type] =
     FieldType
 
@@ -45,7 +43,7 @@ object Descriptor extends RegexParsers {
     'Z' ^^^ PrimitiveType.booleanType()
 
   private lazy val ObjectType: Parser[Type] =
-    'L' ~> ClassName <~ ';' ^^ { _.foldLeft(null: ClassOrInterfaceType){ (scope, name) => new ClassOrInterfaceType(scope, name) } }
+    'L' ~> ClassName <~ ';'
 
   private lazy val ArrayType: Parser[Type] =
     '[' ~> ComponentType ^^ { new ArrayType(_) }
@@ -53,6 +51,7 @@ object Descriptor extends RegexParsers {
   private lazy val ComponentType: Parser[Type] =
     FieldType
 
+  // Used by `methodDescriptor`
   private lazy val MethodDescriptor: Parser[(List[Type], Type)] =
     ('(' ~> ParameterDescriptor.* <~ ')') ~ ReturnDescriptor ^^ {
       case parameterDescriptor ~ returnDescriptor => (parameterDescriptor, returnDescriptor) }
@@ -66,20 +65,4 @@ object Descriptor extends RegexParsers {
 
   private lazy val VoidDescriptor: Parser[Type] =
     'V' ^^^ new VoidType()
-
-/*
-  private val descriptor: Parser[Type] =
-    ( 'Z' ^^^ PrimitiveType.booleanType()
-    | 'C' ^^^ PrimitiveType.charType()
-    | 'B' ^^^ PrimitiveType.byteType()
-    | 'S' ^^^ PrimitiveType.shortType()
-    | 'I' ^^^ PrimitiveType.intType()
-    | 'J' ^^^ PrimitiveType.longType()
-    | 'F' ^^^ PrimitiveType.floatType()
-    | 'D' ^^^ PrimitiveType.doubleType()
-    | 'V' ^^^ new VoidType
-    | 'L' ~> "[^;]*".r <~ ";" ^^ { new ClassOrInterfaceType(null, _) }
-    | '[' ~> descriptor ^^ { new ArrayType(_) } )
-    // TODO: ( {ParameterDescriptor} ) ReturnDescriptor
- */
 }
