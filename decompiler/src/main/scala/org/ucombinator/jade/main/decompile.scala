@@ -4,10 +4,11 @@ import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 
 import com.github.javaparser.StaticJavaParser
-import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type, TypeParameter}
+import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Modifier, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, MethodDeclaration, Parameter, ReceiverParameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, Name, NormalAnnotationExpr, SimpleName, SingleMemberAnnotationExpr, StringLiteralExpr}
+import com.github.javaparser.ast.stmt.BlockStmt
 import org.objectweb.asm.{ClassReader, Opcodes}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
@@ -94,11 +95,6 @@ object Main {
     new NodeList() // TODO
   }
 
-  private def typeToJavaparser(desc: String, signature: String): Type = {
-    if (signature == null) { Descriptor.fieldDescriptor(desc) }
-    else { Signature.javaTypeSignature(signature) }
-  }
-
   private def literalToJavaparser(node: Object): LiteralExpr = node match {
     // TODO: improve formatting of literals?
     case null => null
@@ -119,6 +115,7 @@ object Main {
   }
 
   private def asmToJavaparser(node: FieldNode): FieldDeclaration = {
+    // attrs (ignore?)
     val modifiers = accessToJavaparser(node.access)
     val annotations: NodeList[AnnotationExpr] = {
       val list = new NodeList[AnnotationExpr]()
@@ -133,7 +130,9 @@ object Main {
       list
     }
     val variables = new NodeList[VariableDeclarator]({
-      val `type`: Type = typeToJavaparser(node.desc, node.signature)
+      val `type`: Type =
+        if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
+        else { Signature.javaTypeSignature(node.signature) }
       val name = new SimpleName(node.name)
       val initializer: Expression = literalToJavaparser(node.value)
       new VariableDeclarator(`type`, name, initializer)})
@@ -141,8 +140,54 @@ object Main {
     new FieldDeclaration(modifiers, annotations, variables)
   }
 
+  private def asmToJavaparser(node: MethodNode): MethodDeclaration = {
+    // exceptions
+    // parameters
+    // annotations
+    // attr (ignore?)
+    // annotationDefault
+    // visibleAnnotableParameterCount
+    // visibleParameterAnnotations
+    // invisibleAnnotableParameterCount
+    // invisibleParameterAnnotations
+    // instructions
+    // tryCatchBlocks
+    // maxStack
+    // maxLocals
+    // localVariables
+    // visibleLocalVariableAnnotations
+    // invisibleLocalVariableAnnotations
+    val modifiers = new NodeList[Modifier]() // TODO: access
+    val annotations  = new NodeList[AnnotationExpr]() // TODO
+    val sig: (List[TypeParameter], List[Type], Type, List[ReferenceType]) = {
+      if (node.signature != null) { Signature.methodSignature(node.signature) }
+      else {
+        val d = Descriptor.methodDescriptor(node.desc)
+        (List(), d._1, d._2, List()/*TODO*/)
+      }
+    }
+    val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1.asJava)
+    val parameters: NodeList[Parameter] = new NodeList(sig._2.map(t => new Parameter(t, new SimpleName("parameter"))).asJava)
+    val `type`: Type = sig._3
+    val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4.asJava)
+    val name: SimpleName = new SimpleName(node.name)
+    val body: BlockStmt = null // TODO
+    val receiverParameter: ReceiverParameter = null // TODO
+    new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
+  }
+
   private def asmToJavaparser(node: ClassNode): CompilationUnit = {
-    val fullClassName: Name = StaticJavaParser.parseName(node.name.replace('/', '.'))
+    // version
+    // sourceFile
+    // sourceDebug
+    // outerClass
+    // outerMethod
+    // outerMethodDesc
+    // attr (ignore?)
+    // innerClasses
+    // nestHostClass
+    // nestMember
+    val fullClassName: Name = StaticJavaParser.parseName(node.name.replace('/', '.')) // TODO: revisit
 
     val packageDeclaration = new PackageDeclaration(
       new NodeList[AnnotationExpr]() /*TODO*/, fullClassName.getQualifier.orElse(new Name()))
@@ -180,6 +225,7 @@ object Main {
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
         val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
         list.addAll(node.fields.asScala.map(asmToJavaparser).asJava)
+        list.addAll(node.methods.asScala.map(asmToJavaparser).asJava)
         // TODO
         list
       }
@@ -195,7 +241,7 @@ object Main {
     val types = new NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]]()
     types.add(classOrInterfaceDeclaration)
 
-    val module = null // TODO
+    val module = null // TODO node.module
 
     new CompilationUnit(packageDeclaration, imports, types, module)
   }

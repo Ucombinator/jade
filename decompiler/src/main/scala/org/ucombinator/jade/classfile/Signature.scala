@@ -20,7 +20,7 @@ object Signature extends RegexParsers {
   val javaTypeSignature: String => Type = { parse(JavaTypeSignature, "Java type signature") }
   val classSignature: String => (List[JPTypeParamter], ClassOrInterfaceType, List[ClassOrInterfaceType]) = {
     parse(ClassSignature, "class signature") }
-  val methodSignature: String => (List[JPTypeParamter], List[Type], Type, List[Type]) = {
+  val methodSignature: String => (List[JPTypeParamter], List[Type], Type, List[ReferenceType]) = {
     parse(MethodSignature, "method signature") }
   val fieldSignature: String => Type = { parse(FieldSignature, "field signature") }
 
@@ -91,7 +91,7 @@ object Signature extends RegexParsers {
   private lazy val ClassSignature: Parser[(List[JPTypeParamter], ClassOrInterfaceType, List[ClassOrInterfaceType])] =
     TypeParameters.? ~ SuperclassSignature ~ SuperinterfaceSignature.* ^^ {
       case typeParameters ~ superclassSignature ~ superinterfaceSignature =>
-        (typeParameters.orNull, superclassSignature, superinterfaceSignature) }
+        (typeParameters.getOrElse(List()), superclassSignature, superinterfaceSignature) }
 
   private lazy val TypeParameters: Parser[List[JPTypeParamter]] =
     '<' ~> TypeParameter ~ TypeParameter.* <~ '>' ^^ {
@@ -115,16 +115,16 @@ object Signature extends RegexParsers {
     ClassTypeSignature
 
   // Used by `methodSignature`
-  private lazy val MethodSignature: Parser[(List[JPTypeParamter], List[Type], Type, List[Type])] =
+  private lazy val MethodSignature: Parser[(List[JPTypeParamter], List[Type], Type, List[ReferenceType])] =
     TypeParameters.? ~ ('(' ~> JavaTypeSignature.* <~ ')') ~ Result ~ ThrowsSignature.* ^^ {
       case typeParameters ~ javaTypeSignature ~ result ~ throwsSignature =>
-        (typeParameters.orNull, javaTypeSignature, result, throwsSignature) }
+        (typeParameters.getOrElse(List()), javaTypeSignature, result, throwsSignature) }
 
   private lazy val Result: Parser[Type] =
     JavaTypeSignature |
     VoidDescriptor
 
-  private lazy val ThrowsSignature: Parser[Type] =
+  private lazy val ThrowsSignature: Parser[ReferenceType] =
     '^' ~> ClassTypeSignature |
     '^' ~> TypeVariableSignature
 
