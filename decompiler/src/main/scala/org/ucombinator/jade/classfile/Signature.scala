@@ -2,7 +2,7 @@ package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, ReferenceType, Type, VoidType, WildcardType, TypeParameter => JPTypeParamter}
-import com.github.javaparser.ast.expr.SimpleName
+import com.github.javaparser.ast.expr.{AnnotationExpr, SimpleName}
 
 import scala.collection.JavaConverters._
 import scala.util.parsing.combinator.RegexParsers
@@ -14,7 +14,9 @@ object Signature extends RegexParsers {
       parseAll(p, string) match {
         case Error(msg, _) => throw new Exception(f"parse error '$msg' in $name '$string'")
         case Failure(msg, _) => throw new Exception(f"parse failure '$msg' in $name '$string'")
-        case Success(typ, _) => typ
+        case Success(typ, i) =>
+          if (!i.atEnd) { throw new Exception(f"parse incomplete at position ${i.pos} in $name '$string'") }
+          else { typ }
       }
   }
   val javaTypeSignature: String => Type = { parse(JavaTypeSignature, "Java type signature") }
@@ -71,7 +73,7 @@ object Signature extends RegexParsers {
     WildcardIndicator.? ~ ReferenceTypeSignature ^^ {
       case None ~ referenceTypeSignature => referenceTypeSignature
       case Some(true) ~ referenceTypeSignature => new WildcardType(referenceTypeSignature) // TODO: these might be backwards
-      case Some(false) ~ referenceTypeSignature => new WildcardType(null: ReferenceType, referenceTypeSignature, null) } |
+      case Some(false) ~ referenceTypeSignature => new WildcardType(null: ReferenceType, referenceTypeSignature, new NodeList[AnnotationExpr]()) } |
     '*' ^^^ new WildcardType()
 
   private lazy val WildcardIndicator: Parser[Boolean] =

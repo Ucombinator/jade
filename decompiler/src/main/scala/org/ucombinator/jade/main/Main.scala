@@ -5,6 +5,8 @@ import java.util.concurrent.Callable
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
 
+import scala.collection.JavaConverters._
+
 // TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 // TODO: description
 // TODO: header/footer?
@@ -68,11 +70,11 @@ class Decompile extends Cmd[Unit] {
   var printMethods = false
 
   // TODO: java.io.file or java.nio.path?
-  @Parameters(paramLabel = "<file>", description = Array("The .class file to decompile")) // TODO: FILE?
-  var fileName: String = _
+  @Parameters(paramLabel = "<file>", arity = "1..*", description = Array("The .class file to decompile")) // TODO: FILE?
+  var fileNames: java.util.List[String] = _
 
   override def call(): Unit = {
-    decompile.Main.main(fileName, printAsm, printJavaparser, printMethods)
+    decompile.Main.main(printAsm, printJavaparser, printMethods, fileNames.asScala.toList)
   }
 }
 
