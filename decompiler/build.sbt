@@ -22,18 +22,18 @@ libraryDependencies ++= Seq(
   "org.jgrapht" % "jgrapht-opt" % "1.3.0",
 
   // HTML parsing
-  "org.jsoup" % "jsoup" % "1.11.3",
+  "org.jsoup" % "jsoup" % "1.12.1",
 
   // `.class` file parsing and analysis
-  "org.ow2.asm" % "asm" % "7.0",
-  "org.ow2.asm" % "asm-analysis" % "7.0",
-  "org.ow2.asm" % "asm-commons" % "7.0",
-  //"org.ow2.asm" % "asm-test" % "7.0",
-  "org.ow2.asm" % "asm-tree" % "7.0",
-  "org.ow2.asm" % "asm-util" % "7.0",
+  "org.ow2.asm" % "asm" % "7.1",
+  "org.ow2.asm" % "asm-analysis" % "7.1",
+  "org.ow2.asm" % "asm-commons" % "7.1",
+  //"org.ow2.asm" % "asm-test" % "7.1",
+  "org.ow2.asm" % "asm-tree" % "7.1",
+  "org.ow2.asm" % "asm-util" % "7.1",
 
   // General parsing framework
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1",
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2",
 
   // Testing framework for `src/test/`
   "org.scalatest" %% "scalatest" % "3.0.5" % Test,
