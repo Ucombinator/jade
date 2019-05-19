@@ -1,8 +1,5 @@
 package org.ucombinator.jade.main.decompile
 
-import java.io.PrintWriter
-import java.nio.file.{Files, Paths}
-
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Modifier, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, MethodDeclaration, Parameter, ReceiverParameter, TypeDeclaration, VariableDeclarator}
@@ -17,21 +14,24 @@ import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.method.ssa.SSA
 import org.ucombinator.jade.util.Flag
 
+import java.io.{File, PrintWriter}
+import java.nio.file.Files
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 object Main {
-  def main(printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean, fileNames: List[String]): Unit = {
+  def main(printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean, fileNames: List[File]): Unit = {
     for (fileName <- fileNames) {
       println(fileName)
       main(printAsm, printJavaparser, printMethods, fileName)
     }
   }
 
-  def main(printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean, fileName: String): Unit = {
+  def main(printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean, fileName: File): Unit = {
     require(fileName != null, "the given class file name is actually `null`!")
 
-    val byteArray = Files.readAllBytes(Paths.get(fileName)) //Full path class name
+    val byteArray = Files.readAllBytes(fileName.toPath) //Full path class name
 
     val cn = new ClassNode
     val cr = new ClassReader(byteArray)
@@ -70,12 +70,12 @@ object Main {
         println("!!!!!!!!!!!!")
         println(f"method: ${method.name} ${method.signature} ${method.desc}")
         println("**** ControlFlowGraph ****")
-        val cfg = ControlFlowGraph(fileName, method)
+        val cfg = ControlFlowGraph(fileName.toString, method)
         for (v <- cfg.graph.vertexSet().asScala) {
           println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
         }
         println("**** SSA ****")
-        val ids = SSA(fileName, method, cfg)
+        val ids = SSA(fileName.toString, method, cfg)
 
         println("frames: " + ids.frames.length)
         for (i <- 0 until method.instructions.size) {
@@ -85,7 +85,7 @@ object Main {
         println("results and arguments")
         for (i <- 0 until method.instructions.size) {
           val insn = method.instructions.get(i)
-          println(f"args(${i}): ${Instructions.toString(method.instructions, insn)} ${ids.instructionArguments.get(insn)}")
+          println(f"args($i): ${Instructions.toString(method.instructions, insn)} ${ids.instructionArguments.get(insn)}")
         }
 
         println("ssa")
@@ -111,7 +111,7 @@ object Main {
 
   private def typeToName(t: Type): Name = t match {
     case null => null
-    case t: ClassOrInterfaceType => new Name(typeToName(t.getScope.orElse(null)), t.getName.getIdentifier())
+    case t: ClassOrInterfaceType => new Name(typeToName(t.getScope.orElse(null)), t.getName.getIdentifier)
     case _ => throw new Exception(f"failed to convert type $t to a name")
   }
 

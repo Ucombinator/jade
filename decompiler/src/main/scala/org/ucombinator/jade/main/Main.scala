@@ -1,5 +1,6 @@
 package org.ucombinator.jade.main
 
+import java.io.File
 import java.util.concurrent.Callable
 
 import picocli.CommandLine
@@ -7,18 +8,8 @@ import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Pa
 
 import scala.collection.JavaConverters._
 
-// TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
-// TODO: description
-// TODO: header/footer?
-
-object Main {
-  val commandLine: CommandLine = new CommandLine(new Main())
-  def main(args: Array[String]): Unit = {
-    System.exit(commandLine.execute(args:_*))
-  }
-}
-
-// Class for common settings on commands
+////////////////
+// Classes for common settings on commands
 
 @Command(
   mixinStandardHelpOptions = true,
@@ -36,7 +27,19 @@ class ManifestVersionProvider extends CommandLine.IVersionProvider {
   }
 }
 
+////////////////
 // Top-level command
+
+// TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
+// TODO: description
+// TODO: header/footer?
+
+object Main {
+  val commandLine: CommandLine = new CommandLine(new Main())
+  def main(args: Array[String]): Unit = {
+    System.exit(commandLine.execute(args:_*))
+  }
+}
 
 // TODO: aliases, description, defaultValueProvider
 @Command(
@@ -56,6 +59,7 @@ class Main() extends Cmd[Unit] {
   }
 }
 
+////////////////
 // Sub-commands
 
 @Command(name="decompile")
@@ -71,7 +75,7 @@ class Decompile extends Cmd[Unit] {
 
   // TODO: java.io.file or java.nio.path?
   @Parameters(paramLabel = "<file>", arity = "1..*", description = Array("The .class file to decompile")) // TODO: FILE?
-  var fileNames: java.util.List[String] = _
+  var fileNames: java.util.List[File] = _
 
   override def call(): Unit = {
     decompile.Main.main(printAsm, printJavaparser, printMethods, fileNames.asScala.toList)
@@ -119,7 +123,7 @@ class AsmOpcodeConstants extends Cmd[Unit] {
 @Command(name="build-info")
 class BuildInfoCmd extends Cmd[Unit] {
   override def call(): Unit = {
-    import BuildInfo._
+    import org.ucombinator.jade.main.BuildInfo._
     println(f"Build tools: Scala $scalaVersion, SBT $sbtVersion")
     println(f"Build time: $builtAtString UTC")
     println(f"Build user: $username")
