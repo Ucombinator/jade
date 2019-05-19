@@ -9,7 +9,7 @@ import org.objectweb.asm.{ClassReader, Opcodes}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.asm.Instructions
-import org.ucombinator.jade.classfile.{AccessFlag, Descriptor, Signature}
+import org.ucombinator.jade.classfile.{Descriptor, Signature}
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.method.ssa.SSA
 import org.ucombinator.jade.util.Flag
@@ -17,7 +17,6 @@ import org.ucombinator.jade.util.Flag
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
 
-import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 object Main {
@@ -50,23 +49,14 @@ object Main {
 
     if (printMethods) {
       // TODO: cn.sourceFile, cn.sourceDebug
-
-      println("class {")
-
       // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
-
       // TODO: Inner classes
       val inners: List[InnerClassNode] = cn.innerClasses.asScala.toList
       inners.foreach { c =>
         println(c.name)
       }
 
-      val methods: List[MethodNode] = cn.methods.asScala.toList
-      val methodsCode: List[String] = methods.map(methodText)
-
-      println(methodsCode.mkString("\n"))
-
-      for (method <- methods) {
+      for (method <- cn.methods.asScala) {
         println("!!!!!!!!!!!!")
         println(f"method: ${method.name} ${method.signature} ${method.desc}")
         println("**** ControlFlowGraph ****")
@@ -93,8 +83,6 @@ object Main {
           println(s"ssa: $key -> $value")
         }
       }
-
-      println("\n}")
     }
   }
 
@@ -260,48 +248,5 @@ object Main {
     val module = null // TODO node.module
 
     new CompilationUnit(packageDeclaration, imports, types, module)
-  }
-
-  /** Get method Text */
-  private def methodText(method: MethodNode): String = {
-    /* -- modifiers, which may include `interface` -- */
-    val modifiers = AccessFlag.extractMethodAccessFlags(method.access)
-    val isAbstract = modifiers.contains("abstract")
-
-    val checkedExceptions = method.exceptions.asScala.mkString(", ")
-
-    val parameterList = Option(method.parameters.asScala).
-      getOrElse(mutable.Buffer.empty[ParameterNode]).
-      map { p =>
-        AccessFlag.extractParameterAccessFlags(p.access).mkString(" ") + p.name
-      }.mkString(" ")
-//    val parameterList =
-//      method.parameters.asScala.map { p: ParameterNode =>
-//        AccessFlag.extractParameterAccessFlags(p.access).mkString(" ") + p.name
-//      }.mkString(", ")
-
-      // TODO: signature
-      modifiers + " " + /* signatureString +*/ " " + method.name + "(" + parameterList + ")" +
-      " " + (if (checkedExceptions.isEmpty) "" else "throws" + " " + checkedExceptions) +
-      " " + (if (isAbstract) ";" else "{ /* TODO */ }")
-  }
-
-  def printInsnNode(insnNode: AbstractInsnNode): Unit = insnNode match {
-    case f     : FieldInsnNode          => println(f.getOpcode)
-    case fr    : FrameNode              => println(fr.getOpcode)
-    case iinc  : IincInsnNode           => println(iinc.getOpcode)
-    case i     : InsnNode               => println(i.getOpcode)
-    case int   : IntInsnNode            => println(int.getOpcode)
-    case invDyn: InvokeDynamicInsnNode  => println(invDyn.getOpcode)
-    case jmp   : JumpInsnNode           => println(jmp.getOpcode)
-    case lb    : LabelNode              => println(lb.getOpcode)
-    case ldc   : LdcInsnNode            => println(ldc.getOpcode)
-    case ln    : LineNumberNode         => println(ln.getOpcode)
-    case lkpS  : LookupSwitchInsnNode   => println(lkpS.getOpcode)
-    case m     : MethodInsnNode         => println(m.getOpcode)
-    case mulArr: MultiANewArrayInsnNode => println(mulArr.getOpcode)
-    case tabS  : TableSwitchInsnNode    => println(tabS.getOpcode)
-    case t     : TypeInsnNode           => println(t.getOpcode)
-    case v     : VarInsnNode            => println(v.getOpcode)
   }
 }
