@@ -1,12 +1,9 @@
 package org.ucombinator.jade.main
 
 import java.util.concurrent.Callable
-import java.util.jar.Attributes
 
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
-
-import scala.collection.JavaConverters._
 
 // TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 // TODO: description
@@ -20,7 +17,7 @@ object Main {
 }
 
 // Class for common settings on commands
-// aliases, description, defaultValueProvider
+
 @Command(
   mixinStandardHelpOptions = true,
   requiredOptionMarker = '*',
@@ -30,6 +27,16 @@ abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 }
 
+class ManifestVersionProvider extends CommandLine.IVersionProvider {
+  override def getVersion: Array[String] = {
+    import BuildInfo._
+    Array[String](f"$name version $version (https://github.org/ucombinator/jade)")
+  }
+}
+
+// Top-level command
+
+// TODO: aliases, description, defaultValueProvider
 @Command(
   name = "jade",
   subcommands = Array(
@@ -39,12 +46,15 @@ abstract class Cmd[T] extends Callable[T] {
     classOf[JavaGrammarExtract],
     classOf[JavaGrammarTypes],
     classOf[AsmInstructionConstants],
-    classOf[AsmOpcodeConstants]))
+    classOf[AsmOpcodeConstants],
+    classOf[BuildInfoCmd]))
 class Main() extends Cmd[Unit] {
   override def call(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
   }
 }
+
+// Sub-commands
 
 @Command(name="decompile")
 class Decompile extends Cmd[Unit] {
@@ -104,23 +114,16 @@ class AsmOpcodeConstants extends Cmd[Unit] {
   }
 }
 
-/** [[picocli.CommandLine.IVersionProvider]] implementation that returns version information from the jar file's `/META-INF/MANIFEST.MF` file.
-  * Based on [[https://github.com/remkop/picocli/blob/master/picocli-examples/src/main/java/picocli/examples/VersionProviderDemo2.java]]
-  */
-class ManifestVersionProvider extends CommandLine.IVersionProvider {
-  @throws[Exception]
-  override def getVersion: Array[String] = {
-    val manifestFile = "META-INF/MANIFEST.MF"
-    val title = "Jade"
-    val resources = classOf[Main].getClassLoader.getResources(manifestFile)
-    for (url <- resources.asScala) {
-      val manifest = new java.util.jar.Manifest(url.openStream)
-      @inline def get(key: String) = manifest.getMainAttributes.get(new Attributes.Name(key))
-      // TODO: include versions of packaged jars?
-      if (title == get("Implementation-Title")) {
-        return Array[String](f"${get("Implementation-Title")} version ${get("Implementation-Version")}")
-      }
+@Command(name="build-info")
+class BuildInfoCmd extends Cmd[Unit] {
+  override def call(): Unit = {
+    import BuildInfo._
+    println(f"Build tools: Scala $scalaVersion, SBT $sbtVersion")
+    println(f"Build time: $builtAtString UTC")
+    println(f"Build user: $username")
+    println(f"Libraries:")
+    for (l <- libraryDependencies.sorted) {
+      println("  " + l)
     }
-    throw new Exception(f"Unable to find `$manifestFile` with title '$title' from which to read version")
   }
 }

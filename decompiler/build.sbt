@@ -1,6 +1,5 @@
 organization := "org.ucombinator"
 name := "Jade"
-version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.12.8"
 
@@ -43,6 +42,21 @@ libraryDependencies ++= Seq(
 filterScalaLibrary := false // include scala library in output of sbt-dependency-graph
 dependencyAllowPreRelease := true // include pre-releases in dependency updates
 
+// Setup GitVersioning
+useJGit // make things work even if `git` is not installed
+enablePlugins(GitVersioning)
+git.useGitDescribe := true
+git.uncommittedSignifier := Some("dirty")
+
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := Seq[BuildInfoKey](
+      name, version, scalaVersion, sbtVersion, libraryDependencies,
+      BuildInfoKey.action("username") { System.getProperty("user.name") }),
+    buildInfoPackage := "org.ucombinator.jade.main",
+    buildInfoOptions += BuildInfoOption.BuildTime)
+
 // Flags to `scalac`.  Try to get as much error and warning detection as possible.
 scalacOptions ++= Seq(
   "-deprecation",  // Emit warning and location for usages of deprecated APIs.
@@ -68,6 +82,7 @@ assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 //   Reduces size from 32MB to 5.4MB
 // GraalVM
 // ScalaNative
+// ScalaMeter
 
 // Create merge strategies that do not cause warnings
 def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {
