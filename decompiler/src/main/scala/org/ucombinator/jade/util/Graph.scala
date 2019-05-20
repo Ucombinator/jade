@@ -49,4 +49,11 @@ object Graph {
     dom.mapValues(_.min(O))
   }
 
+  //structure of region graph?
+  // Type region:
+  // | Single of Vertex
+  // | Graph [regions, edge]
+
+  // Definition subregion: All nodes that share a pre and post dominator?
+
 }
