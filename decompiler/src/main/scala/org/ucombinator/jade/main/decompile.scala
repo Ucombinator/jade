@@ -12,8 +12,7 @@ import org.ucombinator.jade.asm.Instructions
 import org.ucombinator.jade.classfile.{Descriptor, Signature}
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.method.ssa.SSA
-import org.ucombinator.jade.util.Flag
-
+import org.ucombinator.jade.util.{Flag, Unknown}
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
 
@@ -138,15 +137,22 @@ object Main {
     new FieldDeclaration(modifiers, annotations, variables)
   }
 
+  private def decomParameter(method: MethodNode, paramCount: Int): (((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])) => Parameter = {
+    case ((((typ, index), node), a1), a2) =>
+      val flags = if (node == null) { List() } else { Flag.parameterFlags(node.access) }
+      val modifiers = new NodeList[Modifier](Flag.onlyKnown(flags).map(x => new Modifier(x)).asJava)
+      val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(a1, a2, null, null)
+      val `type`: Type = typ
+      val isVarArgs: Boolean =
+        Flag.methodFlags(method.access).contains(Unknown(Opcodes.ACC_VARARGS)) &&
+        index == paramCount - 1
+      val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
+      val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
+    new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
+  }
+
   private def asmToJavaparser(node: MethodNode): MethodDeclaration = {
-    // exceptions
-    // parameters
-    // annotations
     // attr (ignore?)
-    // visibleAnnotableParameterCount
-    // visibleParameterAnnotations
-    // invisibleAnnotableParameterCount
-    // invisibleParameterAnnotations
     // instructions
     // tryCatchBlocks
     // maxStack
@@ -165,11 +171,19 @@ object Main {
       if (node.signature != null) { Signature.methodSignature(node.signature) }
       else {
         val d = Descriptor.methodDescriptor(node.desc)
-        (List(), d._1, d._2, List()/*TODO*/)
+        (List(), d._1, d._2, node.exceptions.asScala.toList.map(x => Descriptor.nameToType(Descriptor.className(x))))
       }
     }
     val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1.asJava)
-    val parameters: NodeList[Parameter] = new NodeList(sig._2.map(t => new Parameter(t, new SimpleName("parameter"))).asJava)
+    def nullToList[A](x: Seq[A]): Seq[A] = { if (x == null) { List() } else { x } }
+    val parameters: NodeList[Parameter] = {
+      val ps = sig._2
+        .zipWithIndex
+        .zipAll(node.parameters match { case null => List(); case p => p.asScala }, null, null)
+        .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
+        .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
+      new NodeList(ps.map(decomParameter(node, sig._2.size)).asJava)
+    }
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4.asJava)
     val name: SimpleName = new SimpleName(node.name)
@@ -187,9 +201,9 @@ object Main {
   }
 
   private def asmToJavaparser(node: ClassNode): CompilationUnit = {
-    // version
-    // sourceFile
-    // sourceDebug
+    println(f"version: ${node.version}") // TODO
+    println(f"sourceFile: ${node.sourceFile}") // TODO
+    println(f"sourceDebug: ${node.sourceDebug}") // TODO
     // outerClass
     // outerMethod
     // outerMethodDesc

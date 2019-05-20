@@ -67,4 +67,5 @@ object Flag {
   val classFlags = foo(CLASS)
   val methodFlags = foo(METHOD)
   val fieldFlags = foo(FIELD)
+  val parameterFlags = foo(PARAMETER)
 }
