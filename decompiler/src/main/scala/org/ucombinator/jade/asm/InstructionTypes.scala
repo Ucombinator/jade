@@ -1,8 +1,12 @@
-/*Automatically built by extractAsmTypes.scala to reflect values in AbstractInsnNode. Last checked against ASM 7.0*/
+/* Automatically built by generateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */
+/* Last checked against ASM 7.1. */
+
 package org.ucombinator.jade.asm
+
 import org.objectweb.asm.tree.AbstractInsnNode
+
 object InstructionTypes{
-  val fromString = Map(
+  val fromString: Map[String, Int] = Map(
     "INSN" -> AbstractInsnNode.INSN,
     "INT_INSN" -> AbstractInsnNode.INT_INSN,
     "VAR_INSN" -> AbstractInsnNode.VAR_INSN,
@@ -20,5 +24,6 @@ object InstructionTypes{
     "FRAME" -> AbstractInsnNode.FRAME,
     "LINE" -> AbstractInsnNode.LINE,
   )
-  val fromInt = fromString map {_.swap}
+
+  val fromInt: Map[Int, String] = fromString map {_.swap}
 }

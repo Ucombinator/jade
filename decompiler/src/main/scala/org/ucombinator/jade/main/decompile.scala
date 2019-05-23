@@ -1,7 +1,7 @@
 package org.ucombinator.jade.main.decompile
 
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
-import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Modifier, NodeList, PackageDeclaration}
+import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, MethodDeclaration, Parameter, ReceiverParameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MemberValuePair, Name, NormalAnnotationExpr, SimpleName, SingleMemberAnnotationExpr, StringLiteralExpr}
 import com.github.javaparser.ast.stmt.BlockStmt
@@ -9,10 +9,10 @@ import org.objectweb.asm.{ClassReader, Opcodes}
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.asm.Instructions
-import org.ucombinator.jade.classfile.{Descriptor, Signature}
+import org.ucombinator.jade.classfile.{Descriptor, Modifier, Signature}
 import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.method.ssa.SSA
-import org.ucombinator.jade.util.{Flag, Unknown}
+
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
 
@@ -120,7 +120,7 @@ object Main {
 
   private def asmToJavaparser(node: FieldNode): FieldDeclaration = {
     // attrs (ignore?)
-    val modifiers = new NodeList[Modifier](Flag.onlyKnown(Flag.fieldFlags(node.access)).map(x => new Modifier(x)).asJava)
+    val modifiers = Modifier.modifiersToNodeList(Modifier.intToField(node.access))
     val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(
       node.visibleAnnotations,
       node.invisibleAnnotations,
@@ -139,12 +139,12 @@ object Main {
 
   private def decomParameter(method: MethodNode, paramCount: Int): (((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])) => Parameter = {
     case ((((typ, index), node), a1), a2) =>
-      val flags = if (node == null) { List() } else { Flag.parameterFlags(node.access) }
-      val modifiers = new NodeList[Modifier](Flag.onlyKnown(flags).map(x => new Modifier(x)).asJava)
+      val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
+      val modifiers = Modifier.modifiersToNodeList(flags)
       val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(a1, a2, null, null)
       val `type`: Type = typ
       val isVarArgs: Boolean =
-        Flag.methodFlags(method.access).contains(Unknown(Opcodes.ACC_VARARGS)) &&
+        Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
         index == paramCount - 1
       val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
       val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
@@ -160,8 +160,8 @@ object Main {
     // localVariables
     // visibleLocalVariableAnnotations
     // invisibleLocalVariableAnnotations
-    // TODO: Modifier.Keyword.DEFAULT
-    val modifiers = new NodeList[Modifier](Flag.onlyKnown(Flag.methodFlags(node.access)).map(x => new Modifier(x)).asJava)
+    // TODO: JPModifier.Keyword.DEFAULT
+    val modifiers = Modifier.modifiersToNodeList(Modifier.intToMethod(node.access))
     val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(
       node.visibleAnnotations,
       node.invisibleAnnotations,
@@ -218,7 +218,7 @@ object Main {
     val imports = new NodeList[ImportDeclaration]() // TODO
 
     val classOrInterfaceDeclaration = {
-      val modifiers = new NodeList[Modifier](Flag.onlyKnown(Flag.classFlags(node.access)).map(x => new Modifier(x)).asJava)
+      val modifiers = Modifier.modifiersToNodeList(Modifier.intToClass(node.access))
       val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(
         node.visibleAnnotations,
         node.invisibleAnnotations,

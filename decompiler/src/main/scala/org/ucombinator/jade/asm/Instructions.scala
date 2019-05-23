@@ -1,6 +1,7 @@
 package org.ucombinator.jade.asm
 
 import org.objectweb.asm.tree._
+import org.objectweb.asm.util.Printer
 
 /*
 import org.objectweb.asm.util.{TraceMethodVisitor, Textifier => ASMTextifier}
@@ -22,10 +23,22 @@ class Textifier(method: MethodNode) extends ASMTextifier {
  */
 
 object Instructions {
+  /*
+  private val textifier = new Textifier()
+  private val methodVisitor = new TraceMethodVisitor(textifier)
+  private val stringWriter = new StringWriter()
+  private val printWriter = new PrintWriter(stringWriter)
+  private val stringBuffer = stringWriter.getBuffer
+  */
   def toString(l: InsnList, i: AbstractInsnNode): String = {
     val index = l.indexOf(i)
     val typ = InstructionTypes.fromInt(i.getType)
-    val opcode = if (i.getOpcode == -1) { "no_opcode" } else Opcodes.fromInt(i.getOpcode)
+    /*i.accept(methodVisitor)
+    textifier.print(printWriter)
+    printWriter.flush()
+    val string = stringBuffer.toString
+    stringBuffer.setLength(0)*/
+    val opcode = if (i.getOpcode == -1) { "no_opcode" } else Printer.OPCODES(i.getOpcode)
     f"$index $typ $opcode"
 
     // TODO

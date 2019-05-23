@@ -1,31 +1,12 @@
 package org.ucombinator.jade.main
 
-import java.io.File
-import java.util.concurrent.Callable
-
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
 
+import java.io.File
+import java.util.concurrent.Callable
+
 import scala.collection.JavaConverters._
-
-////////////////
-// Classes for common settings on commands
-
-@Command(
-  mixinStandardHelpOptions = true,
-  requiredOptionMarker = '*',
-  showDefaultValues = true,
-  versionProvider = classOf[ManifestVersionProvider])
-abstract class Cmd[T] extends Callable[T] {
-  @ParentCommand var mainCommand: Main = _
-}
-
-class ManifestVersionProvider extends CommandLine.IVersionProvider {
-  override def getVersion: Array[String] = {
-    import BuildInfo._
-    Array[String](f"$name version $version (https://github.org/ucombinator/jade)")
-  }
-}
 
 ////////////////
 // Top-level command
@@ -33,6 +14,7 @@ class ManifestVersionProvider extends CommandLine.IVersionProvider {
 // TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 // TODO: description
 // TODO: header/footer?
+// TODO: aliases, description, defaultValueProvider
 
 object Main {
   val commandLine: CommandLine = new CommandLine(new Main())
@@ -41,18 +23,16 @@ object Main {
   }
 }
 
-// TODO: aliases, description, defaultValueProvider
 @Command(
   name = "jade",
   subcommands = Array(
     classOf[HelpCommand],
+    classOf[BuildInfoCmd],
     classOf[Decompile],
-    classOf[JavaGrammarDownload],
-    classOf[JavaGrammarExtract],
-    classOf[JavaGrammarTypes],
-    classOf[AsmInstructionConstants],
-    classOf[AsmOpcodeConstants],
-    classOf[BuildInfoCmd]))
+    classOf[DownloadJls],
+    classOf[DownloadJvms],
+    classOf[GenerateModifierCode],
+    classOf[GenerateAsmInstructionTypes]))
 class Main() extends Cmd[Unit] {
   override def call(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -60,7 +40,40 @@ class Main() extends Cmd[Unit] {
 }
 
 ////////////////
+// Classes for common settings on commands
+
+@Command(
+  mixinStandardHelpOptions = true,
+  requiredOptionMarker = '*',
+  showDefaultValues = true,
+  versionProvider = classOf[VersionProvider])
+abstract class Cmd[T] extends Callable[T] {
+  @ParentCommand var mainCommand: Main = _
+}
+
+class VersionProvider extends CommandLine.IVersionProvider {
+  override def getVersion: Array[String] = {
+    import org.ucombinator.jade.main.BuildInfo._
+    Array[String](f"$name version $version (https://github.org/ucombinator/jade)")
+  }
+}
+
+////////////////
 // Sub-commands
+
+@Command(name="build-info")
+class BuildInfoCmd extends Cmd[Unit] {
+  override def call(): Unit = {
+    import org.ucombinator.jade.main.BuildInfo._
+    println(f"Build tools: Scala $scalaVersion, SBT $sbtVersion")
+    println(f"Build time: $builtAtString UTC")
+    println(f"Build user: $username")
+    println(f"Libraries:")
+    for (l <- libraryDependencies.sorted) {
+      println("  " + l)
+    }
+  }
+}
 
 @Command(name="decompile")
 class Decompile extends Cmd[Unit] {
@@ -82,54 +95,42 @@ class Decompile extends Cmd[Unit] {
   }
 }
 
-@Command(name="java-grammar:download")
-class JavaGrammarDownload extends Cmd[Unit] {
-  @Parameters(paramLabel = "<version or url>")
-  var versionOrUrl: String = _
+@Command(name="download-jls")
+class DownloadJls extends Cmd[Unit] {
+  @Parameters(paramLabel = "<version>")
+  var version: Int = _
+
+  @Parameters(paramLabel = "<chapter>")
+  var chapter: Int = _
 
   override def call(): Unit = {
-    downloadGrammar.Main.main(versionOrUrl)
+    downloadSpecification.Main.main("jls", version, chapter)
   }
 }
 
-@Command(name="java-grammar:extract")
-class JavaGrammarExtract extends Cmd[Unit] {
+@Command(name="download-jvms")
+class DownloadJvms extends Cmd[Unit] {
+  @Parameters(paramLabel = "<version>")
+  var version: Int = _
+
+  @Parameters(paramLabel = "<chapter>")
+  var chapter: Int = _
+
   override def call(): Unit = {
-    extractGrammar.Main.main()
+    downloadSpecification.Main.main("jvms", version, chapter)
   }
 }
 
-@Command(name="java-grammar:types")
-class JavaGrammarTypes extends Cmd[Unit] {
+@Command(name="generate-modifier-code")
+class GenerateModifierCode extends Cmd[Unit] {
   override def call(): Unit = {
-    javaFileTypes.Main.main()
+    generateModifierCode.Main.main()
   }
 }
 
-@Command(name="asm-constants:instruction-types")
-class AsmInstructionConstants extends Cmd[Unit] {
+@Command(name="generate-asm-instruction-types")
+class GenerateAsmInstructionTypes extends Cmd[Unit] {
   override def call(): Unit = {
-    extractAsmTypes.Main.main()
-  }
-}
-
-@Command(name="asm-constants:opcodes")
-class AsmOpcodeConstants extends Cmd[Unit] {
-  override def call(): Unit = {
-    extractAsmOpcodes.Main.main()
-  }
-}
-
-@Command(name="build-info")
-class BuildInfoCmd extends Cmd[Unit] {
-  override def call(): Unit = {
-    import org.ucombinator.jade.main.BuildInfo._
-    println(f"Build tools: Scala $scalaVersion, SBT $sbtVersion")
-    println(f"Build time: $builtAtString UTC")
-    println(f"Build user: $username")
-    println(f"Libraries:")
-    for (l <- libraryDependencies.sorted) {
-      println("  " + l)
-    }
+    generateAsmInstructionTypes.Main.main()
   }
 }
