@@ -74,7 +74,7 @@ object Main {
         println("results and arguments")
         for (i <- 0 until method.instructions.size) {
           val insn = method.instructions.get(i)
-          println(f"args($i): ${Instructions.toString(method.instructions, insn)} ${ids.instructionArguments.get(insn)}")
+          println(f"args($i): ${Instructions.longInsnString(method.instructions, insn)} --- ${ids.instructionArguments.get(insn)}")
         }
 
         println("ssa")

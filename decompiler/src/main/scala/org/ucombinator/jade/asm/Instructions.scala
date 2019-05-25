@@ -1,95 +1,55 @@
 package org.ucombinator.jade.asm
 
+import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.objectweb.asm.util.Printer
+import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 
-/*
-import org.objectweb.asm.util.{TraceMethodVisitor, Textifier => ASMTextifier}
+import java.io.{PrintWriter, StringWriter}
 
-class Textifier(method: MethodNode) extends ASMTextifier {
-  def foo(insn: AbstractInsnNode): Unit = {
-    val p = new Textifier()
-    val mv = new TraceMethodVisitor(p)
-    insn.accept(???)
+import scala.collection.JavaConverters._
 
-  }
-
-  override def visitInsn(opcode: Int): Unit = {
-    this.tab2 = "+"
-    super.visitInsn(opcode)
-  }
-
-}
- */
-
-object Instructions {
-  /*
-  private val textifier = new Textifier()
-  private val methodVisitor = new TraceMethodVisitor(textifier)
+object Instructions extends Textifier(Opcodes.ASM7) {
   private val stringWriter = new StringWriter()
-  private val printWriter = new PrintWriter(stringWriter)
   private val stringBuffer = stringWriter.getBuffer
-  */
-  def toString(l: InsnList, i: AbstractInsnNode): String = {
-    val index = l.indexOf(i)
-    val typ = InstructionTypes.fromInt(i.getType)
-    /*i.accept(methodVisitor)
-    textifier.print(printWriter)
-    printWriter.flush()
-    val string = stringBuffer.toString
-    stringBuffer.setLength(0)*/
-    val opcode = if (i.getOpcode == -1) { "no_opcode" } else Printer.OPCODES(i.getOpcode)
-    f"$index $typ $opcode"
+  private val printWriter = new PrintWriter(stringWriter)
+  private val methodVisitor = new TraceMethodVisitor(this)
+  private var insnList: InsnList = _
 
-    // TODO
-    // realInstruction: Boolean
-    // Annotations
-    //
-    // Types: (reflection to automate this? code gen to automate this?)
-    //   field: owner, name, desc
-    //   frame: type, local, stack
-    //   iinc: index, incr (how does analyzer treat this?) // A node that represents an IINC instruction.
-    //   insn // no operand instruction
-    //   int: operand // A node that represents an instruction with a single int operand.
-    //   invokeDynamic: name: String, desc: String, bsm: Handle, bsmArgs: AnyRef*
-    //   jump: label
-    //   label: value
-    //   lineNumber: line, start
-    //   ldc: cst (constant)
-    //   lookupSwitch: dflt: LabelNode, keys: Array[Int], labels: Array[LabelNode]
-    //   tableSwitch: min: Int, max: Int, dflt: LabelNode, labels: List[LabelNode])
-    //   method (other than dynamic): owner: String, name: String, desc: String, inf: Boolean
-    //   multiANewArray: desc: String, dims: Int
-    //   type: desc: String
-    //   var: index: Int
+  def shortInsnString(insnList: InsnList, insn: AbstractInsnNode): String = {
+    // Ensure labels have the correct name
+    if (insnList ne this.insnList) {
+      this.insnList = insnList
+      this.labelNames = new java.util.HashMap()
+      for (insn <- insnList.iterator().asScala) {
+        insn match {
+          case insn: LabelNode => this.labelNames.put(insn.getLabel, f"L${insnList.indexOf(insn)}")
+          case _ => /* Do nothing */
+        }
+      }
+    }
+    insn.accept(methodVisitor)
+    this.print(printWriter)
+    printWriter.flush()
+    val string = stringBuffer.toString.trim
+    stringBuffer.setLength(0)
+    this.getText.clear()
+    string
+  }
+
+  def longInsnString(insnList: InsnList, insn: AbstractInsnNode): String = {
+    val index = insnList.indexOf(insn)
+    val string = this.shortInsnString(insnList, insn)
+    val insnType = InstructionTypes.fromInt(insn.getType)
+    val typeString =
+      if (insnType.endsWith("INSN")) {
+        insnType.replace("_INSN", "")
+      } else {
+        "*" + insnType
+      }
+
+    // Not currently needed but keep it around so we can find it again
+    //val opcode = if (i.getOpcode == -1) { "no_opcode" } else Printer.OPCODES(i.getOpcode)
+
+    f"$index:$string ($typeString)"
   }
 }
-
-//InsnList A doubly linked list of AbstractInsnNode objects.
-
-//AnnotationNode A node that represents an annotationn.
-//ClassNode A node that represents a class.
-//FieldNode A node that represents a field.
-//FrameNode A node that represents a stack map frame.
-//InnerClassNode A node that represents an inner class.
-
-//MethodNode A node that represents a method.
-
-//LocalVariableAnnotationNode
-//TypeAnnotationNode
-//LocalVariableNode A node that represents a local variable declaration.
-
-//TryCatchBlockNode A node that represents a try catch block.
-
-//ModuleExportNode
-//ModuleNode
-//ModuleOpenNode
-//ModuleProvideNode
-//ModuleRequireNode
-
-//ParameterNode
-
-//Opcodes
-
-//////////////
-//Type
