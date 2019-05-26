@@ -5,12 +5,12 @@ import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, Primit
 import com.github.javaparser.ast.expr.{AnnotationExpr, SimpleName}
 
 import scala.collection.JavaConverters._
-import scala.util.parsing.combinator.RegexParsers
+
 import sun.reflect.generics.parser.SignatureParser
 import sun.reflect.generics.tree.{ArrayTypeSignature, BaseType, BooleanSignature, ByteSignature, CharSignature, ClassSignature, ClassTypeSignature, DoubleSignature, FieldTypeSignature, FloatSignature, FormalTypeParameter, IntSignature, LongSignature, MethodTypeSignature, ReturnType, ShortSignature, SimpleClassTypeSignature, TypeArgument, TypeSignature, TypeVariableSignature, VoidDescriptor, Wildcard}
 
-// Grammar defined in JVMS 4.7.9.1
-object Signature extends RegexParsers {
+// Parsing signatures as defined in the JVM Specification section 4.7.9.1
+object Signature {
   def classSignature(string: String): (Array[TypeParameter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
     translate(SignatureParser.make().parseClassSig(string))
   }
@@ -22,40 +22,40 @@ object Signature extends RegexParsers {
   }
   private def translate(t: MethodTypeSignature): (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
     (t.getFormalTypeParameters.map(translate),
-    t.getParameterTypes.map(translate),
-    translate(t.getReturnType),
-    t.getExceptionTypes.map(translate).map(_.asInstanceOf[ReferenceType]))
+     t.getParameterTypes.map(translate),
+     translate(t.getReturnType),
+     t.getExceptionTypes.map(translate))
   }
   private def translate(t: ReturnType): Type = {
     t match {
-      case returnType: VoidDescriptor => new VoidType
-      case returnType: TypeSignature => translate(returnType)
+      case _: VoidDescriptor => new VoidType
+      case t: TypeSignature => translate(t)
     }
   }
   private def translate(t: ClassSignature): (Array[TypeParameter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
     (t.getFormalTypeParameters.map(translate),
-    translate(t.getSuperclass),
-    t.getSuperInterfaces.map(translate))
+     translate(t.getSuperclass),
+     t.getSuperInterfaces.map(translate))
   }
   private def translate(t: FormalTypeParameter): TypeParameter = {
     new TypeParameter(
       t.getName,
       new NodeList(t.getBounds.map(translate).map(_.asInstanceOf[ClassOrInterfaceType]):_*))
   }
-  private def translate(t: FieldTypeSignature): Type = {
+  private def translate(t: FieldTypeSignature): ReferenceType = {
     t match {
-      case fieldTypeSignature: ArrayTypeSignature => translate(fieldTypeSignature)
+      case t: ArrayTypeSignature => translate(t)
       // The following case should never happen:
       //case fieldTypeSignature: BottomSignature => translate(fieldTypeSignature)
-      case fieldTypeSignature: ClassTypeSignature => translate(fieldTypeSignature)
-      case fieldTypeSignature: SimpleClassTypeSignature => translate(fieldTypeSignature)
-      case fieldTypeSignature: TypeVariableSignature => translate(fieldTypeSignature)
+      case t: ClassTypeSignature => translate(t)
+      case t: SimpleClassTypeSignature => translate(t)
+      case t: TypeVariableSignature => translate(t)
     }
   }
-  private def translate(t: TypeVariableSignature): Type = {
+  private def translate(t: TypeVariableSignature): TypeParameter = {
     new TypeParameter(t.getIdentifier)
   }
-  private def translate(t: ArrayTypeSignature): Type = {
+  private def translate(t: ArrayTypeSignature): ArrayType = {
     new ArrayType(translate(t.getComponentType))
   }
   private def translate(t: ClassTypeSignature): ClassOrInterfaceType = {
@@ -63,20 +63,22 @@ object Signature extends RegexParsers {
       .foldLeft(null: ClassOrInterfaceType)
       { (scope, simpleClassTypeSignature) => translate(scope, simpleClassTypeSignature) }
   }
-  private def translate(initialScope: ClassOrInterfaceType = null, simpleClassTypeSignature: SimpleClassTypeSignature): ClassOrInterfaceType = {
-    val name :: names = simpleClassTypeSignature.getName.split('.').toList.reverse
-    val scope = names.foldRight(initialScope){ (name, scope) => new ClassOrInterfaceType(scope, name) }
+  private def translate(t: SimpleClassTypeSignature): ClassOrInterfaceType = {
+    translate(null, t)
+  }
+  private def translate(scope: ClassOrInterfaceType, t: SimpleClassTypeSignature): ClassOrInterfaceType = {
+    val name :: names = t.getName.split('.').toList.reverse
     // TODO: ignored: simpleClassTypeSignature.getDollar
     new ClassOrInterfaceType(
-      scope,
+      names.foldRight(scope){ (name, scope) => new ClassOrInterfaceType(scope, name) },
       new SimpleName(name),
-      if (simpleClassTypeSignature.getTypeArguments.isEmpty) { null }
-      else { new NodeList(simpleClassTypeSignature.getTypeArguments.map(translate):_*) })
+      if (t.getTypeArguments.isEmpty) { null }
+      else { new NodeList(t.getTypeArguments.map(translate):_*) })
   }
   private def translate(t: TypeArgument): Type = {
     t match {
-      case typeArgument: FieldTypeSignature => translate(typeArgument)
-      case typeArgument: Wildcard => translate(typeArgument)
+      case t: FieldTypeSignature => translate(t)
+      case t: Wildcard => translate(t)
     }
   }
   private def translate(t: Wildcard): WildcardType = {
@@ -84,31 +86,31 @@ object Signature extends RegexParsers {
       case (Array(), Array(o: SimpleClassTypeSignature)) if o.getName == "java.lang.Object" =>
         // *
         new WildcardType()
-      case (Array(), Array(t)) =>
+      case (Array(), Array(upperBound)) =>
         // +
         // TODO: consider using Type.asReferenceType
-        new WildcardType(translate(t).asInstanceOf[ReferenceType])
-      case (Array(t), Array(o: SimpleClassTypeSignature)) if o.getName == "java.lang.Object" =>
+        new WildcardType(translate(upperBound))
+      case (Array(lowerBound), Array(o: SimpleClassTypeSignature)) if o.getName == "java.lang.Object" =>
         // -
-        new WildcardType(null, translate(t).asInstanceOf[ReferenceType], new NodeList[AnnotationExpr]())
+        new WildcardType(null, translate(lowerBound), new NodeList[AnnotationExpr]())
     }
   }
   private def translate(t: TypeSignature): Type = {
     t match {
-      case typeSignature: FieldTypeSignature => translate(typeSignature)
-      case typeSignature: BaseType => translate(typeSignature)
+      case t: FieldTypeSignature => translate(t)
+      case t: BaseType => translate(t)
     }
   }
-  private def translate(t: BaseType): Type = {
+  private def translate(t: BaseType): PrimitiveType = {
     t match {
-      case baseType: BooleanSignature => PrimitiveType.booleanType()
-      case baseType: ByteSignature => PrimitiveType.byteType()
-      case baseType: CharSignature => PrimitiveType.charType()
-      case baseType: DoubleSignature => PrimitiveType.doubleType()
-      case baseType: FloatSignature => PrimitiveType.floatType()
-      case baseType: IntSignature => PrimitiveType.intType()
-      case baseType: LongSignature => PrimitiveType.longType()
-      case baseType: ShortSignature => PrimitiveType.shortType()
+      case _: BooleanSignature => PrimitiveType.booleanType()
+      case _: ByteSignature => PrimitiveType.byteType()
+      case _: CharSignature => PrimitiveType.charType()
+      case _: DoubleSignature => PrimitiveType.doubleType()
+      case _: FloatSignature => PrimitiveType.floatType()
+      case _: IntSignature => PrimitiveType.intType()
+      case _: LongSignature => PrimitiveType.longType()
+      case _: ShortSignature => PrimitiveType.shortType()
       // The following case should never happen:
       //case baseType: FieldTypeSignature => ???
     }

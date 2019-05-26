@@ -3,10 +3,8 @@ package org.ucombinator.jade.classfile
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type}
 import com.github.javaparser.ast.expr.Name
 
-import scala.util.parsing.combinator.RegexParsers
-
-// Grammar defined by JVMS 4.3
-object Descriptor extends RegexParsers {
+// Parsing signatures as defined in the JVM Specification section 4.3
+object Descriptor {
   def typeDescriptor(string: String): Type = {
     Signature.typeSignature(string)
   }
