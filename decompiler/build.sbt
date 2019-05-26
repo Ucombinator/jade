@@ -42,8 +42,8 @@ libraryDependencies ++= Seq(
 filterScalaLibrary := false // include scala library in output of sbt-dependency-graph
 dependencyAllowPreRelease := true // include pre-releases in dependency updates
 
-// Setup GitVersioning
-useJGit // make things work even if `git` is not installed
+// Setup `GitVersioning`
+useJGit // make GitVersioning work even if `git` is not installed
 enablePlugins(GitVersioning)
 git.useGitDescribe := true
 git.uncommittedSignifier := Some("dirty")
@@ -70,19 +70,24 @@ scalacOptions ++= Seq(
 javacOptions in compile ++= Seq(
   "-Xlint") // Turn on all warnings
 
+// Setup `sbt-assembly`
 assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 
+// In theory, this should slim down the jar to only the parts referenced.
+// However, it does not work due to the following two issues:
+//  - https://github.com/sbt/sbt-assembly/issues/186
+//  - https://github.com/sbt/sbt-assembly/issues/265
 //assemblyShadeRules in assembly := Seq(
 //  ShadeRule.keep("org.ucombinator.jade.main.**").inAll,
 //  ShadeRule.keep("picocli.**").inAll)
-//  See issues:
-//    https://github.com/sbt/sbt-assembly/issues/186
-//    https://github.com/sbt/sbt-assembly/issues/265
-// java -cp /home/adamsmd/.ivy2/cache/org.pantsbuild/jarjar/jars/jarjar-1.7.2.jar:lib/jade/jade.jar org.pantsbuild.jarjar.Main process <(echo 'keep org.ucombinator.jade.**') lib/jade/jade.jar tmp.jar
-//   Reduces size from 32MB to 5.4MB
-// GraalVM
-// ScalaNative
-// ScalaMeter
+//
+// Alternatively, we can manually run the following command:
+//  java -cp /home/adamsmd/.ivy2/cache/org.pantsbuild/jarjar/jars/jarjar-1.7.2.jar:lib/jade/jade.jar org.pantsbuild.jarjar.Main process <(echo 'keep org.ucombinator.jade.**') lib/jade/jade.jar tmp.jar
+// Last time this was tested, it reduces size from 32MB to 5.4MB.
+
+// An alternative to sbt-assembly that we are considering is sbt-onejar, however it is not up to date and does not work:
+//  - http://one-jar.sourceforge.net/
+//  - https://github.com/sbt/sbt-onejar
 
 // Create merge strategies that do not cause warnings
 def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {
