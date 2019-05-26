@@ -7,11 +7,11 @@ import scala.util.parsing.combinator.RegexParsers
 
 // Grammar defined by JVMS 4.3
 object Descriptor extends RegexParsers {
-  def fieldDescriptor2(string: String): Type = {
-    Signature.typeSignature2(string)
+  def typeDescriptor(string: String): Type = {
+    Signature.typeSignature(string)
   }
-  def methodDescriptor2(string: String): (Array[Type], Type) = {
-    val s = Signature.methodSignature2(string)
+  def methodDescriptor(string: String): (Array[Type], Type) = {
+    val s = Signature.methodSignature(string)
     assert(s._1.isEmpty)
     assert(s._4.isEmpty)
     (s._2, s._3)

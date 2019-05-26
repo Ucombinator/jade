@@ -1,71 +1,69 @@
 package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, ReferenceType, Type, VoidType, WildcardType, TypeParameter => JPTypeParamter}
+import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, ReferenceType, Type, VoidType, WildcardType, TypeParameter}
 import com.github.javaparser.ast.expr.{AnnotationExpr, SimpleName}
 
 import scala.collection.JavaConverters._
 import scala.util.parsing.combinator.RegexParsers
 import sun.reflect.generics.parser.SignatureParser
-import sun.reflect.generics.tree.{ArrayTypeSignature, BaseType, BooleanSignature, BottomSignature, ByteSignature, CharSignature, ClassSignature, ClassTypeSignature, DoubleSignature, FieldTypeSignature, FloatSignature, FormalTypeParameter, IntSignature, LongSignature, MethodTypeSignature, ReturnType, ShortSignature, SimpleClassTypeSignature, TypeArgument, TypeSignature, TypeVariableSignature, VoidDescriptor, Wildcard}
+import sun.reflect.generics.tree.{ArrayTypeSignature, BaseType, BooleanSignature, ByteSignature, CharSignature, ClassSignature, ClassTypeSignature, DoubleSignature, FieldTypeSignature, FloatSignature, FormalTypeParameter, IntSignature, LongSignature, MethodTypeSignature, ReturnType, ShortSignature, SimpleClassTypeSignature, TypeArgument, TypeSignature, TypeVariableSignature, VoidDescriptor, Wildcard}
 
 // Grammar defined in JVMS 4.7.9.1
 object Signature extends RegexParsers {
-  def classSignature2(string: String): (Array[JPTypeParamter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
-    parse3(SignatureParser.make().parseClassSig(string))
+  def classSignature(string: String): (Array[TypeParameter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
+    translate(SignatureParser.make().parseClassSig(string))
   }
-  def methodSignature2(string: String): (Array[JPTypeParamter], Array[Type], Type, Array[ReferenceType]) = {
-    parse3(SignatureParser.make().parseMethodSig(string))
+  def methodSignature(string: String): (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
+    translate(SignatureParser.make().parseMethodSig(string))
   }
-  def typeSignature2(string: String): Type = {
-    parse3(SignatureParser.make().parseTypeSig(string))
+  def typeSignature(string: String): Type = {
+    translate(SignatureParser.make().parseTypeSig(string))
   }
-  private def parse3(methodTypeSignature: MethodTypeSignature): (Array[JPTypeParamter], Array[Type], Type, Array[ReferenceType]) = {
-    (methodTypeSignature.getFormalTypeParameters.map(parse3),
-    methodTypeSignature.getParameterTypes.map(parse3),
-    parse3(methodTypeSignature.getReturnType),
-    methodTypeSignature.getExceptionTypes.map(parse3).map(_.asInstanceOf[ReferenceType]))
+  private def translate(t: MethodTypeSignature): (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
+    (t.getFormalTypeParameters.map(translate),
+    t.getParameterTypes.map(translate),
+    translate(t.getReturnType),
+    t.getExceptionTypes.map(translate).map(_.asInstanceOf[ReferenceType]))
   }
-  private def parse3(returnType: ReturnType): Type = {
-    returnType match {
+  private def translate(t: ReturnType): Type = {
+    t match {
       case returnType: VoidDescriptor => new VoidType
-      case returnType: TypeSignature => parse3(returnType)
+      case returnType: TypeSignature => translate(returnType)
     }
   }
-  private def parse3(classSig: ClassSignature): (Array[JPTypeParamter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
-    (classSig.getFormalTypeParameters.map(parse3),
-    parse3(classSig.getSuperclass),
-    classSig.getSuperInterfaces.map(parse3))
+  private def translate(t: ClassSignature): (Array[TypeParameter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
+    (t.getFormalTypeParameters.map(translate),
+    translate(t.getSuperclass),
+    t.getSuperInterfaces.map(translate))
   }
-  private def parse3(formalTypeParameter: FormalTypeParameter): JPTypeParamter = {
-    new JPTypeParamter(
-      formalTypeParameter.getName,
-      new NodeList(formalTypeParameter.getBounds.map(parse3).map(_.asInstanceOf[ClassOrInterfaceType]):_*))
+  private def translate(t: FormalTypeParameter): TypeParameter = {
+    new TypeParameter(
+      t.getName,
+      new NodeList(t.getBounds.map(translate).map(_.asInstanceOf[ClassOrInterfaceType]):_*))
   }
-  private def parse3(fieldTypeSignature: FieldTypeSignature): Type = {
-    fieldTypeSignature match {
-      case fieldTypeSignature: ArrayTypeSignature => parse3(fieldTypeSignature)
-      case fieldTypeSignature: BottomSignature => parse3(fieldTypeSignature)
-      case fieldTypeSignature: ClassTypeSignature => parse3(fieldTypeSignature)
-      case fieldTypeSignature: SimpleClassTypeSignature => parse3(fieldTypeSignature)
-      case fieldTypeSignature: TypeVariableSignature => parse3(fieldTypeSignature)
+  private def translate(t: FieldTypeSignature): Type = {
+    t match {
+      case fieldTypeSignature: ArrayTypeSignature => translate(fieldTypeSignature)
+      // The following case should never happen:
+      //case fieldTypeSignature: BottomSignature => translate(fieldTypeSignature)
+      case fieldTypeSignature: ClassTypeSignature => translate(fieldTypeSignature)
+      case fieldTypeSignature: SimpleClassTypeSignature => translate(fieldTypeSignature)
+      case fieldTypeSignature: TypeVariableSignature => translate(fieldTypeSignature)
     }
   }
-  private def parse3(bottomSignature: BottomSignature): Type = {
-    ???
+  private def translate(t: TypeVariableSignature): Type = {
+    new TypeParameter(t.getIdentifier)
   }
-  private def parse3(typeVariableSignature: TypeVariableSignature): Type = {
-    new JPTypeParamter(typeVariableSignature.getIdentifier)
+  private def translate(t: ArrayTypeSignature): Type = {
+    new ArrayType(translate(t.getComponentType))
   }
-  private def parse3(arrayTypeSignature: ArrayTypeSignature): Type = {
-    new ArrayType(parse3(arrayTypeSignature.getComponentType))
-  }
-  private def parse3(classTypeSignature: ClassTypeSignature): ClassOrInterfaceType = {
-    classTypeSignature.getPath.asScala
+  private def translate(t: ClassTypeSignature): ClassOrInterfaceType = {
+    t.getPath.asScala
       .foldLeft(null: ClassOrInterfaceType)
-      { (scope, simpleClassTypeSignature) => parse3(scope, simpleClassTypeSignature) }
+      { (scope, simpleClassTypeSignature) => translate(scope, simpleClassTypeSignature) }
   }
-  private def parse3(initialScope: ClassOrInterfaceType = null, simpleClassTypeSignature: SimpleClassTypeSignature): ClassOrInterfaceType = {
+  private def translate(initialScope: ClassOrInterfaceType = null, simpleClassTypeSignature: SimpleClassTypeSignature): ClassOrInterfaceType = {
     val name :: names = simpleClassTypeSignature.getName.split('.').toList.reverse
     val scope = names.foldRight(initialScope){ (name, scope) => new ClassOrInterfaceType(scope, name) }
     // TODO: ignored: simpleClassTypeSignature.getDollar
@@ -73,36 +71,36 @@ object Signature extends RegexParsers {
       scope,
       new SimpleName(name),
       if (simpleClassTypeSignature.getTypeArguments.isEmpty) { null }
-      else { new NodeList(simpleClassTypeSignature.getTypeArguments.map(parse3):_*) })
+      else { new NodeList(simpleClassTypeSignature.getTypeArguments.map(translate):_*) })
   }
-  private def parse3(typeArgument: TypeArgument): Type = {
-    typeArgument match {
-      case typeArgument: FieldTypeSignature => parse3(typeArgument)
-      case typeArgument: Wildcard => parse3(typeArgument)
+  private def translate(t: TypeArgument): Type = {
+    t match {
+      case typeArgument: FieldTypeSignature => translate(typeArgument)
+      case typeArgument: Wildcard => translate(typeArgument)
     }
   }
-  private def parse3(wildcard: Wildcard): WildcardType = {
-    (wildcard.getLowerBounds, wildcard.getUpperBounds) match {
+  private def translate(t: Wildcard): WildcardType = {
+    (t.getLowerBounds, t.getUpperBounds) match {
       case (Array(), Array(o: SimpleClassTypeSignature)) if o.getName == "java.lang.Object" =>
         // *
         new WildcardType()
       case (Array(), Array(t)) =>
         // +
-        // TODO: use Type.asReferenceType
-        new WildcardType(parse3(t).asInstanceOf[ReferenceType])
+        // TODO: consider using Type.asReferenceType
+        new WildcardType(translate(t).asInstanceOf[ReferenceType])
       case (Array(t), Array(o: SimpleClassTypeSignature)) if o.getName == "java.lang.Object" =>
         // -
-        new WildcardType(null, parse3(t).asInstanceOf[ReferenceType], new NodeList[AnnotationExpr]())
+        new WildcardType(null, translate(t).asInstanceOf[ReferenceType], new NodeList[AnnotationExpr]())
     }
   }
-  private def parse3(typeSignature: TypeSignature): Type = {
-    typeSignature match {
-      case typeSignature: FieldTypeSignature => parse3(typeSignature)
-      case typeSignature: BaseType => parse3(typeSignature)
+  private def translate(t: TypeSignature): Type = {
+    t match {
+      case typeSignature: FieldTypeSignature => translate(typeSignature)
+      case typeSignature: BaseType => translate(typeSignature)
     }
   }
-  private def parse3(baseType: BaseType): Type = {
-    baseType match {
+  private def translate(t: BaseType): Type = {
+    t match {
       case baseType: BooleanSignature => PrimitiveType.booleanType()
       case baseType: ByteSignature => PrimitiveType.byteType()
       case baseType: CharSignature => PrimitiveType.charType()
@@ -111,7 +109,8 @@ object Signature extends RegexParsers {
       case baseType: IntSignature => PrimitiveType.intType()
       case baseType: LongSignature => PrimitiveType.longType()
       case baseType: ShortSignature => PrimitiveType.shortType()
-      case baseType: FieldTypeSignature => ??? // TODO: is this possible?
+      // The following case should never happen:
+      //case baseType: FieldTypeSignature => ???
     }
   }
 }

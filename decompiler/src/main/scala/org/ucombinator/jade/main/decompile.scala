@@ -103,7 +103,7 @@ object Main {
   }
 
   private def asmToJavaparser(node: AnnotationNode): AnnotationExpr = {
-    val name = typeToName(Descriptor.fieldDescriptor2(node.desc))
+    val name = typeToName(Descriptor.typeDescriptor(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
       case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaparser(v))
@@ -128,8 +128,8 @@ object Main {
       node.invisibleTypeAnnotations)
     val variables = new NodeList[VariableDeclarator]({
       val `type`: Type =
-        if (node.signature == null) { Descriptor.fieldDescriptor2(node.desc) }
-        else { Signature.typeSignature2(node.signature) }
+        if (node.signature == null) { Descriptor.typeDescriptor(node.desc) }
+        else { Signature.typeSignature(node.signature) }
       val name = new SimpleName(node.name)
       val initializer: Expression = literalToJavaparser(node.value)
       new VariableDeclarator(`type`, name, initializer)})
@@ -168,9 +168,9 @@ object Main {
       node.visibleTypeAnnotations,
       node.invisibleTypeAnnotations)
     val sig: (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
-      if (node.signature != null) { Signature.methodSignature2(node.signature) }
+      if (node.signature != null) { Signature.methodSignature(node.signature) }
       else {
-        val d = Descriptor.methodDescriptor2(node.desc)
+        val d = Descriptor.methodDescriptor(node.desc)
         (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.nameToType(x)))
       }
     }
@@ -231,7 +231,7 @@ object Main {
       val (typeParameters, extendedTypes, implementedTypes):
         (NodeList[TypeParameter], NodeList[ClassOrInterfaceType], NodeList[ClassOrInterfaceType]) = {
         if (node.signature != null) {
-          val s = Signature.classSignature2(node.signature)
+          val s = Signature.classSignature(node.signature)
           (new NodeList(s._1:_*), new NodeList(s._2), new NodeList(s._3:_*))
         } else {
           (new NodeList(),
