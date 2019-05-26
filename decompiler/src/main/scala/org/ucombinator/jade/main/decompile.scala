@@ -103,7 +103,7 @@ object Main {
   }
 
   private def asmToJavaparser(node: AnnotationNode): AnnotationExpr = {
-    val name = typeToName(Descriptor.fieldDescriptor(node.desc))
+    val name = typeToName(Descriptor.fieldDescriptor2(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
       case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaparser(v))
@@ -128,8 +128,8 @@ object Main {
       node.invisibleTypeAnnotations)
     val variables = new NodeList[VariableDeclarator]({
       val `type`: Type =
-        if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
-        else { Signature.javaTypeSignature(node.signature) }
+        if (node.signature == null) { Descriptor.fieldDescriptor2(node.desc) }
+        else { Signature.typeSignature2(node.signature) }
       val name = new SimpleName(node.name)
       val initializer: Expression = literalToJavaparser(node.value)
       new VariableDeclarator(`type`, name, initializer)})
@@ -167,14 +167,14 @@ object Main {
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
       node.invisibleTypeAnnotations)
-    val sig: (List[TypeParameter], List[Type], Type, List[ReferenceType]) = {
-      if (node.signature != null) { Signature.methodSignature(node.signature) }
+    val sig: (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
+      if (node.signature != null) { Signature.methodSignature2(node.signature) }
       else {
-        val d = Descriptor.methodDescriptor(node.desc)
-        (List(), d._1, d._2, node.exceptions.asScala.toList.map(x => Descriptor.nameToType(Descriptor.className(x))))
+        val d = Descriptor.methodDescriptor2(node.desc)
+        (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.nameToType(Descriptor.className(x))))
       }
     }
-    val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1.asJava)
+    val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1:_*)
     def nullToList[A](x: Seq[A]): Seq[A] = { if (x == null) { List() } else { x } }
     val parameters: NodeList[Parameter] = {
       val ps = sig._2
@@ -182,10 +182,10 @@ object Main {
         .zipAll(node.parameters match { case null => List(); case p => p.asScala }, null, null)
         .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
         .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
-      new NodeList(ps.map(decomParameter(node, sig._2.size)).asJava)
+      new NodeList(ps.map(decomParameter(node, sig._2.size)):_*)
     }
     val `type`: Type = sig._3
-    val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4.asJava)
+    val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
     val body: BlockStmt = null // TODO
     val receiverParameter: ReceiverParameter = null // TODO
@@ -231,8 +231,8 @@ object Main {
       val (typeParameters, extendedTypes, implementedTypes):
         (NodeList[TypeParameter], NodeList[ClassOrInterfaceType], NodeList[ClassOrInterfaceType]) = {
         if (node.signature != null) {
-          val s = Signature.classSignature(node.signature)
-          (new NodeList(s._1.asJava), new NodeList(s._2), new NodeList(s._3.asJava))
+          val s = Signature.classSignature2(node.signature)
+          (new NodeList(s._1:_*), new NodeList(s._2), new NodeList(s._3:_*))
         } else {
           (new NodeList(),
            if (node.superName == null) { new NodeList() }

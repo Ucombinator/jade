@@ -7,6 +7,24 @@ import scala.util.parsing.combinator.RegexParsers
 
 // Grammar defined by JVMS 4.3
 object Descriptor extends RegexParsers {
+  def fieldDescriptor2(string: String): Type = {
+    val s = Signature.typeSignature2(string)
+    val oldS = fieldDescriptor(string)
+    if (s.toString != oldS.toString) {
+      assert(false)
+    }
+    s
+  }
+  def methodDescriptor2(string: String): (Array[Type], Type) = {
+    val s = Signature.methodSignature2(string)
+    val oldS = methodDescriptor(string)
+    assert(s._1.isEmpty)
+    assert(s._4.isEmpty)
+    if ((s._2.toList, s._3).toString != oldS.toString) {
+      assert(false)
+    }
+    (s._2, s._3)
+  }
   private def parse[T](p: Parser[T], name: String): String => T = {
     string: String =>
       parseAll(p, string) match {
@@ -19,7 +37,10 @@ object Descriptor extends RegexParsers {
   }
   val fieldDescriptor: String => Type = { parse(FieldDescriptor, "field descriptor") }
   val methodDescriptor: String => (List[Type], Type) = { parse(MethodDescriptor, "method descriptor") }
-  val className: String => Name = { parse(ClassName, "class name") }
+  //val className: String => Name = { parse(ClassName, "class name") }
+  def className(string: String): Name = {
+    string.split('/').foldLeft(null: Name){ (qualifier, identifier) => new Name(qualifier, identifier) }
+  }
 
   def nameToType(t: Name): ClassOrInterfaceType = {
     if (t == null) { null }
