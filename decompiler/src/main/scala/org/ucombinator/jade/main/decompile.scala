@@ -171,7 +171,7 @@ object Main {
       if (node.signature != null) { Signature.methodSignature2(node.signature) }
       else {
         val d = Descriptor.methodDescriptor2(node.desc)
-        (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.nameToType(Descriptor.className(x))))
+        (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.nameToType(x)))
       }
     }
     val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1:_*)
@@ -236,8 +236,8 @@ object Main {
         } else {
           (new NodeList(),
            if (node.superName == null) { new NodeList() }
-           else { new NodeList(Descriptor.nameToType(Descriptor.className(node.superName))) },
-           new NodeList(node.interfaces.asScala.map(x => Descriptor.nameToType(Descriptor.className(x))).asJava))
+           else { new NodeList(Descriptor.nameToType(node.superName)) },
+           new NodeList(node.interfaces.asScala.map(x => Descriptor.nameToType(x)).asJava))
         }
       }
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
