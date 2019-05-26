@@ -89,30 +89,15 @@ assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 //  - http://one-jar.sourceforge.net/
 //  - https://github.com/sbt/sbt-onejar
 
-// Create merge strategies that do not cause warnings
-def quiet(mergeStragegy: sbtassembly.MergeStrategy): sbtassembly.MergeStrategy = new sbtassembly.MergeStrategy {
-  val name = "quiet:" + mergeStragegy.name
-  def apply(tempDir: File, path: String, files: Seq[File]): Either[String, Seq[(File, String)]] =
-    mergeStragegy(tempDir, path, files)
-
-  override def notifyThreshold = 1
-  override def detailLogLevel = Level.Info
-  override def summaryLogLevel = Level.Info
-}
-
-lazy val quietDiscard = quiet(MergeStrategy.discard)
-lazy val quietRename = quiet(MergeStrategy.rename)
-lazy val quietFilterDistinctLines = quiet(MergeStrategy.filterDistinctLines)
-
 assemblyMergeStrategy in assembly := {
   case PathList(file) if List(
-    "module-info.class", // from asm-7.0
-  ).contains(file) => quietDiscard
+    "module-info.class",
+  ).contains(file) => MergeStrategy.rename
 
   case PathList("META-INF", file) if List(
     "MANIFEST.MF",
     "NOTICE.txt"
-  ).contains(file) => quietRename
+  ).contains(file) => MergeStrategy.rename
 
   case _ => MergeStrategy.deduplicate
 }
