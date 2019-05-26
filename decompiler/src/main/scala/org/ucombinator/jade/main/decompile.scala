@@ -103,7 +103,7 @@ object Main {
   }
 
   private def asmToJavaparser(node: AnnotationNode): AnnotationExpr = {
-    val name = typeToName(Descriptor.typeDescriptor(node.desc))
+    val name = typeToName(Descriptor.fieldDescriptor(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
       case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaparser(v))
@@ -128,7 +128,7 @@ object Main {
       node.invisibleTypeAnnotations)
     val variables = new NodeList[VariableDeclarator]({
       val `type`: Type =
-        if (node.signature == null) { Descriptor.typeDescriptor(node.desc) }
+        if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
         else { Signature.typeSignature(node.signature) }
       val name = new SimpleName(node.name)
       val initializer: Expression = literalToJavaparser(node.value)
@@ -171,7 +171,7 @@ object Main {
       if (node.signature != null) { Signature.methodSignature(node.signature) }
       else {
         val d = Descriptor.methodDescriptor(node.desc)
-        (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.nameToType(x)))
+        (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.classNameType(x)))
       }
     }
     val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1:_*)
@@ -236,8 +236,8 @@ object Main {
         } else {
           (new NodeList(),
            if (node.superName == null) { new NodeList() }
-           else { new NodeList(Descriptor.nameToType(node.superName)) },
-           new NodeList(node.interfaces.asScala.map(x => Descriptor.nameToType(x)).asJava))
+           else { new NodeList(Descriptor.classNameType(node.superName)) },
+           new NodeList(node.interfaces.asScala.map(x => Descriptor.classNameType(x)).asJava))
         }
       }
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {

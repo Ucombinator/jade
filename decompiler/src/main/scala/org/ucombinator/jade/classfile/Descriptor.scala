@@ -3,9 +3,9 @@ package org.ucombinator.jade.classfile
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type}
 import com.github.javaparser.ast.expr.Name
 
-// Parsing signatures as defined in the JVM Specification section 4.3
+// NOTE: The structure of this class follows that of the Java Virtual Machine Specification section 4.3 "Descriptors"
 object Descriptor {
-  def typeDescriptor(string: String): Type = {
+  def fieldDescriptor(string: String): Type = {
     Signature.typeSignature(string)
   }
   def methodDescriptor(string: String): (Array[Type], Type) = {
@@ -17,11 +17,11 @@ object Descriptor {
   def className(string: String): Name = {
     string.split('/').foldLeft(null: Name){ (qualifier, identifier) => new Name(qualifier, identifier) }
   }
-  def nameToType(string: String): ClassOrInterfaceType = {
-    nameToType(className(string))
+  def classNameType(string: String): ClassOrInterfaceType = {
+    classNameType(className(string))
   }
-  def nameToType(name: Name): ClassOrInterfaceType = {
+  def classNameType(name: Name): ClassOrInterfaceType = {
     if (name == null) { null }
-    else { new ClassOrInterfaceType(nameToType(name.getQualifier.orElse(null)), name.getIdentifier) }
+    else { new ClassOrInterfaceType(classNameType(name.getQualifier.orElse(null)), name.getIdentifier) }
   }
 }
