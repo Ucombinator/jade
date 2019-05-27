@@ -9,7 +9,7 @@ libraryDependencies ++= Seq(
   "com.github.javaparser" % "javaparser-core-serialization" % "3.14.1", // Serialization to/from JSON
   "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.14.1", // Resolving symbols and identifiers
   // Omitting the `javaparser-parent` package as it is just metadata
-  // Omitting the "generator" and "metamodel" packages as they are just for building `javaparser`
+  // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
   // Command-line argument parsing
   "info.picocli" % "picocli" % "4.0.0-alpha-3",

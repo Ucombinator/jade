@@ -81,7 +81,7 @@ class Decompile extends Cmd[Unit] {
   var printAsm = false
 
   @Option(names = Array("--print-javaparser"))
-  var printJavaparser = false
+  var printJavaParser = false
 
   @Option(names = Array("--print-methods"))
   var printMethods = false
@@ -91,7 +91,7 @@ class Decompile extends Cmd[Unit] {
   var fileNames: java.util.List[File] = _
 
   override def call(): Unit = {
-    decompile.Main.main(printAsm, printJavaparser, printMethods, fileNames.asScala.toList)
+    decompile.Main.main(printAsm, printJavaParser, printMethods, fileNames.asScala.toList)
   }
 }
 

@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.AbstractInsnNode
 
 import java.lang.reflect.Modifier
 
+// TODO: convert to a macro
 object Main {
   def main () : Unit = {
     println("/* Automatically built by generateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */")

@@ -19,14 +19,14 @@ import java.nio.file.Files
 import scala.collection.JavaConverters._
 
 object Main {
-  def main(printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean, fileNames: List[File]): Unit = {
+  def main(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean, fileNames: List[File]): Unit = {
     for (fileName <- fileNames) {
       println(fileName)
-      main(printAsm, printJavaparser, printMethods, fileName)
+      main(printAsm, printJavaParser, printMethods, fileName)
     }
   }
 
-  def main(printAsm: Boolean, printJavaparser: Boolean, printMethods: Boolean, fileName: File): Unit = {
+  def main(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean, fileName: File): Unit = {
     require(fileName != null, "the given class file name is actually `null`!")
 
     val byteArray = Files.readAllBytes(fileName.toPath) //Full path class name
@@ -41,8 +41,8 @@ object Main {
       cn.accept(traceClassVisitor)
     }
 
-    if (printJavaparser) {
-      val cu = asmToJavaparser(cn)
+    val cu = asmToJavaParser(cn)
+    if (printJavaParser) {
       println(cu)
     }
 
@@ -85,11 +85,11 @@ object Main {
     }
   }
 
-  private def literalToJavaparser(node: Object): LiteralExpr = node match {
+  private def literalToJavaParser(node: Object): LiteralExpr = node match {
     // TODO: improve formatting of literals?
     case null => null
     case node: java.lang.Integer => new IntegerLiteralExpr(String.valueOf(node))
-    case node: java.lang.Float => new DoubleLiteralExpr(String.valueOf(node)) // Note that `javaparser` uses Double for Floats
+    case node: java.lang.Float => new DoubleLiteralExpr(String.valueOf(node)) // Note that `JavaParser` uses Double for Floats
     case node: java.lang.Long => new LongLiteralExpr(String.valueOf(node))
     case node: java.lang.Double => new DoubleLiteralExpr(String.valueOf(node))
     case node: java.lang.String => new StringLiteralExpr(node)
@@ -102,11 +102,11 @@ object Main {
     case _ => throw new Exception(f"failed to convert type $t to a name")
   }
 
-  private def asmToJavaparser(node: AnnotationNode): AnnotationExpr = {
+  private def asmToJavaParser(node: AnnotationNode): AnnotationExpr = {
     val name = typeToName(Descriptor.fieldDescriptor(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
-      case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaparser(v))
+      case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaParser(v))
       case vs =>
         new NormalAnnotationExpr(
           name,
@@ -114,14 +114,14 @@ object Main {
             (for (List(k, v) <- vs.grouped(2)) yield {
               new MemberValuePair(
                 k.asInstanceOf[String],
-                literalToJavaparser(v.asInstanceOf[Object]))}).toList.asJava) )
+                literalToJavaParser(v.asInstanceOf[Object]))}).toList.asJava) )
     }
   }
 
-  private def asmToJavaparser(node: FieldNode): FieldDeclaration = {
+  private def asmToJavaParser(node: FieldNode): FieldDeclaration = {
     // attrs (ignore?)
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToField(node.access))
-    val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(
+    val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
@@ -131,17 +131,18 @@ object Main {
         if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
         else { Signature.typeSignature(node.signature) }
       val name = new SimpleName(node.name)
-      val initializer: Expression = literalToJavaparser(node.value)
+      val initializer: Expression = literalToJavaParser(node.value)
       new VariableDeclarator(`type`, name, initializer)})
 
     new FieldDeclaration(modifiers, annotations, variables)
   }
 
-  private def decomParameter(method: MethodNode, paramCount: Int): (((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])) => Parameter = {
+  private def decomParameter(method: MethodNode, paramCount: Int):
+    (((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])) => Parameter = {
     case ((((typ, index), node), a1), a2) =>
       val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
       val modifiers = Modifier.modifiersToNodeList(flags)
-      val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(a1, a2, null, null)
+      val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(a1, a2, null, null)
       val `type`: Type = typ
       val isVarArgs: Boolean =
         Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
@@ -151,7 +152,7 @@ object Main {
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
 
-  private def asmToJavaparser(node: MethodNode): MethodDeclaration = {
+  private def asmToJavaParser(node: MethodNode): MethodDeclaration = {
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
@@ -162,7 +163,7 @@ object Main {
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToMethod(node.access))
-    val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(
+    val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
@@ -182,7 +183,7 @@ object Main {
         .zipAll(node.parameters match { case null => List(); case p => p.asScala }, null, null)
         .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
         .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
-      new NodeList(ps.map(decomParameter(node, sig._2.size)):_*)
+      new NodeList(ps.map(decomParameter(node, sig._2.length)):_*)
     }
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
@@ -192,15 +193,15 @@ object Main {
     new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
   }
 
-  private def asmToJavaparsers(nodes: java.util.List[_]*): NodeList[AnnotationExpr] = {
+  private def asmToJavaParsers(nodes: java.util.List[_]*): NodeList[AnnotationExpr] = {
     val list = new NodeList[AnnotationExpr]()
     for (node <- nodes) {
-      if (node != null) { list.addAll(node.asScala.map(x => asmToJavaparser(x.asInstanceOf[AnnotationNode])).asJava) }
+      if (node != null) { list.addAll(node.asScala.map(x => asmToJavaParser(x.asInstanceOf[AnnotationNode])).asJava) }
     }
     list
   }
 
-  private def asmToJavaparser(node: ClassNode): CompilationUnit = {
+  private def asmToJavaParser(node: ClassNode): CompilationUnit = {
     println(f"version: ${node.version}") // TODO
     println(f"sourceFile: ${node.sourceFile}") // TODO
     println(f"sourceDebug: ${node.sourceDebug}") // TODO
@@ -219,7 +220,7 @@ object Main {
 
     val classOrInterfaceDeclaration = {
       val modifiers = Modifier.modifiersToNodeList(Modifier.intToClass(node.access))
-      val annotations: NodeList[AnnotationExpr] = asmToJavaparsers(
+      val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(
         node.visibleAnnotations,
         node.invisibleAnnotations,
         node.visibleTypeAnnotations,
@@ -242,8 +243,8 @@ object Main {
       }
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
         val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
-        list.addAll(node.fields.asScala.map(asmToJavaparser).asJava)
-        list.addAll(node.methods.asScala.map(asmToJavaparser).asJava)
+        list.addAll(node.fields.asScala.map(asmToJavaParser).asJava)
+        list.addAll(node.methods.asScala.map(asmToJavaParser).asJava)
         // TODO
         list
       }
