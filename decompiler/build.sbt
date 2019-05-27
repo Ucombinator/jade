@@ -5,9 +5,9 @@ scalaVersion := "2.12.8"
 
 libraryDependencies ++= Seq(
   // Abstract Syntax Trees for the Java language
-  "com.github.javaparser" % "javaparser-core" % "3.14.1", // Main library
-  "com.github.javaparser" % "javaparser-core-serialization" % "3.14.1", // Serialization to/from JSON
-  "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.14.1", // Resolving symbols and identifiers
+  "com.github.javaparser" % "javaparser-core" % "3.14.3", // Main library
+  "com.github.javaparser" % "javaparser-core-serialization" % "3.14.3", // Serialization to/from JSON
+  "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.14.3", // Resolving symbols and identifiers
   // Omitting the `javaparser-parent` package as it is just metadata
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
@@ -36,7 +36,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2",
 
   // Testing framework for `src/test/`
-  "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+  "org.scalatest" %% "scalatest" % "3.0.7" % Test,
 )
 
 filterScalaLibrary := false // include scala library in output of sbt-dependency-graph
