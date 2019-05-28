@@ -1,9 +1,8 @@
-package org.ucombinator.jade.jvm.signature.parser
+package org.ucombinator.jade.interpreter.signature
 
 import org.scalatest.FunSuite
-import org.ucombinator.jade.interpreter.signature._
 
-class ParserTest extends FunSuite {
+class SignatureTest extends FunSuite {
   test("A class signature after parsing should be equal to the result we manually construct") {
     val classSignature = "<K:Ljava/lang/Object;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/util/Map<TK;TV;>;Ljava/lang/Cloneable;Ljava/io/Serializable;"
     val expectedResult = ClassSignature(
