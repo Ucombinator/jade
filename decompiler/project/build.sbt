@@ -4,4 +4,4 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.4.0") // Provides `sbt depe
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0") // Base `version` on git tags
 addSbtPlugin("com.typesafe.sbt" % "sbt-license-report" % "1.2.0") // Provides `sbt dumpLicenseReport`
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2") // Provides `sbt dependencyTree`
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1") // Report code coverage for tests
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1") // Provides `sbt clean coverage test coverageReport`
