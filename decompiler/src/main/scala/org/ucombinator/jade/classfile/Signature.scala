@@ -45,20 +45,17 @@ object Signature {
   private def translate(t: FieldTypeSignature): ReferenceType = {
     t match {
       case t: ClassTypeSignature => translate(t)
-      case t: SimpleClassTypeSignature => translate(t)
       case t: TypeVariableSignature => translate(t)
       case t: ArrayTypeSignature => translate(t)
-      // The following case should never happen:
-      //case fieldTypeSignature: BottomSignature => translate(fieldTypeSignature)
+      // The following cases should never happen:
+      //case t: SimpleClassTypeSignature => ???
+      //case t: BottomSignature => ???
     }
   }
   private def translate(t: ClassTypeSignature): ClassOrInterfaceType = {
     t.getPath.asScala
       .foldLeft(null: ClassOrInterfaceType)
       { (scope, simpleClassTypeSignature) => translate(scope, simpleClassTypeSignature) }
-  }
-  private def translate(t: SimpleClassTypeSignature): ClassOrInterfaceType = {
-    translate(null, t)
   }
   private def translate(scope: ClassOrInterfaceType, t: SimpleClassTypeSignature): ClassOrInterfaceType = {
     val name :: names = t.getName.split('.').toList.reverse
@@ -102,10 +99,20 @@ object Signature {
      translate(t.getSuperclass),
      t.getSuperInterfaces.map(translate))
   }
+  private def referenceTypeToClassOrInterfaceType(t: ReferenceType): ClassOrInterfaceType = {
+    t match {
+      case t: ClassOrInterfaceType => t
+      case t: TypeParameter =>
+        assert(t.getTypeBound.isEmpty, f"non-empty type bounds in $t")
+        // TODO: mark this as a type parameter
+        new ClassOrInterfaceType(null, t.getName, null)
+    }
+  }
   private def translate(t: FormalTypeParameter): TypeParameter = {
     new TypeParameter(
       t.getName,
-      new NodeList(t.getBounds.map(translate).map(_.asInstanceOf[ClassOrInterfaceType]):_*))
+      // TODO: distinguish between class and interface bounds?
+      new NodeList(t.getBounds.map(translate).map(referenceTypeToClassOrInterfaceType):_*))
   }
 
   // Used by methodSignature

@@ -64,7 +64,8 @@ scalacOptions ++= Seq(
   "-feature",      // Emit warning and location for usages of features that should be imported explicitly.
   "-opt:l:inline", // Generates faster bytecode by applying optimisations to the program
   "-unchecked",    // Enable additional warnings where generated code depends on assumptions.
-  "-Xlint:_")      // Turn on all lint messages
+  "-Xlint:_",      // Turn on all lint messages
+)
 
 // Flags to `javac`
 javacOptions in compile ++= Seq(
