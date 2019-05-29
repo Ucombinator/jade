@@ -22,7 +22,7 @@ sealed class ModifierImpl(
   override val value: Int,
   override val keyword: Option[com.github.javaparser.ast.Modifier.Keyword])
   extends Modifier
-      
+
 object Modifier {
   def modifiersToNodeList(modifiers: List[Modifier]):
     com.github.javaparser.ast.NodeList[com.github.javaparser.ast.Modifier] = {
@@ -123,7 +123,7 @@ object Modifier {
   )
   private val FieldMapping = List[(Int, FieldModifier)](
     (/*0x0001*/ ACC_PUBLIC.value, ACC_PUBLIC), // Declared public; may be accessed from outside its package.
-    (/*0x0002*/ ACC_PRIVATE.value, ACC_PRIVATE), // Declared private; usable only within the defining class.
+    (/*0x0002*/ ACC_PRIVATE.value, ACC_PRIVATE), // Declared private; accessible only within the defining class and other classes belonging to the same nest (§5.4.4).
     (/*0x0004*/ ACC_PROTECTED.value, ACC_PROTECTED), // Declared protected; may be accessed within subclasses.
     (/*0x0008*/ ACC_STATIC.value, ACC_STATIC), // Declared static.
     (/*0x0010*/ ACC_FINAL.value, ACC_FINAL), // Declared final; never directly assigned to after object construction (JLS §17.5).
@@ -134,7 +134,7 @@ object Modifier {
   )
   private val MethodMapping = List[(Int, MethodModifier)](
     (/*0x0001*/ ACC_PUBLIC.value, ACC_PUBLIC), // Declared public; may be accessed from outside its package.
-    (/*0x0002*/ ACC_PRIVATE.value, ACC_PRIVATE), // Declared private; accessible only within the defining class.
+    (/*0x0002*/ ACC_PRIVATE.value, ACC_PRIVATE), // Declared private; accessible only within the defining class and other classes belonging to the same nest (§5.4.4).
     (/*0x0004*/ ACC_PROTECTED.value, ACC_PROTECTED), // Declared protected; may be accessed within subclasses.
     (/*0x0008*/ ACC_STATIC.value, ACC_STATIC), // Declared static.
     (/*0x0010*/ ACC_FINAL.value, ACC_FINAL), // Declared final; must not be overridden (§5.4.5).

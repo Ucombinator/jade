@@ -24,7 +24,7 @@ object Main {
         val List(acc_name, value, description) = row.select("td").asScala.toList
         val keyword =
           """(Declared|Marked|Marked or implicitly) <code class="literal">(.*)</code>""".r
-            .findPrefixMatchOf(description.childNodes().asScala.mkString) match {
+            .findFirstMatchIn(description.childNodes().asScala.mkString) match {
           case Some(regexMatch) => Some(regexMatch.group(2))
           case None => None
         }
@@ -86,8 +86,8 @@ object Main {
       """sealed class ModifierImpl(
         |  override val value: Int,
         |  override val keyword: Option[com.github.javaparser.ast.Modifier.Keyword])
-        |  extends Modifier
-      """.stripMargin)
+        |  extends Modifier""".stripMargin)
+    println()
 
     println(
       """object Modifier {

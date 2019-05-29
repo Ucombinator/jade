@@ -1,3 +1,4 @@
 *.class
 target
+specifications
 lib/jade/jade.jar

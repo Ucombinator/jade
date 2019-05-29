@@ -97,10 +97,10 @@ class Decompile extends Cmd[Unit] {
 
 @Command(name="download-jls")
 class DownloadJls extends Cmd[Unit] {
-  @Parameters(paramLabel = "<version>")
+  @Parameters(paramLabel = "<version>", index = "0")
   var version: Int = _
 
-  @Parameters(paramLabel = "<chapter>")
+  @Parameters(paramLabel = "<chapter>", index = "1")
   var chapter: Int = _
 
   override def call(): Unit = {
@@ -110,10 +110,10 @@ class DownloadJls extends Cmd[Unit] {
 
 @Command(name="download-jvms")
 class DownloadJvms extends Cmd[Unit] {
-  @Parameters(paramLabel = "<version>")
+  @Parameters(paramLabel = "<version>", index = "0")
   var version: Int = _
 
-  @Parameters(paramLabel = "<chapter>")
+  @Parameters(paramLabel = "<chapter>", index = "1")
   var chapter: Int = _
 
   override def call(): Unit = {
