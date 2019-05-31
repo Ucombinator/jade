@@ -1,4 +1,4 @@
-package org.ucombinator.jade.method.controlFlowGraph
+package org.ucombinator.jade.decompile.method.controlFlowGraph
 
 import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}

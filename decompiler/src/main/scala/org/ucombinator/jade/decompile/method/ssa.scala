@@ -1,10 +1,10 @@
-package org.ucombinator.jade.method.ssa
+package org.ucombinator.jade.decompile.method.ssa
 
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 
-import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
+import org.ucombinator.jade.decompile.method.controlFlowGraph.ControlFlowGraph
 
 import scala.collection.JavaConverters._
 

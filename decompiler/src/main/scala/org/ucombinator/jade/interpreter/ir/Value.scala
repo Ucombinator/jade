@@ -1,7 +1,7 @@
 package org.ucombinator.jade.interpreter.ir
 
 import org.ucombinator.jade.interpreter.descriptor.Descriptor.FieldDescriptor
-import org.ucombinator.jade.method.ssa.Var
+import org.ucombinator.jade.decompile.method.ssa.Var
 
 
 /** Value */

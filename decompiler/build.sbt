@@ -1,5 +1,6 @@
 organization := "org.ucombinator"
 name := "Jade"
+description := "Jade: The Java Decompiler"
 
 scalaVersion := "2.12.8"
 

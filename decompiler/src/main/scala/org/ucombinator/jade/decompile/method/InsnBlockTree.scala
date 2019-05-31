@@ -1,10 +1,10 @@
-package org.ucombinator.jade.method
+package org.ucombinator.jade.decompile.method
 
 import org.jgrapht.{Graph, Graphs}
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm.tree.{AbstractInsnNode, JumpInsnNode, MethodNode}
-import org.ucombinator.jade.method.controlFlowGraph.{ControlFlowGraph, Edge}
+import org.ucombinator.jade.decompile.method.controlFlowGraph.{ControlFlowGraph, Edge}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._

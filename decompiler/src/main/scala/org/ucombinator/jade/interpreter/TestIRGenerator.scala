@@ -5,8 +5,8 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis.{Frame => AsmFrame}
 import org.ucombinator.jade.interpreter.frame.Frame
 import org.ucombinator.jade.interpreter.ir.{Identifier, Value}
-import org.ucombinator.jade.method.controlFlowGraph.ControlFlowGraph
-import org.ucombinator.jade.method.ssa.{SSA, Var}
+import org.ucombinator.jade.decompile.method.controlFlowGraph.ControlFlowGraph
+import org.ucombinator.jade.decompile.method.ssa.{SSA, Var}
 
 import scala.collection.JavaConverters._
 
