@@ -35,14 +35,14 @@ final class InsnBlockTree(className: String, method: MethodNode) {
 
   private val insnIndexPairs: List[(AbstractInsnNode, Int)] = method.instructions.toArray.zipWithIndex.toList
 
-  private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge] =
+  private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge] =
     ControlFlowGraph(className, method).graph
 
-  private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge] = {
-    val result = new DirectedPseudograph[AbstractInsnNode, ControlFlowEdge](classOf[ControlFlowEdge])
+  private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge] = {
+    val result = new DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge](classOf[ControlFlowGraph.Edge])
     controlFlowGraph.vertexSet.asScala.foreach(result.addVertex)
     controlFlowGraph.edgeSet.asScala.map {
-      case ControlFlowEdge(s, t) => ControlFlowEdge(t, s)
+      case ControlFlowGraph.Edge(s, t) => ControlFlowGraph.Edge(t, s)
     } foreach {
       e => result.addEdge(e.source, e.target, e)
     }

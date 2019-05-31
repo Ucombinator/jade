@@ -6,16 +6,14 @@ import org.objectweb.asm.tree.{AbstractInsnNode, MethodNode, TryCatchBlockNode}
 
 import scala.collection.mutable
 
-final case class ControlFlowEdge(source: AbstractInsnNode, target: AbstractInsnNode)
-
 case class ControlFlowGraph(
-  graph: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge],
+  graph: DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge],
   handlers: Set[TryCatchBlockNode],
   frames: Array[Frame[BasicValue]])
 
 case object ControlFlowGraph {
   def apply(owner: String, method: MethodNode): ControlFlowGraph = {
-    val edges = new DirectedPseudograph[AbstractInsnNode, ControlFlowEdge](classOf[ControlFlowEdge])
+    val edges = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
     for (i <- method.instructions.toArray) {
       edges.addVertex(i)
     }
@@ -24,21 +22,26 @@ case object ControlFlowGraph {
     val frames = analyzer.analyze(owner, method)
     ControlFlowGraph(edges, handlers.toSet, frames)
   }
-}
 
-class ControlFlowGraphAnalyzer(method: MethodNode, edges: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge], handlers: mutable.Set[TryCatchBlockNode])
-  extends Analyzer[BasicValue](new BasicInterpreter) {
+  final case class Edge(source: AbstractInsnNode, target: AbstractInsnNode)
 
-  override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
-    val source = this.method.instructions.get(insn)
-    val target = this.method.instructions.get(successor)
-    this.edges.addEdge(source, target, ControlFlowEdge(source, target))
-  }
+  class ControlFlowGraphAnalyzer(
+    method: MethodNode,
+    edges: DirectedPseudograph[AbstractInsnNode, Edge],
+    handlers: mutable.Set[TryCatchBlockNode])
+    extends Analyzer[BasicValue](new BasicInterpreter) {
 
-  override protected def newControlFlowExceptionEdge(insn: Int, successor: Int): Boolean = ??? // Should never be called
+    override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
+      val source = this.method.instructions.get(insn)
+      val target = this.method.instructions.get(successor)
+      this.edges.addEdge(source, target, Edge(source, target))
+    }
 
-  override protected def newControlFlowExceptionEdge(insn: Int, successor: TryCatchBlockNode): Boolean = {
-    this.handlers += successor
-    true // the edge must always be considered by the analyzer
+    override protected def newControlFlowExceptionEdge(insn: Int, successor: Int): Boolean = ??? // Should never be called
+
+    override protected def newControlFlowExceptionEdge(insn: Int, successor: TryCatchBlockNode): Boolean = {
+      this.handlers += successor
+      true // the edge must always be considered by the analyzer
+    }
   }
 }
