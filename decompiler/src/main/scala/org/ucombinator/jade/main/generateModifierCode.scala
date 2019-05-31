@@ -46,9 +46,9 @@ object Main {
       val rows = list.parent.nextElementSibling.child(0).children().asScala.grouped(2)
       (kind,
         for (mutable.Buffer(row: Element, description: Element) <- rows.toList) yield {
-          val (value, acc_name) = """(0x[0-9]*) \(([A-Z_]*)\)""".r.findPrefixMatchOf(row.text) match {
-            case Some(regexMatch) => (regexMatch.group(1), regexMatch.group(2))
-          }
+          val regexMatch = """(0x[0-9]*) \(([A-Z_]*)\)""".r.findPrefixMatchOf(row.text).get
+          val value = regexMatch.group(1)
+          val acc_name = regexMatch.group(2)
           val keyword = if (acc_name == "ACC_TRANSITIVE") { Some("transitive") } else { None }
           ModifierInfo(acc_name, stringToInt(value), keyword, kind, description.text)
         })
