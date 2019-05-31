@@ -1,4 +1,4 @@
-package org.ucombinator.jade.asm
+package org.ucombinator.jade.util.asm
 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._

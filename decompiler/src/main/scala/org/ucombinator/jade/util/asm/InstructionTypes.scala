@@ -1,7 +1,7 @@
 /* Automatically built by generateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */
 /* Last checked against ASM 7.1. */
 
-package org.ucombinator.jade.asm
+package org.ucombinator.jade.util.asm
 
 import org.objectweb.asm.tree.AbstractInsnNode
 

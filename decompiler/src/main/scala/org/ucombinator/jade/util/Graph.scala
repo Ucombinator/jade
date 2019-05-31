@@ -1,11 +1,33 @@
 package org.ucombinator.jade.util
 
-import org.jgrapht.{Graph => JGraph, Graphs}
+import java.io.Writer
+
+import org.jgrapht.io.{DOTExporter, StringComponentNameProvider}
+import org.jgrapht.{Graphs, Graph => JGraph}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 object Graph {
+  class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
+    override def getName(component: N): String = {
+      val s = (component.toString + " " + component.hashCode)
+        .replaceAll("\\\\", "\\\\\\\\")
+        .replaceAll("\"", "\\\\\"")
+      if (quotes) { "\"" + s + "\""}
+      else { s }
+    }
+  }
+
+  def print[N, E](writer: Writer, graph: JGraph[N, E]): Unit = {
+    val dotExporter = new DOTExporter[N, E](
+      new EscapedStringComponentNameProvider[N](true),
+      null,
+      null
+    )
+    dotExporter.exportGraph(graph, writer)
+  }
+
   // Returns a mapping from nodes to the set of nodes that dominate them
   def dominators[V,E](graph: JGraph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
     val vs = graph.vertexSet.asScala.toSet

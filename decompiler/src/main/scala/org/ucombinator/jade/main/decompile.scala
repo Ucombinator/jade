@@ -3,7 +3,7 @@ package org.ucombinator.jade.main.decompile
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
-import org.ucombinator.jade.asm.Instructions
+import org.ucombinator.jade.util.asm.Instructions
 import org.ucombinator.jade.decompile.method.controlFlowGraph.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
 import java.io.{File, PrintWriter}

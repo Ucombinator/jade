@@ -7,7 +7,7 @@ import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expres
 import com.github.javaparser.ast.stmt.BlockStmt
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.{AnnotationNode, ClassNode, FieldNode, MethodNode, ParameterNode}
-import org.ucombinator.jade.classfile.{Descriptor, Modifier, Signature}
+import org.ucombinator.jade.util.classfile.{Descriptor, Modifier, Signature}
 
 import scala.collection.JavaConverters._
 

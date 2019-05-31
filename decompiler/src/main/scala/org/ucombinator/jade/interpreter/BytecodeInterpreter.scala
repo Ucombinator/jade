@@ -6,7 +6,6 @@ import org.objectweb.asm.tree.analysis.{BasicValue => AsmBasicValue}
 import org.ucombinator.jade.interpreter.ir._
 import org.ucombinator.jade.interpreter.descriptor.DescriptorParser
 import org.ucombinator.jade.interpreter.frame.{Frame, RichFrameOperations}
-import org.ucombinator.jade.util.Debug.printInsnNode
 
 import scala.annotation.tailrec
 
@@ -64,7 +63,6 @@ abstract class BytecodeInterpreter(insnFramePairs: List[(AbstractInsnNode, Frame
       case (insn, frame) :: (leftInsns@(nextInsn, nextFrame) :: _) =>
 
         /** Debug print - Start */
-        printInsnNode(insn)
         println(s"nLocals: ${frame.local.length}")
         println(s"nStack: ${frame.stack.length}")
         println(s"frame: $frame")

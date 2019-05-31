@@ -1,4 +1,4 @@
-package org.ucombinator.jade.classfile
+package org.ucombinator.jade.util.classfile
 
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, ReferenceType, Type, VoidType, WildcardType, TypeParameter}
