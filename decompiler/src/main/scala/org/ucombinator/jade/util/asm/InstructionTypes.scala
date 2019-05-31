@@ -1,4 +1,4 @@
-/* Automatically built by generateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */
+/* Automatically built by GenerateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */
 /* Last checked against ASM 7.1. */
 
 package org.ucombinator.jade.util.asm

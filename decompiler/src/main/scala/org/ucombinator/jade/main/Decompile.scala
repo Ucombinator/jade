@@ -1,4 +1,4 @@
-package org.ucombinator.jade.main.decompile
+package org.ucombinator.jade.main
 
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree._
@@ -13,7 +13,7 @@ import org.ucombinator.jade.decompile.DecompileClass
 
 import scala.collection.JavaConverters._
 
-object Main {
+object Decompile {
   def main(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean, fileNames: List[File]): Unit = {
     for (fileName <- fileNames) {
       println(fileName)

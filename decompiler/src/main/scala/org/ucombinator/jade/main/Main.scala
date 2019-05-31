@@ -11,7 +11,6 @@ import scala.collection.JavaConverters._
 ////////////////
 // Top-level command
 
-// TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 // TODO: description
 // TODO: header/footer?
 // TODO: aliases, description, defaultValueProvider
@@ -28,11 +27,11 @@ object Main {
   subcommands = Array(
     classOf[HelpCommand],
     classOf[BuildInfoCmd],
-    classOf[Decompile],
-    classOf[DownloadJls],
-    classOf[DownloadJvms],
-    classOf[GenerateModifierCode],
-    classOf[GenerateAsmInstructionTypes]))
+    classOf[DecompileCmd],
+    classOf[DownloadJlsCmd],
+    classOf[DownloadJvmsCmd],
+    classOf[GenerateModifierCodeCmd],
+    classOf[GenerateAsmInstructionTypesCmd]))
 class Main() extends Cmd[Unit] {
   override def call(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -76,7 +75,7 @@ class BuildInfoCmd extends Cmd[Unit] {
 }
 
 @Command(name="decompile")
-class Decompile extends Cmd[Unit] {
+class DecompileCmd extends Cmd[Unit] {
   @Option(names = Array("--print-asm"))
   var printAsm = false
 
@@ -91,12 +90,12 @@ class Decompile extends Cmd[Unit] {
   var fileNames: java.util.List[File] = _
 
   override def call(): Unit = {
-    decompile.Main.main(printAsm, printJavaParser, printMethods, fileNames.asScala.toList)
+    Decompile.main(printAsm, printJavaParser, printMethods, fileNames.asScala.toList)
   }
 }
 
 @Command(name="download-jls")
-class DownloadJls extends Cmd[Unit] {
+class DownloadJlsCmd extends Cmd[Unit] {
   @Parameters(paramLabel = "<version>", index = "0")
   var version: Int = _
 
@@ -104,12 +103,12 @@ class DownloadJls extends Cmd[Unit] {
   var chapter: Int = _
 
   override def call(): Unit = {
-    downloadSpecification.Main.main("jls", version, chapter)
+    DownloadSpecification.main("jls", version, chapter)
   }
 }
 
 @Command(name="download-jvms")
-class DownloadJvms extends Cmd[Unit] {
+class DownloadJvmsCmd extends Cmd[Unit] {
   @Parameters(paramLabel = "<version>", index = "0")
   var version: Int = _
 
@@ -117,20 +116,20 @@ class DownloadJvms extends Cmd[Unit] {
   var chapter: Int = _
 
   override def call(): Unit = {
-    downloadSpecification.Main.main("jvms", version, chapter)
+    DownloadSpecification.main("jvms", version, chapter)
   }
 }
 
 @Command(name="generate-modifier-code")
-class GenerateModifierCode extends Cmd[Unit] {
+class GenerateModifierCodeCmd extends Cmd[Unit] {
   override def call(): Unit = {
-    generateModifierCode.Main.main()
+    GenerateModifierCode.main()
   }
 }
 
 @Command(name="generate-asm-instruction-types")
-class GenerateAsmInstructionTypes extends Cmd[Unit] {
+class GenerateAsmInstructionTypesCmd extends Cmd[Unit] {
   override def call(): Unit = {
-    generateAsmInstructionTypes.Main.main()
+    GenerateAsmInstructionTypes.main()
   }
 }

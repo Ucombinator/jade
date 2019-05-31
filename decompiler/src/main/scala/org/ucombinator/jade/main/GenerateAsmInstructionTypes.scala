@@ -3,16 +3,16 @@
  * Reads from AbstractInsnNode (see import).
  * Writes to stdout, but output created org.ucombinator.jade.asm.InstructionTypes. */
 
-package org.ucombinator.jade.main.generateAsmInstructionTypes
+package org.ucombinator.jade.main
 
 import org.objectweb.asm.tree.AbstractInsnNode
 
 import java.lang.reflect.Modifier
 
 // TODO: convert to a macro
-object Main {
+object GenerateAsmInstructionTypes {
   def main () : Unit = {
-    println("/* Automatically built by generateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */")
+    println("/* Automatically built by GenerateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */")
     println("/* Last checked against ASM 7.1. */")
     println()
     println("package org.ucombinator.jade.asm")
