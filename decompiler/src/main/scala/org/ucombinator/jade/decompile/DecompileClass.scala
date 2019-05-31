@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 
 object DecompileClass {
 
-  private def literalToJavaParser(node: Object): LiteralExpr = node match {
+  private def literal(node: Object): LiteralExpr = node match {
     // TODO: improve formatting of literals?
     case null => null
     case node: java.lang.Integer => new IntegerLiteralExpr(String.valueOf(node))
@@ -30,11 +30,11 @@ object DecompileClass {
     case _ => throw new Exception(f"failed to convert type $t to a name")
   }
 
-  private def asmToJavaParser(node: AnnotationNode): AnnotationExpr = {
+  private def decompile(node: AnnotationNode): AnnotationExpr = {
     val name = typeToName(Descriptor.fieldDescriptor(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
-      case List(v: Object) => new SingleMemberAnnotationExpr(name, literalToJavaParser(v))
+      case List(v: Object) => new SingleMemberAnnotationExpr(name, literal(v))
       case vs =>
         new NormalAnnotationExpr(
           name,
@@ -42,14 +42,22 @@ object DecompileClass {
             (for (List(k, v) <- vs.grouped(2)) yield {
               new MemberValuePair(
                 k.asInstanceOf[String],
-                literalToJavaParser(v.asInstanceOf[Object]))}).toList.asJava) )
+                literal(v.asInstanceOf[Object]))}).toList.asJava) )
     }
   }
 
-  private def asmToJavaParser(node: FieldNode): FieldDeclaration = {
+  private def decompile(nodes: java.util.List[_ <: AnnotationNode]*): NodeList[AnnotationExpr] = {
+    val list = new NodeList[AnnotationExpr]()
+    for (node <- nodes) {
+      if (node != null) { list.addAll(node.asScala.map(x => decompile(x)).asJava) }
+    }
+    list
+  }
+
+  private def decompile(node: FieldNode): FieldDeclaration = {
     // attrs (ignore?)
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToField(node.access))
-    val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(
+    val annotations: NodeList[AnnotationExpr] = decompile(
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
@@ -59,18 +67,18 @@ object DecompileClass {
         if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
         else { Signature.typeSignature(node.signature) }
       val name = new SimpleName(node.name)
-      val initializer: Expression = literalToJavaParser(node.value)
+      val initializer: Expression = literal(node.value)
       new VariableDeclarator(`type`, name, initializer)})
 
     new FieldDeclaration(modifiers, annotations, variables)
   }
 
-  private def decomParameter(method: MethodNode, paramCount: Int):
+  private def decompileParameter(method: MethodNode, paramCount: Int):
     (((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])) => Parameter = {
     case ((((typ, index), node), a1), a2) =>
       val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
       val modifiers = Modifier.modifiersToNodeList(flags)
-      val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(a1, a2, null, null)
+      val annotations: NodeList[AnnotationExpr] = decompile(a1, a2, null, null)
       val `type`: Type = typ
       val isVarArgs: Boolean =
         Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
@@ -80,7 +88,7 @@ object DecompileClass {
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
 
-  private def asmToJavaParser(node: MethodNode): MethodDeclaration = {
+  private def decompile(node: MethodNode): MethodDeclaration = {
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
@@ -91,7 +99,7 @@ object DecompileClass {
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToMethod(node.access))
-    val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(
+    val annotations: NodeList[AnnotationExpr] = decompile(
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
@@ -111,7 +119,7 @@ object DecompileClass {
         .zipAll(node.parameters match { case null => List(); case p => p.asScala }, null, null)
         .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
         .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
-      new NodeList(ps.map(decomParameter(node, sig._2.length)):_*)
+      new NodeList(ps.map(decompileParameter(node, sig._2.length)):_*)
     }
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
@@ -121,15 +129,7 @@ object DecompileClass {
     new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
   }
 
-  private def asmToJavaParsers(nodes: java.util.List[_]*): NodeList[AnnotationExpr] = {
-    val list = new NodeList[AnnotationExpr]()
-    for (node <- nodes) {
-      if (node != null) { list.addAll(node.asScala.map(x => asmToJavaParser(x.asInstanceOf[AnnotationNode])).asJava) }
-    }
-    list
-  }
-
-  def asmToJavaParser(node: ClassNode): CompilationUnit = {
+  def decompile(node: ClassNode): CompilationUnit = {
     println(f"version: ${node.version}") // TODO
     println(f"sourceFile: ${node.sourceFile}") // TODO
     println(f"sourceDebug: ${node.sourceDebug}") // TODO
@@ -148,7 +148,7 @@ object DecompileClass {
 
     val classOrInterfaceDeclaration = {
       val modifiers = Modifier.modifiersToNodeList(Modifier.intToClass(node.access))
-      val annotations: NodeList[AnnotationExpr] = asmToJavaParsers(
+      val annotations: NodeList[AnnotationExpr] = decompile(
         node.visibleAnnotations,
         node.invisibleAnnotations,
         node.visibleTypeAnnotations,
@@ -171,8 +171,8 @@ object DecompileClass {
       }
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
         val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
-        list.addAll(node.fields.asScala.map(asmToJavaParser).asJava)
-        list.addAll(node.methods.asScala.map(asmToJavaParser).asJava)
+        list.addAll(node.fields.asScala.map(decompile).asJava)
+        list.addAll(node.methods.asScala.map(decompile).asJava)
         // TODO
         list
       }

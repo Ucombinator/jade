@@ -36,7 +36,7 @@ object Decompile {
       cn.accept(traceClassVisitor)
     }
 
-    val cu = DecompileClass.asmToJavaParser(cn)
+    val cu = DecompileClass.decompile(cn)
     if (printJavaParser) {
       println(cu)
     }
