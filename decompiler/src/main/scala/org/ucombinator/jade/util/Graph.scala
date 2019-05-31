@@ -37,7 +37,7 @@ object Graph {
   // Returns a mapping from nodes to the set of nodes that dominate them
   def dominators[V,E](graph: JGraph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
     val vs = graph.vertexSet.asScala.toSet
-    var dom: immutable.Map[V, immutable.Set[V]]  = Map.empty
+    var dom: immutable.Map[V, immutable.Set[V]] = Map.empty
 
     // Initial assignment
     dom = dom + (start -> immutable.Set(start))
@@ -68,9 +68,9 @@ object Graph {
 
     object O extends Ordering[V] {
       override def compare(x: V, y: V): Int = {
-        if (dom(x)(y)) -1
-        else if (dom(y)(x)) 1
-        else 0
+        if (dom(x)(y)) { -1 }
+        else if (dom(y)(x)) { 1 }
+        else { 0 }
       }
     }
 
