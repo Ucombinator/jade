@@ -1,4 +1,4 @@
-package org.ucombinator.jade.decompile.method.controlFlowGraph
+package org.ucombinator.jade.decompile.method
 
 import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}
@@ -6,18 +6,16 @@ import org.objectweb.asm.tree.{AbstractInsnNode, MethodNode, TryCatchBlockNode}
 
 import scala.collection.mutable
 
-final case class Edge(source: AbstractInsnNode, target: AbstractInsnNode) {
-  override def toString = f"ControlFlowEdge($source, $target)"
-}
+final case class ControlFlowEdge(source: AbstractInsnNode, target: AbstractInsnNode)
 
 case class ControlFlowGraph(
-  graph: DirectedPseudograph[AbstractInsnNode, Edge],
+  graph: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge],
   handlers: Set[TryCatchBlockNode],
   frames: Array[Frame[BasicValue]])
 
 case object ControlFlowGraph {
   def apply(owner: String, method: MethodNode): ControlFlowGraph = {
-    val edges = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
+    val edges = new DirectedPseudograph[AbstractInsnNode, ControlFlowEdge](classOf[ControlFlowEdge])
     for (i <- method.instructions.toArray) {
       edges.addVertex(i)
     }
@@ -28,15 +26,13 @@ case object ControlFlowGraph {
   }
 }
 
-class ControlFlowGraphAnalyzer(method: MethodNode, edges: DirectedPseudograph[AbstractInsnNode, Edge], handlers: mutable.Set[TryCatchBlockNode])
+class ControlFlowGraphAnalyzer(method: MethodNode, edges: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge], handlers: mutable.Set[TryCatchBlockNode])
   extends Analyzer[BasicValue](new BasicInterpreter) {
 
   override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
     val source = this.method.instructions.get(insn)
     val target = this.method.instructions.get(successor)
-    //this.edges.addVertex(source)
-    //this.edges.addVertex(target)
-    this.edges.addEdge(source, target, Edge(source, target))
+    this.edges.addEdge(source, target, ControlFlowEdge(source, target))
   }
 
   override protected def newControlFlowExceptionEdge(insn: Int, successor: Int): Boolean = ??? // Should never be called

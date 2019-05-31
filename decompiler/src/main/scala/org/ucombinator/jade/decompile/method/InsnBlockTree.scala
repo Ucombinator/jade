@@ -4,7 +4,6 @@ import org.jgrapht.{Graph, Graphs}
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm.tree.{AbstractInsnNode, JumpInsnNode, MethodNode}
-import org.ucombinator.jade.decompile.method.controlFlowGraph.{ControlFlowGraph, Edge}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -36,14 +35,14 @@ final class InsnBlockTree(className: String, method: MethodNode) {
 
   private val insnIndexPairs: List[(AbstractInsnNode, Int)] = method.instructions.toArray.zipWithIndex.toList
 
-  private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, Edge] =
+  private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge] =
     ControlFlowGraph(className, method).graph
 
-  private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, Edge] = {
-    val result = new DirectedPseudograph[AbstractInsnNode, Edge](classOf[Edge])
+  private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowEdge] = {
+    val result = new DirectedPseudograph[AbstractInsnNode, ControlFlowEdge](classOf[ControlFlowEdge])
     controlFlowGraph.vertexSet.asScala.foreach(result.addVertex)
     controlFlowGraph.edgeSet.asScala.map {
-      case Edge(s, t) => Edge(t, s)
+      case ControlFlowEdge(s, t) => ControlFlowEdge(t, s)
     } foreach {
       e => result.addEdge(e.source, e.target, e)
     }

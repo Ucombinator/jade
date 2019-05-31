@@ -1,6 +1,6 @@
 package org.ucombinator.jade.util
 
-import java.io.Writer
+import java.io.{StringWriter, Writer}
 
 import org.jgrapht.io.{DOTExporter, StringComponentNameProvider}
 import org.jgrapht.{Graphs, Graph => JGraph}
@@ -9,7 +9,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 object Graph {
-  class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
+  private class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
     override def getName(component: N): String = {
       val s = (component.toString + " " + component.hashCode)
         .replaceAll("\\\\", "\\\\\\\\")
@@ -17,6 +17,12 @@ object Graph {
       if (quotes) { "\"" + s + "\""}
       else { s }
     }
+  }
+
+  def print[N, E](graph: JGraph[N, E]): String = {
+    val writer = new StringWriter()
+    print(writer, graph)
+    writer.toString
   }
 
   def print[N, E](writer: Writer, graph: JGraph[N, E]): Unit = {
