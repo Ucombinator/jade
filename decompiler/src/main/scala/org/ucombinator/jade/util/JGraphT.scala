@@ -3,12 +3,12 @@ package org.ucombinator.jade.util
 import java.io.{StringWriter, Writer}
 
 import org.jgrapht.io.{DOTExporter, StringComponentNameProvider}
-import org.jgrapht.{Graphs, Graph => JGraph}
+import org.jgrapht.{Graphs, Graph}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-object Graph {
+object JGraphT {
   private class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
     override def getName(component: N): String = {
       val s = (component.toString + " " + component.hashCode)
@@ -19,13 +19,13 @@ object Graph {
     }
   }
 
-  def print[N, E](graph: JGraph[N, E]): String = {
+  def print[N, E](graph: Graph[N, E]): String = {
     val writer = new StringWriter()
     print(writer, graph)
     writer.toString
   }
 
-  def print[N, E](writer: Writer, graph: JGraph[N, E]): Unit = {
+  def print[N, E](writer: Writer, graph: Graph[N, E]): Unit = {
     val dotExporter = new DOTExporter[N, E](
       new EscapedStringComponentNameProvider[N](true),
       null,
@@ -35,7 +35,7 @@ object Graph {
   }
 
   // Returns a mapping from nodes to the set of nodes that dominate them
-  def dominators[V,E](graph: JGraph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
+  def dominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
     val vs = graph.vertexSet.asScala.toSet
     var dom: immutable.Map[V, immutable.Set[V]] = Map.empty
 
@@ -63,7 +63,7 @@ object Graph {
   }
 
   // Returns a mapping from nodes to the node that is its immediate dominator
-  def immediateDominators[V,E](graph: JGraph[V,E], start: V): immutable.Map[V, V] = {
+  def immediateDominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, V] = {
     val dom = dominators(graph, start)
 
     object O extends Ordering[V] {
