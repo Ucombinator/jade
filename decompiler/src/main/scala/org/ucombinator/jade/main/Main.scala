@@ -59,7 +59,9 @@ class VersionProvider extends CommandLine.IVersionProvider {
 ////////////////
 // Sub-commands
 
-@Command(name="build-info")
+@Command(
+  name = "build-info",
+  description = Array("Display information about how `jade` was built"))
 class BuildInfoCmd extends Cmd[Unit] {
   override def call(): Unit = {
     import org.ucombinator.jade.main.BuildInfo._
@@ -73,7 +75,9 @@ class BuildInfoCmd extends Cmd[Unit] {
   }
 }
 
-@Command(name="decompile")
+@Command(
+  name = "decompile",
+  description = Array("Decompile class, jar, or jmod files"))
 class DecompileCmd extends Cmd[Unit] {
   @Option(names = Array("--print-asm"))
   var printAsm = false
@@ -92,7 +96,9 @@ class DecompileCmd extends Cmd[Unit] {
   }
 }
 
-@Command(name="download-jls")
+@Command(
+  name = "download-jls",
+  description = Array("Download the Java Langauge Specification"))
 class DownloadJlsCmd extends Cmd[Unit] {
   @Parameters(paramLabel = "<version>", index = "0")
   var version: Int = _
@@ -105,7 +111,9 @@ class DownloadJlsCmd extends Cmd[Unit] {
   }
 }
 
-@Command(name="download-jvms")
+@Command(
+  name = "download-jvms",
+  description = Array("Download the Java Virtual Machine Specification"))
 class DownloadJvmsCmd extends Cmd[Unit] {
   @Parameters(paramLabel = "<version>", index = "0")
   var version: Int = _
@@ -118,14 +126,18 @@ class DownloadJvmsCmd extends Cmd[Unit] {
   }
 }
 
-@Command(name="generate-modifier-code")
+@Command(
+  name = "generate-modifier-code",
+  description = Array("Generate the code for `Modifier.scala`"))
 class GenerateModifierCodeCmd extends Cmd[Unit] {
   override def call(): Unit = {
     GenerateModifierCode.main()
   }
 }
 
-@Command(name="generate-asm-instruction-types")
+@Command(
+  name = "generate-asm-instruction-types",
+  description = Array("Generate the code for `InstructionTypes.scala`"))
 class GenerateAsmInstructionTypesCmd extends Cmd[Unit] {
   override def call(): Unit = {
     GenerateAsmInstructionTypes.main()
