@@ -32,7 +32,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
         yield { decompilePath(p) }
       children.toList.flatten
     } else {
-      println("skipping $path") // TODO
+      println(f"skipping $path") // TODO
       List()
     }
   }
