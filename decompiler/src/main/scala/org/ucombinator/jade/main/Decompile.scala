@@ -102,6 +102,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
       }
 
       for (method <- classNode.methods.asScala) {
+        // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
         println("!!!!!!!!!!!!")
         println(f"method: ${method.name} ${method.signature} ${method.desc}")
         println("**** ControlFlowGraph ****")
