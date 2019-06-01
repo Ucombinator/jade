@@ -2,8 +2,7 @@ package org.ucombinator.jade.main
 
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
-
-import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.Callable
 
 import scala.collection.JavaConverters._
@@ -85,12 +84,11 @@ class DecompileCmd extends Cmd[Unit] {
   @Option(names = Array("--print-methods"))
   var printMethods = false
 
-  // TODO: java.io.file or java.nio.path?
-  @Parameters(paramLabel = "<file>", arity = "1..*", description = Array("The .class file to decompile")) // TODO: FILE?
-  var fileNames: java.util.List[File] = _
+  @Parameters(paramLabel = "<path>", arity = "1..*", description = Array("Files or directories to decompile"))
+  var path: java.util.List[Path] = _
 
   override def call(): Unit = {
-    Decompile.main(printAsm, printJavaParser, printMethods, fileNames.asScala.toList)
+    Decompile(printAsm, printJavaParser, printMethods).main(path.asScala.toList)
   }
 }
 

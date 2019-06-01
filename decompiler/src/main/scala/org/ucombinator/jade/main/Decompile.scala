@@ -6,60 +6,111 @@ import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.util.asm.Instructions
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
-import java.io.{File, PrintWriter}
-import java.nio.file.Files
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, PrintWriter}
+import java.nio.file.{Files, Path}
+import java.util.stream.Collectors
+import java.util.zip.{ZipEntry, ZipInputStream}
 
+import com.github.javaparser.ast.CompilationUnit
 import org.ucombinator.jade.decompile.DecompileClass
 
 import scala.collection.JavaConverters._
 
-object Decompile {
-  def main(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean, fileNames: List[File]): Unit = {
-    for (fileName <- fileNames) {
-      println(fileName)
-      main(printAsm, printJavaParser, printMethods, fileName)
+case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean) {
+  type Result = List[(Path, List[String], ClassNode, CompilationUnit)]
+  def main(paths: List[Path]): Unit = {
+    for (path <- paths) {
+      decompilePath(path)
     }
   }
+  def decompilePath(path: Path): Result = {
+    if (Files.isRegularFile(path)) {
+      decompileBytes(path, List(), Files.readAllBytes(path))
+    } else if (Files.isDirectory(path)) {
+      val children =
+        for (p <- Files.list(path).collect(Collectors.toList[Path]).asScala)
+        yield { decompilePath(p) }
+      children.toList.flatten
+    } else {
+      println("skipping $path") // TODO
+      List()
+    }
+  }
+  def decompileBytes(path: Path, subpath: List[String], bytes: Array[Byte]): Result = {
+    if (bytes.startsWith(Array(0x50, 0x4b, 0x03, 0x04).map(_.toByte))) {
+      decompileZip(path, subpath, bytes, 0) // zip file
+    } else if (bytes.startsWith(Array(0x4a, 0x4d, 0x01, 0x00, 0x50, 0x4b, 0x03, 0x04).map(_.toByte))) {
+      decompileZip(path, subpath, bytes, 4) // jmod file
+    } else if (bytes.startsWith(Array(0xCA, 0xFE, 0xBA, 0xBE).map(_.toByte))) {
+      List(decompileClassFile(path, subpath, bytes)) // class file
+    } else {
+      List() // unsupported file type
+    }
+  }
+  def decompileZip(path: Path, subpath: List[String], bytes: Array[Byte], offset: Int): Result = {
+    val zipInputStream = new ZipInputStream(new ByteArrayInputStream(bytes, offset, bytes.length - offset))
+    // TODO: multi-version jar
+    // TODO: figure out jmod files
+    // not using jar file because jmod files are zip files
+    // new Manifest
+    val array = new Array[Byte](4 * 1024)
+    var entry: ZipEntry = null
+    var entries: Result = List()
+    // TODO: use yeild?
+    while ({entry = zipInputStream.getNextEntry; entry != null}) {
+      if (!entry.isDirectory) {
+        val builder = new ByteArrayOutputStream()
+        var len = -1
+        while ({len = zipInputStream.read(array); len != -1}) {
+          builder.write(array, 0, len)
+        }
+        val bytes = builder.toByteArray
+        entries ++= decompileBytes(path, subpath :+ entry.getName, bytes)
+      }
+    }
+    zipInputStream.close()
+    entries
+  }
 
-  def main(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean, fileName: File): Unit = {
-    require(fileName != null, "the given class file name is actually `null`!")
+  def decompileClassFile(path: Path, subpath: List[String], bytes: Array[Byte]): (Path, List[String], ClassNode, CompilationUnit) = {
+    val owner = (path.toString :: subpath).mkString("!")
 
-    val byteArray = Files.readAllBytes(fileName.toPath) //Full path class name
+    val classNode = new ClassNode
+    val cr = new ClassReader(bytes)
+    cr.accept(classNode, 0)
 
-    val cn = new ClassNode
-    val cr = new ClassReader(byteArray)
-
-    cr.accept(cn, 0)
+    if (classNode.name == null) { return (path, subpath, null, null) }
 
     if (printAsm) {
       val traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out))
-      cn.accept(traceClassVisitor)
+      classNode.accept(traceClassVisitor)
     }
 
-    val cu = DecompileClass.decompile(cn)
+    val compilationUnit = DecompileClass.decompile(classNode)
+
     if (printJavaParser) {
-      println(cu)
+      println(compilationUnit)
     }
 
     if (printMethods) {
-      // TODO: cn.sourceFile, cn.sourceDebug
-      // TODO: cn.outerClass, cn.outerMethod, cn.outerMethodDesc
+      // TODO: classNode.sourceFile, classNode.sourceDebug
+      // TODO: classNode.outerClass, classNode.outerMethod, classNode.outerMethodDesc
       // TODO: Inner classes
-      val inners: List[InnerClassNode] = cn.innerClasses.asScala.toList
+      val inners: List[InnerClassNode] = classNode.innerClasses.asScala.toList
       inners.foreach { c =>
         println(c.name)
       }
 
-      for (method <- cn.methods.asScala) {
+      for (method <- classNode.methods.asScala) {
         println("!!!!!!!!!!!!")
         println(f"method: ${method.name} ${method.signature} ${method.desc}")
         println("**** ControlFlowGraph ****")
-        val cfg = ControlFlowGraph(fileName.toString, method)
+        val cfg = ControlFlowGraph(owner, method)
         for (v <- cfg.graph.vertexSet().asScala) {
           println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
         }
         println("**** SSA ****")
-        val ids = SSA(fileName.toString, method, cfg)
+        val ids = SSA(owner, method, cfg)
 
         println("frames: " + ids.frames.length)
         for (i <- 0 until method.instructions.size) {
@@ -78,5 +129,7 @@ object Decompile {
         }
       }
     }
+
+    (path, subpath, classNode, compilationUnit)
   }
 }
