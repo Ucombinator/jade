@@ -101,7 +101,6 @@ object DecompileClass {
     // visibleLocalVariableAnnotations
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
-    // TODO: <init> and <clinit>
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToMethod(node.access))
     val annotations: NodeList[AnnotationExpr] = decompile(
       node.visibleAnnotations,
