@@ -2,7 +2,7 @@ package org.ucombinator.jade.decompile
 
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
-import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, FieldDeclaration, MethodDeclaration, Parameter, ReceiverParameter, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, ConstructorDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, ReceiverParameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MemberValuePair, Name, NormalAnnotationExpr, SimpleName, SingleMemberAnnotationExpr, StringLiteralExpr}
 import com.github.javaparser.ast.stmt.BlockStmt
 import org.objectweb.asm.Opcodes
@@ -73,22 +73,25 @@ object DecompileClass {
     new FieldDeclaration(modifiers, annotations, variables)
   }
 
-  private def decompileParameter(method: MethodNode, paramCount: Int):
-    (((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])) => Parameter = {
-    case ((((typ, index), node), a1), a2) =>
-      val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
-      val modifiers = Modifier.modifiersToNodeList(flags)
-      val annotations: NodeList[AnnotationExpr] = decompile(a1, a2, null, null)
-      val `type`: Type = typ
-      val isVarArgs: Boolean =
-        Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
-        index == paramCount - 1
-      val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
-      val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
+  private def decompileParameter(
+    method: MethodNode,
+    paramCount: Int,
+    parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])):
+    Parameter = {
+    val ((((typ, index), node), a1), a2) = parameter
+    val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
+    val modifiers = Modifier.modifiersToNodeList(flags)
+    val annotations: NodeList[AnnotationExpr] = decompile(a1, a2, null, null)
+    val `type`: Type = typ
+    val isVarArgs: Boolean =
+      Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
+      index == paramCount - 1
+    val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
+    val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
 
-  private def decompile(node: MethodNode): MethodDeclaration = {
+  private def decompile(fullClassName: Name, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
@@ -120,14 +123,21 @@ object DecompileClass {
         .zipAll(node.parameters match { case null => List(); case p => p.asScala }, null, null)
         .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
         .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
-      new NodeList(ps.map(decompileParameter(node, sig._2.length)):_*)
+      new NodeList(ps.map(decompileParameter(node, sig._2.length, _)):_*)
     }
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
-    val body: BlockStmt = null // TODO
+    val body: BlockStmt = new BlockStmt() // TODO
     val receiverParameter: ReceiverParameter = null // TODO
-    new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
+    node.name match {
+      case "<clinit>" =>
+        new InitializerDeclaration(true, body)
+      case "<init>" =>
+        new ConstructorDeclaration(modifiers, annotations, typeParameters, new SimpleName(fullClassName.getIdentifier)/*TODO*/, parameters, thrownExceptions, body, receiverParameter)
+      case _ =>
+        new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
+    }
   }
 
   def decompile(node: ClassNode): CompilationUnit = {
@@ -173,7 +183,7 @@ object DecompileClass {
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
         val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
         list.addAll(node.fields.asScala.map(decompile).asJava)
-        list.addAll(node.methods.asScala.map(decompile).asJava)
+        list.addAll(node.methods.asScala.map(decompile(fullClassName, _)).asJava)
         // TODO
         list
       }
