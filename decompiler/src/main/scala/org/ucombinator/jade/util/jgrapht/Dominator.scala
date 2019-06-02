@@ -1,38 +1,13 @@
-package org.ucombinator.jade.util
+package org.ucombinator.jade.util.jgrapht
 
-import java.io.{StringWriter, Writer}
-
-import org.jgrapht.io.{DOTExporter, StringComponentNameProvider}
-import org.jgrapht.{Graphs, Graph}
+import org.jgrapht.{Graph, Graphs}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-object JGraphT {
-  private class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
-    override def getName(component: N): String = {
-      val s = (component.toString + " " + component.hashCode)
-        .replaceAll("\\\\", "\\\\\\\\")
-        .replaceAll("\"", "\\\\\"")
-      if (quotes) { "\"" + s + "\""}
-      else { s }
-    }
-  }
+object Dominator {
 
-  def print[N, E](graph: Graph[N, E]): String = {
-    val writer = new StringWriter()
-    print(writer, graph)
-    writer.toString
-  }
-
-  def print[N, E](writer: Writer, graph: Graph[N, E]): Unit = {
-    val dotExporter = new DOTExporter[N, E](
-      new EscapedStringComponentNameProvider[N](true),
-      null,
-      null
-    )
-    dotExporter.exportGraph(graph, writer)
-  }
+  // TODO: dominator tree as JGraphT
 
   // Returns a mapping from nodes to the set of nodes that dominate them
   def dominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
@@ -76,12 +51,4 @@ object JGraphT {
 
     dom.mapValues(_.min(O))
   }
-
-  //structure of region graph?
-  // Type region:
-  // | Single of Vertex
-  // | Graph [regions, edge]
-
-  // Definition subregion: All nodes that share a pre and post dominator?
-
 }
