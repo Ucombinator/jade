@@ -126,7 +126,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
         if (printMethods) {
           println(GraphViz.print(cfg))
           for (v <- cfg.graph.vertexSet().asScala) {
-            println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
+            println(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
           }
           println("**** SSA ****")
         }
@@ -141,7 +141,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
           println("results and arguments")
           for (i <- 0 until method.instructions.size) {
             val insn = method.instructions.get(i)
-            println(f"args($i): ${Insn.longString(method.instructions, insn)} --- ${ids.instructionArguments.get(insn)}")
+            println(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
           }
 
           println("ssa")

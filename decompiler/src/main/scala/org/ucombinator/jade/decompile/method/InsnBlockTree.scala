@@ -3,7 +3,8 @@ package org.ucombinator.jade.decompile.method
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.jgrapht.graph.DirectedPseudograph
 import org.jgrapht.{Graph, Graphs}
-import org.objectweb.asm.tree.{AbstractInsnNode, JumpInsnNode, MethodNode}
+import org.objectweb.asm.tree.{JumpInsnNode, MethodNode}
+import org.ucombinator.jade.util.asm.Insn
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -31,15 +32,15 @@ case class CycleBlock(start: Int, end: Int, forwardJumpInsn: JumpInsnNode, backw
 
 
 final class InsnBlockTree(className: String, method: MethodNode) {
-//  private val instructions: Array[AbstractInsnNode] = method.instructions.toArray
+//  private val instructions: Array[Insn] = method.instructions.toArray
 
-  private val insnIndexPairs: List[(AbstractInsnNode, Int)] = method.instructions.toArray.zipWithIndex.toList
+  private val insnIndexPairs: List[(Insn, Int)] = method.instructions.toArray.map(Insn(method, _)).zipWithIndex.toList
 
-  private val controlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge] =
+  private val controlFlowGraph: DirectedPseudograph[Insn, ControlFlowGraph.Edge] =
     ControlFlowGraph(className, method).graph
 
-  private val reverseControlFlowGraph: DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge] = {
-    val result = new DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge](classOf[ControlFlowGraph.Edge])
+  private val reverseControlFlowGraph: DirectedPseudograph[Insn, ControlFlowGraph.Edge] = {
+    val result = new DirectedPseudograph[Insn, ControlFlowGraph.Edge](classOf[ControlFlowGraph.Edge])
     controlFlowGraph.vertexSet.asScala.foreach(result.addVertex)
     controlFlowGraph.edgeSet.asScala.map {
       case ControlFlowGraph.Edge(s, t) => ControlFlowGraph.Edge(t, s)
@@ -95,32 +96,32 @@ final class InsnBlockTree(className: String, method: MethodNode) {
     } mapValues(_.min(O))
   }
 
-  private val postDominators: Map[AbstractInsnNode, AbstractInsnNode] =
-    immediateDominators(reverseControlFlowGraph, method.instructions.getLast)
+  private val postDominators: Map[Insn, Insn] =
+    immediateDominators(reverseControlFlowGraph, Insn(method, method.instructions.getLast))
 
-  val insnToOffset: Map[AbstractInsnNode, Int] = insnIndexPairs.toMap
+  val insnToOffset: Map[Insn, Int] = insnIndexPairs.toMap
 
   val jumpInsnIndexPair: List[(JumpInsnNode, Int)] =
-    for {(j, idx) <- insnIndexPairs if j.isInstanceOf[JumpInsnNode]
+    for {(j, idx) <- insnIndexPairs if j.insn.isInstanceOf[JumpInsnNode]
          pair = (j.asInstanceOf[JumpInsnNode], idx)}
       yield pair
 
   @tailrec
-  private def findFirstJumpAfter(n: AbstractInsnNode): JumpInsnNode =
-    n match {
+  private def findFirstJumpAfter(n: Insn): JumpInsnNode =
+    n.insn match {
       case j: JumpInsnNode => j
-      case _               => findFirstJumpAfter(n.getNext)
+      case _               => findFirstJumpAfter(Insn(n.method, n.insn.getNext))
     }
 
   @tailrec
-  private def findFirstJumpBefore(n: AbstractInsnNode): JumpInsnNode =
-    n match {
+  private def findFirstJumpBefore(n: Insn): JumpInsnNode =
+    n.insn match {
       case j: JumpInsnNode => j
-      case _               => findFirstJumpBefore(n.getPrevious)
+      case _               => findFirstJumpBefore(Insn(n.method, n.insn.getPrevious))
     }
 
   private val cycleFinder = new TarjanSimpleCycles(controlFlowGraph)
-  private val cycles: List[List[AbstractInsnNode]] = cycleFinder.findSimpleCycles.asScala.map(_.asScala.toList).toList
+  private val cycles: List[List[Insn]] = cycleFinder.findSimpleCycles.asScala.map(_.asScala.toList).toList
 
   private val cycleBlocks  =
     cycles map { l =>
@@ -131,7 +132,7 @@ final class InsnBlockTree(className: String, method: MethodNode) {
       CycleBlock(start, end, forwardJumpInsn, backwardJumpInsn)
     }
 
-  private val cycleJumpInsnNodes: Set[JumpInsnNode] = cycles.toSet flatMap { (l: List[AbstractInsnNode]) =>
+  private val cycleJumpInsnNodes: Set[JumpInsnNode] = cycles.toSet flatMap { l: List[Insn] =>
     val forwardJumpInsn = findFirstJumpAfter(l.head)
     val backwardJumpInsn = findFirstJumpBefore(l.last)
     Seq(forwardJumpInsn, backwardJumpInsn)
@@ -139,7 +140,7 @@ final class InsnBlockTree(className: String, method: MethodNode) {
 
   private val branchBlocks: List[JumpBlock] =
     for {(jmp, start) <- jumpInsnIndexPair if !cycleJumpInsnNodes(jmp)
-         end = insnToOffset(postDominators(jmp))}
+         end = insnToOffset(postDominators(Insn(method, jmp)))}
       yield BranchBlock(start, end, jmp)
 
   private val jumpBlocks: List[JumpBlock] = (cycleBlocks ++ branchBlocks).sortBy(_.start)

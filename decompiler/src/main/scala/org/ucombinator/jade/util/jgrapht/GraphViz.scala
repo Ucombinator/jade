@@ -4,7 +4,7 @@ import java.io.{StringWriter, Writer}
 
 import org.jgrapht.Graph
 import org.jgrapht.io.{ComponentNameProvider, DOTExporter, StringComponentNameProvider}
-import org.objectweb.asm.tree.{AbstractInsnNode, InsnList}
+import org.objectweb.asm.tree.MethodNode
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.util.asm.Insn
 
@@ -34,10 +34,8 @@ object GraphViz {
     dotExporter.exportGraph(graph, writer)
   }
 
-  private class AbstractInsnComponentNameProvider(insnList: InsnList) extends ComponentNameProvider[AbstractInsnNode] {
-    override def getName(component: AbstractInsnNode): String = {
-      Insn.longString(insnList, component)
-    }
+  private class AbstractInsnComponentNameProvider(method: MethodNode) extends ComponentNameProvider[Insn] {
+    override def getName(component: Insn): String = { component.longString }
   }
 
   def print[E](graph: ControlFlowGraph): String = {
@@ -47,9 +45,9 @@ object GraphViz {
   }
 
   def print[E](writer: Writer, graph: ControlFlowGraph): Unit = {
-    val dotExporter = new DOTExporter[AbstractInsnNode, ControlFlowGraph.Edge](
-      new EscapedStringComponentNameProvider[AbstractInsnNode](true),
-      new AbstractInsnComponentNameProvider(graph.method.instructions),
+    val dotExporter = new DOTExporter[Insn, ControlFlowGraph.Edge](
+      new EscapedStringComponentNameProvider[Insn](true),
+      new AbstractInsnComponentNameProvider(graph.method),
       null
     )
     dotExporter.exportGraph(graph.graph, writer)

@@ -129,7 +129,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
       // TODO: cache this computation?
-      if (cfg.graph.incomingEdgesOf(insn).size() > (if (insnIndex == 0) { 0 } else { 1 })
+      if (cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > (if (insnIndex == 0) { 0 } else { 1 })
         || cfg.handlers.exists(p => p.handler == insn)) {
         // We are at a join point
         val frame = cfg.frames(insnIndex)

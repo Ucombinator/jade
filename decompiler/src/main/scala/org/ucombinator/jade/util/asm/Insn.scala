@@ -10,7 +10,10 @@ import org.ucombinator.jade.asm.InsnTypes
 import scala.collection.JavaConverters._
 
 case class Insn(method: MethodNode, insn: AbstractInsnNode) {
-  override def toString: String = Insn.longString(method.instructions, insn)
+  def index: Int = method.instructions.indexOf(insn)
+  def shortString: String = Insn.shortString(method, insn)
+  def longString: String = Insn.longString(method, insn)
+  override def toString: String = Insn.longString(method, insn)
 }
 
 object Insn extends Textifier(Opcodes.ASM7) {
@@ -19,6 +22,10 @@ object Insn extends Textifier(Opcodes.ASM7) {
   private val printWriter = new PrintWriter(stringWriter)
   private val methodVisitor = new TraceMethodVisitor(this)
   private var insnList: InsnList = _
+
+  def shortString(method: MethodNode, insn: AbstractInsnNode): String = {
+    shortString(method.instructions, insn)
+  }
 
   def shortString(insnList: InsnList, insn: AbstractInsnNode): String = {
     // Ensure labels have the correct name
@@ -39,6 +46,10 @@ object Insn extends Textifier(Opcodes.ASM7) {
     stringBuffer.setLength(0)
     this.getText.clear()
     string
+  }
+
+  def longString(method: MethodNode, insn: AbstractInsnNode): String = {
+    longString(method.instructions, insn)
   }
 
   def longString(insnList: InsnList, insn: AbstractInsnNode): String = {
