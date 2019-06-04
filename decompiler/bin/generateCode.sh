@@ -42,6 +42,6 @@ for i in $(seq 8 12); do
   done
 done
 echo "Generating code for Java $i grammar" # `$i` will be the last value of the previous loop
-jade generate-modifier-code <specifications/jvms-$i/jvms-$i-chapter-4.html >src/main/scala/org/ucombinator/jade/classfile/Modifier.scala
+jade generate-modifier-code <specifications/jvms-$i/jvms-$i-chapter-4.html >src/main/scala/org/ucombinator/jade/util/classfile/Modifier.scala
 echo "Generating code for ASM instruction types"
-jade generate-asm-instruction-types >src/main/scala/org/ucombinator/jade/asm/InstructionTypes.scala
+jade generate-insn-types >src/main/scala/org/ucombinator/jade/util/asm/InsnTypes.scala
