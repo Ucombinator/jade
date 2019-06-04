@@ -1,12 +1,12 @@
 package org.ucombinator.jade.decompile
 
-import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
-import com.github.javaparser.ast.body.{BodyDeclaration, ClassOrInterfaceDeclaration, ConstructorDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, ReceiverParameter, TypeDeclaration, VariableDeclarator}
-import com.github.javaparser.ast.expr.{AnnotationExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MemberValuePair, Name, NormalAnnotationExpr, SimpleName, SingleMemberAnnotationExpr, StringLiteralExpr}
+import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt.BlockStmt
+import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.tree.{AnnotationNode, ClassNode, FieldNode, MethodNode, ParameterNode}
+import org.objectweb.asm.tree._
 import org.ucombinator.jade.util.classfile.{Descriptor, Modifier, Signature}
 
 import scala.collection.JavaConverters._
@@ -91,7 +91,23 @@ object DecompileClass {
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
 
-  private def decompile(fullClassName: Name, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
+  def parameterTypes(desc: List[Type], sig: List[Type], params: List[ParameterNode]): List[Type] = {
+    (desc, sig, params) match {
+      case (d :: ds, ss, p :: ps)
+        if Modifier.intToParameter(p.access).contains(Modifier.ACC_SYNTHETIC)
+        || Modifier.intToParameter(p.access).contains(Modifier.ACC_MANDATED) =>
+      // TODO: Modifier.checkParameter(access, Modifier)
+        d :: parameterTypes(ds, ss, ps)
+      case (d :: ds, s :: ss, p :: ps) =>
+        s :: parameterTypes(ds, ss, ps)
+      case (_, ss, List()) =>
+        ss
+      case _ =>
+        throw new Exception(f"failed to construct parameter types: $desc, $sig, $params")
+    }
+  }
+
+  private def decompile(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
@@ -107,19 +123,24 @@ object DecompileClass {
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
       node.invisibleTypeAnnotations)
+    val descriptor: (Array[Type], Type) = Descriptor.methodDescriptor(node.desc)
     val sig: (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
       if (node.signature != null) { Signature.methodSignature(node.signature) }
       else {
-        val d = Descriptor.methodDescriptor(node.desc)
-        (Array(), d._1, d._2, node.exceptions.asScala.toArray.map(x => Descriptor.classNameType(x)))
+        (Array(), descriptor._1, descriptor._2, node.exceptions.asScala.toArray.map(x => Descriptor.classNameType(x)))
       }
+    }
+    // TODO: use nullToList
+    val parameterNodes: List[ParameterNode] = if (node.parameters == null) { List() } else { node.parameters.asScala.toList }
+    if (node.parameters != null && sig._2.length != node.parameters.size()) {
+      // TODO: check if always in an enum
     }
     val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1:_*)
     def nullToList[A](x: Seq[A]): Seq[A] = { if (x == null) { List() } else { x } }
     val parameters: NodeList[Parameter] = {
-      val ps = sig._2
+      val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes)
         .zipWithIndex
-        .zipAll(node.parameters match { case null => List(); case p => p.asScala }, null, null)
+        .zipAll(parameterNodes, null, null)
         .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
         .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
       new NodeList(ps.map(decompileParameter(node, sig._2.length, _)):_*)
@@ -133,16 +154,16 @@ object DecompileClass {
       case "<clinit>" =>
         new InitializerDeclaration(true, body)
       case "<init>" =>
-        new ConstructorDeclaration(modifiers, annotations, typeParameters, new SimpleName(fullClassName.getIdentifier)/*TODO*/, parameters, thrownExceptions, body, receiverParameter)
+        new ConstructorDeclaration(modifiers, annotations, typeParameters, new SimpleName(Descriptor.className(classNode.name).getIdentifier)/*TODO*/, parameters, thrownExceptions, body, receiverParameter)
       case _ =>
         new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
     }
   }
 
   def decompile(node: ClassNode): CompilationUnit = {
-    println(f"version: ${node.version}") // TODO
-    println(f"sourceFile: ${node.sourceFile}") // TODO
-    println(f"sourceDebug: ${node.sourceDebug}") // TODO
+    // TODO println(f"version: ${node.version}") // TODO
+    // TODO println(f"sourceFile: ${node.sourceFile}") // TODO
+    // TODO println(f"sourceDebug: ${node.sourceDebug}") // TODO
     // outerClass
     // outerMethod
     // outerMethodDesc
@@ -182,7 +203,7 @@ object DecompileClass {
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
         val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
         list.addAll(node.fields.asScala.map(decompile).asJava)
-        list.addAll(node.methods.asScala.map(decompile(fullClassName, _)).asJava)
+        list.addAll(node.methods.asScala.map(decompile(node, _)).asJava)
         // TODO
         list
       }

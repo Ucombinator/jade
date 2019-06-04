@@ -1,9 +1,12 @@
 package org.ucombinator.jade.util.jgrapht
 
-import org.jgrapht.Graph
-import org.jgrapht.io.{DOTExporter, StringComponentNameProvider}
-
 import java.io.{StringWriter, Writer}
+
+import org.jgrapht.Graph
+import org.jgrapht.io.{ComponentNameProvider, DOTExporter, StringComponentNameProvider}
+import org.objectweb.asm.tree.{AbstractInsnNode, InsnList}
+import org.ucombinator.jade.decompile.method.ControlFlowGraph
+import org.ucombinator.jade.util.asm.Instructions
 
 object GraphViz {
   private class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
@@ -11,7 +14,7 @@ object GraphViz {
       val s = (component.toString + " " + component.hashCode)
         .replaceAll("\\\\", "\\\\\\\\")
         .replaceAll("\"", "\\\\\"")
-      if (quotes) { "\"" + s + "\""}
+      if (quotes) { "\"" + s + "\"" }
       else { s }
     }
   }
@@ -29,5 +32,26 @@ object GraphViz {
       null
     )
     dotExporter.exportGraph(graph, writer)
+  }
+
+  private class AbstractInsnComponentNameProvider(insnList: InsnList) extends ComponentNameProvider[AbstractInsnNode] {
+    override def getName(component: AbstractInsnNode): String = {
+      Instructions.longInsnString(insnList, component)
+    }
+  }
+
+  def print[E](graph: ControlFlowGraph): String = {
+    val writer = new StringWriter()
+    print(writer, graph)
+    writer.toString
+  }
+
+  def print[E](writer: Writer, graph: ControlFlowGraph): Unit = {
+    val dotExporter = new DOTExporter[AbstractInsnNode, ControlFlowGraph.Edge](
+      new EscapedStringComponentNameProvider[AbstractInsnNode](true),
+      new AbstractInsnComponentNameProvider(graph.method.instructions),
+      null
+    )
+    dotExporter.exportGraph(graph.graph, writer)
   }
 }

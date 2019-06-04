@@ -1,18 +1,19 @@
 package org.ucombinator.jade.main
 
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree._
-import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
-import org.ucombinator.jade.util.asm.Instructions
-import org.ucombinator.jade.decompile.method.ControlFlowGraph
-import org.ucombinator.jade.decompile.method.ssa.SSA
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, PrintWriter}
 import java.nio.file.{Files, Path}
 import java.util.stream.Collectors
 import java.util.zip.{ZipEntry, ZipInputStream}
 
 import com.github.javaparser.ast.CompilationUnit
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.tree._
+import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.decompile.DecompileClass
+import org.ucombinator.jade.decompile.method.ControlFlowGraph
+import org.ucombinator.jade.decompile.method.ssa.SSA
+import org.ucombinator.jade.util.asm.Instructions
+import org.ucombinator.jade.util.jgrapht.GraphViz
 
 import scala.collection.JavaConverters._
 
@@ -31,7 +32,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
         for (p <- Files.list(path).collect(Collectors.toList[Path]).asScala)
         yield { decompilePath(p) }
       children.toList.flatten
-    } else {
+    } else { // TODO if exists
       println(f"skipping $path") // TODO
       List()
     }
@@ -48,6 +49,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     }
   }
   def decompileZip(path: Path, subpath: List[String], bytes: Array[Byte], offset: Int): Result = {
+    println(f"zip: $path $subpath")
     val zipInputStream = new ZipInputStream(new ByteArrayInputStream(bytes, offset, bytes.length - offset))
     // TODO: multi-version jar
     // TODO: figure out jmod files
@@ -80,6 +82,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     cr.accept(classNode, 0)
 
     if (classNode.name == null) { return (path, subpath, null, null) }
+    println(classNode.name)
 
     if (printAsm) {
       val traceClassVisitor = new TraceClassVisitor(null, new Textifier(), new PrintWriter(System.out))
@@ -92,41 +95,59 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
       println(compilationUnit)
     }
 
+    // TODO: classNode.sourceFile, classNode.sourceDebug
+    // TODO: classNode.outerClass, classNode.outerMethod, classNode.outerMethodDesc
+    // TODO: Inner classes
+    val inners: List[InnerClassNode] = classNode.innerClasses.asScala.toList
     if (printMethods) {
-      // TODO: classNode.sourceFile, classNode.sourceDebug
-      // TODO: classNode.outerClass, classNode.outerMethod, classNode.outerMethodDesc
-      // TODO: Inner classes
-      val inners: List[InnerClassNode] = classNode.innerClasses.asScala.toList
       inners.foreach { c =>
         println(c.name)
       }
+    }
 
-      for (method <- classNode.methods.asScala) {
-        // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
+    for (method <- classNode.methods.asScala) {
+      // TODO: abstract and native
+      // TODO: signature .sym and has no method body
+      // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
+      if (printMethods) {
         println("!!!!!!!!!!!!")
         println(f"method: ${method.name} ${method.signature} ${method.desc}")
-        println("**** ControlFlowGraph ****")
-        val cfg = ControlFlowGraph(owner, method)
-        for (v <- cfg.graph.vertexSet().asScala) {
-          println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
+      }
+      if (method.instructions.size == 0) {
+        // TODO: abstract/native vs signature (cl.sym)
+        if (printMethods) {
+          //println("**** Method is empty ****")
         }
-        println("**** SSA ****")
+      } else {
+        if (printMethods) {
+          println("**** ControlFlowGraph ****")
+        }
+        val cfg = ControlFlowGraph(owner, method)
+        if (printMethods) {
+          println(GraphViz.print(cfg))
+          for (v <- cfg.graph.vertexSet().asScala) {
+            println(f"v: ${method.instructions.indexOf(v)} ${cfg.graph.incomingEdgesOf(v).size()}: $v")
+          }
+          println("**** SSA ****")
+        }
         val ids = SSA(owner, method, cfg)
 
-        println("frames: " + ids.frames.length)
-        for (i <- 0 until method.instructions.size) {
-          println(f"frame($i): ${ids.frames(i)}")
-        }
+        if (printMethods) {
+          println("frames: " + ids.frames.length)
+          for (i <- 0 until method.instructions.size) {
+            println(f"frame($i): ${ids.frames(i)}")
+          }
 
-        println("results and arguments")
-        for (i <- 0 until method.instructions.size) {
-          val insn = method.instructions.get(i)
-          println(f"args($i): ${Instructions.longInsnString(method.instructions, insn)} --- ${ids.instructionArguments.get(insn)}")
-        }
+          println("results and arguments")
+          for (i <- 0 until method.instructions.size) {
+            val insn = method.instructions.get(i)
+            println(f"args($i): ${Instructions.longInsnString(method.instructions, insn)} --- ${ids.instructionArguments.get(insn)}")
+          }
 
-        println("ssa")
-        for ((key, value) <- ids.ssaMap) {
-          println(s"ssa: $key -> $value")
+          println("ssa")
+          for ((key, value) <- ids.ssaMap) {
+            println(s"ssa: $key -> $value")
+          }
         }
       }
     }

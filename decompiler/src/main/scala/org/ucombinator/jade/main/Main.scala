@@ -1,9 +1,10 @@
 package org.ucombinator.jade.main
 
-import picocli.CommandLine
-import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
 import java.nio.file.Path
 import java.util.concurrent.Callable
+
+import picocli.CommandLine
+import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
 
 import scala.collection.JavaConverters._
 

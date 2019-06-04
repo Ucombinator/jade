@@ -1,10 +1,10 @@
 package org.ucombinator.jade.util.asm
 
+import java.io.{PrintWriter, StringWriter}
+
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
-
-import java.io.{PrintWriter, StringWriter}
 
 import scala.collection.JavaConverters._
 

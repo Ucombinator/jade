@@ -132,7 +132,8 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
       // TODO: cache this computation?
-      if (cfg.graph.incomingEdgesOf(insn).size() > 1 || cfg.handlers.exists(p => p.handler == insn)) {
+      if (cfg.graph.incomingEdgesOf(insn).size() > (if (insnIndex == 0) { 0 } else { 1 })
+        || cfg.handlers.exists(p => p.handler == insn)) {
         // We are at a join point
         val frame = cfg.frames(insnIndex)
         val newFrame = new Frame[Var](frame.getLocals, frame.getStackSize)
@@ -154,6 +155,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
 }
 
 case class SSA(
+  method: MethodNode,
   frames: Array[Frame[Var]],
   instructionArguments: Map[AbstractInsnNode, (Var, List[Var])],
   ssaMap: Map[Var, Set[(AbstractInsnNode, Var)]])
@@ -180,6 +182,6 @@ case object SSA {
 
     val frames = new SSAAnalyzer(method, cfg, interpreter).analyze(owner, method)
 
-    SSA(frames, interpreter.instructionArguments, interpreter.ssaMap)
+    SSA(method, frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
 }

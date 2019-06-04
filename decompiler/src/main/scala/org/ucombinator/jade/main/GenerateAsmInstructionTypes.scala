@@ -5,9 +5,9 @@
 
 package org.ucombinator.jade.main
 
-import org.objectweb.asm.tree.AbstractInsnNode
-
 import java.lang.reflect.Modifier
+
+import org.objectweb.asm.tree.AbstractInsnNode
 
 // TODO: convert to a macro
 object GenerateAsmInstructionTypes {

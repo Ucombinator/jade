@@ -1,8 +1,8 @@
 package org.ucombinator.jade.decompile.method
 
-import org.jgrapht.{Graph, Graphs}
 import org.jgrapht.alg.cycle.TarjanSimpleCycles
 import org.jgrapht.graph.DirectedPseudograph
+import org.jgrapht.{Graph, Graphs}
 import org.objectweb.asm.tree.{AbstractInsnNode, JumpInsnNode, MethodNode}
 
 import scala.annotation.tailrec

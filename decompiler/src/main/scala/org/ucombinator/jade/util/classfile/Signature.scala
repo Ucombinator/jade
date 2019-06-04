@@ -1,11 +1,10 @@
 package org.ucombinator.jade.util.classfile
 
 import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, ReferenceType, Type, VoidType, WildcardType, TypeParameter}
+import com.github.javaparser.ast.`type`._
 import com.github.javaparser.ast.expr.{AnnotationExpr, SimpleName}
-
 import sun.reflect.generics.parser.SignatureParser
-import sun.reflect.generics.tree.{ArrayTypeSignature, BaseType, BooleanSignature, ByteSignature, CharSignature, ClassSignature, ClassTypeSignature, DoubleSignature, FieldTypeSignature, FloatSignature, FormalTypeParameter, IntSignature, LongSignature, MethodTypeSignature, ReturnType, ShortSignature, SimpleClassTypeSignature, TypeArgument, TypeSignature, TypeVariableSignature, VoidDescriptor, Wildcard}
+import sun.reflect.generics.tree._
 
 import scala.collection.JavaConverters._
 

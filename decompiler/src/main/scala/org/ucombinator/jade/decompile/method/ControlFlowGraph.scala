@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.{AbstractInsnNode, MethodNode, TryCatchBlockNode}
 import scala.collection.mutable
 
 case class ControlFlowGraph(
+  method: MethodNode,
   graph: DirectedPseudograph[AbstractInsnNode, ControlFlowGraph.Edge],
   handlers: Set[TryCatchBlockNode],
   frames: Array[Frame[BasicValue]])
@@ -20,7 +21,7 @@ case object ControlFlowGraph {
     val handlers = mutable.Set[TryCatchBlockNode]()
     val analyzer = new ControlFlowGraphAnalyzer(method, edges, handlers)
     val frames = analyzer.analyze(owner, method)
-    ControlFlowGraph(edges, handlers.toSet, frames)
+    ControlFlowGraph(method, edges, handlers.toSet, frames)
   }
 
   final case class Edge(source: AbstractInsnNode, target: AbstractInsnNode)
