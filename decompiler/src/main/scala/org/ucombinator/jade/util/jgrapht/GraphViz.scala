@@ -6,7 +6,7 @@ import org.jgrapht.Graph
 import org.jgrapht.io.{ComponentNameProvider, DOTExporter, StringComponentNameProvider}
 import org.objectweb.asm.tree.{AbstractInsnNode, InsnList}
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
-import org.ucombinator.jade.util.asm.Instructions
+import org.ucombinator.jade.util.asm.Insn
 
 object GraphViz {
   private class EscapedStringComponentNameProvider[N](quotes: Boolean) extends StringComponentNameProvider[N] {
@@ -36,7 +36,7 @@ object GraphViz {
 
   private class AbstractInsnComponentNameProvider(insnList: InsnList) extends ComponentNameProvider[AbstractInsnNode] {
     override def getName(component: AbstractInsnNode): String = {
-      Instructions.longInsnString(insnList, component)
+      Insn.longString(insnList, component)
     }
   }
 

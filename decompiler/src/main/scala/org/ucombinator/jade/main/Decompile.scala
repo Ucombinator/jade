@@ -12,7 +12,7 @@ import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.decompile.DecompileClass
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
-import org.ucombinator.jade.util.asm.Instructions
+import org.ucombinator.jade.util.asm.Insn
 import org.ucombinator.jade.util.jgrapht.GraphViz
 
 import scala.collection.JavaConverters._
@@ -141,7 +141,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
           println("results and arguments")
           for (i <- 0 until method.instructions.size) {
             val insn = method.instructions.get(i)
-            println(f"args($i): ${Instructions.longInsnString(method.instructions, insn)} --- ${ids.instructionArguments.get(insn)}")
+            println(f"args($i): ${Insn.longString(method.instructions, insn)} --- ${ids.instructionArguments.get(insn)}")
           }
 
           println("ssa")

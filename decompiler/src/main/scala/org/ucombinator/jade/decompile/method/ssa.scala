@@ -4,6 +4,7 @@ import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
+import org.ucombinator.jade.util.asm.Insn
 
 import scala.collection.JavaConverters._
 
@@ -12,17 +13,17 @@ sealed trait Var extends Value {
   override def getSize: Int = basicValue.getSize
 }
 
-case class ParameterVar  (                        local: Int,   basicValue: BasicValue) extends Var
-case class ReturnVar     (                                      basicValue: BasicValue) extends Var
-case class CopyVar       (insn: AbstractInsnNode, version: Int, basicValue: BasicValue) extends Var
-case class InstructionVar(insn: AbstractInsnNode,               basicValue: BasicValue) extends Var
-case class ExceptionVar  (insn: AbstractInsnNode,               basicValue: BasicValue) extends Var
-case class PhiVar        (insn: AbstractInsnNode, index: Int,   basicValue: BasicValue) extends Var
-case object EmptyVar                                                                    extends Var {
+case class ParameterVar  (            local: Int,   basicValue: BasicValue) extends Var
+case class ReturnVar     (                          basicValue: BasicValue) extends Var
+case class CopyVar       (insn: Insn, version: Int, basicValue: BasicValue) extends Var
+case class InstructionVar(insn: Insn,               basicValue: BasicValue) extends Var
+case class ExceptionVar  (insn: Insn,               basicValue: BasicValue) extends Var
+case class PhiVar        (insn: Insn, index: Int,   basicValue: BasicValue) extends Var
+case object EmptyVar                                                        extends Var {
   override val basicValue: BasicValue = BasicValue.UNINITIALIZED_VALUE
 }
 
-class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
+class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) {
   var copyVersion: Int = 0 // For `copyOperation` // TODO: copyIndex? copyPosition?
   var originInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]
@@ -45,7 +46,7 @@ class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
   }
 
   override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[Var], exceptionType: Type): Var = {
-    ExceptionVar(tryCatchBlockNode.handler,
+    ExceptionVar(Insn(method, tryCatchBlockNode.handler),
       SSA.basicInterpreter.newExceptionValue(
         tryCatchBlockNode, handlerFrame.asInstanceOf[Frame[BasicValue]], exceptionType))
   }
@@ -58,25 +59,25 @@ class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
 
   @throws[AnalyzerException]
   override def newOperation(insn: AbstractInsnNode): Var = {
-    record(insn, List(), InstructionVar(insn, SSA.basicInterpreter.newOperation(insn)))
+    record(insn, List(), InstructionVar(Insn(method, insn), SSA.basicInterpreter.newOperation(insn)))
   }
 
 
   @throws[AnalyzerException]
   override def copyOperation(insn: AbstractInsnNode, value: Var): Var = {
     this.copyVersion += 1
-    record(insn, List(value), CopyVar(insn, this.copyVersion, SSA.basicInterpreter.copyOperation(insn, value.basicValue)))
+    record(insn, List(value), CopyVar(Insn(method, insn), this.copyVersion, SSA.basicInterpreter.copyOperation(insn, value.basicValue)))
   }
 
   @throws[AnalyzerException]
   override def unaryOperation(insn: AbstractInsnNode, value: Var): Var = {
-    record(insn, List(value), InstructionVar(insn, SSA.basicInterpreter.unaryOperation(insn, value.basicValue)))
+    record(insn, List(value), InstructionVar(Insn(method, insn), SSA.basicInterpreter.unaryOperation(insn, value.basicValue)))
   }
 
   @throws[AnalyzerException]
   override def binaryOperation(insn: AbstractInsnNode, value1: Var, value2: Var): Var = {
     record(insn, List(value1, value2),
-      InstructionVar(insn,
+      InstructionVar(Insn(method, insn),
         SSA.basicInterpreter.binaryOperation(
           insn, value1.basicValue, value2.basicValue)))
   }
@@ -84,7 +85,7 @@ class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
   @throws[AnalyzerException]
   override def ternaryOperation(insn: AbstractInsnNode, value1: Var, value2: Var, value3: Var): Var = {
     record(insn, List(value1, value2, value3),
-      InstructionVar(insn,
+      InstructionVar(Insn(method, insn),
         SSA.basicInterpreter.ternaryOperation(
           insn, value1.basicValue, value2.basicValue, value3.basicValue)))
   }
@@ -92,7 +93,7 @@ class SSAInterpreter extends Interpreter[Var](Opcodes.ASM7) {
   @throws[AnalyzerException]
   override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: Var]): Var = {
     record(insn, values.asScala.toList,
-      InstructionVar(insn,
+      InstructionVar(Insn(method, insn),
         SSA.basicInterpreter.naryOperation(
           insn, values.asScala.map(_.basicValue).asJava)))
   }
@@ -139,12 +140,12 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
         val newFrame = new Frame[Var](frame.getLocals, frame.getStackSize)
         // Note that we leave Frame.returnValue at null
         for (i <- 0 until frame.getLocals) {
-          newFrame.setLocal(i, PhiVar(insn, i, frame.getLocal(i)))
+          newFrame.setLocal(i, PhiVar(Insn(method, insn), i, frame.getLocal(i)))
         }
         for (i <- 0 until frame.getStackSize) {
           // Note that we use `push` instead of `setStack` as the `Frame` constructor
           // starts with an empty stack regardless of `stackSize`
-          newFrame.push(PhiVar(insn, i + newFrame.getLocals, frame.getStack(i)))
+          newFrame.push(PhiVar(Insn(method, insn), i + newFrame.getLocals, frame.getStack(i)))
         }
         this.getFrames()(insnIndex) = newFrame
       }
@@ -163,7 +164,7 @@ case class SSA(
 case object SSA {
   val basicInterpreter = new BasicInterpreter
   def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): SSA = {
-    val interpreter = new SSAInterpreter()
+    val interpreter = new SSAInterpreter(method)
 
     // Hook into a method that is called whenever `analyze` starts working on a new instruction
     val oldInstructions = method.instructions

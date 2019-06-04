@@ -1,11 +1,11 @@
-/* Automatically built by GenerateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */
+/* Automatically built by GenerateInsnTypes.scala to reflect values in AbstractInsnNode. */
 /* Last checked against ASM 7.1. */
 
-package org.ucombinator.jade.util.asm
+package org.ucombinator.jade.asm
 
 import org.objectweb.asm.tree.AbstractInsnNode
 
-object InstructionTypes{
+object InsnTypes {
   val fromString: Map[String, Int] = Map(
     "INSN" -> AbstractInsnNode.INSN,
     "INT_INSN" -> AbstractInsnNode.INT_INSN,

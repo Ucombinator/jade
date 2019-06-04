@@ -31,7 +31,7 @@ object Main {
     classOf[DownloadJlsCmd],
     classOf[DownloadJvmsCmd],
     classOf[GenerateModifierCodeCmd],
-    classOf[GenerateAsmInstructionTypesCmd]))
+    classOf[GenerateInsnTypesCmd]))
 class Main() extends Cmd[Unit] {
   override def call(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -137,10 +137,10 @@ class GenerateModifierCodeCmd extends Cmd[Unit] {
 }
 
 @Command(
-  name = "generate-asm-instruction-types",
-  description = Array("Generate the code for `InstructionTypes.scala`"))
-class GenerateAsmInstructionTypesCmd extends Cmd[Unit] {
+  name = "generate-insn-types",
+  description = Array("Generate the code for `InsnTypes.scala`"))
+class GenerateInsnTypesCmd extends Cmd[Unit] {
   override def call(): Unit = {
-    GenerateAsmInstructionTypes.main()
+    GenerateInsnTypes.main()
   }
 }

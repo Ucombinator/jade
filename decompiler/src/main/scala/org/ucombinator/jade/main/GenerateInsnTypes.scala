@@ -1,7 +1,7 @@
 /**
  * Reflection pass to build maps from opcode names to integers and vice versa.
  * Reads from AbstractInsnNode (see import).
- * Writes to stdout, but output created org.ucombinator.jade.asm.InstructionTypes. */
+ * Writes to stdout, but output created org.ucombinator.jade.util.asm.InsnTypes. */
 
 package org.ucombinator.jade.main
 
@@ -10,16 +10,16 @@ import java.lang.reflect.Modifier
 import org.objectweb.asm.tree.AbstractInsnNode
 
 // TODO: convert to a macro
-object GenerateAsmInstructionTypes {
+object GenerateInsnTypes {
   def main () : Unit = {
-    println("/* Automatically built by GenerateAsmInstructionTypes.scala to reflect values in AbstractInsnNode. */")
+    println("/* Automatically built by GenerateInsnTypes.scala to reflect values in AbstractInsnNode. */")
     println("/* Last checked against ASM 7.1. */")
     println()
     println("package org.ucombinator.jade.asm")
     println()
     println("import org.objectweb.asm.tree.AbstractInsnNode")
     println()
-    println("object InstructionTypes{")
+    println("object InsnTypes {")
     println("  val fromString: Map[String, Int] = Map(")
 
     for (field <- classOf[AbstractInsnNode].getDeclaredFields) {
