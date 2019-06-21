@@ -130,7 +130,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
       val insnIndex = method.instructions.indexOf(insn)
       // TODO: cache this computation?
       if (cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > (if (insnIndex == 0) { 0 } else { 1 })
-        || cfg.handlers.exists(p => p.handler == insn)) {
+        || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)) {
         // We are at a join point
         val frame = cfg.frames(insnIndex)
         val newFrame = new Frame[Var](frame.getLocals, frame.getStackSize)

@@ -107,7 +107,7 @@ object DecompileClass {
     }
   }
 
-  private def decompile(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
+  def decompile(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
     // instructions
     // tryCatchBlocks

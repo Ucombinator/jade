@@ -43,7 +43,7 @@ class Main() extends Cmd[Unit] {
 
 @Command(
   mixinStandardHelpOptions = true,
-  requiredOptionMarker = '*',
+  requiredOptionMarker = '*', // TODO: `REQ` or at least put in documentation string
   showDefaultValues = true,
   versionProvider = classOf[VersionProvider])
 abstract class Cmd[T] extends Callable[T] {

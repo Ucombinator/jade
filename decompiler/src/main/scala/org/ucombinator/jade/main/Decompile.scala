@@ -106,52 +106,56 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     }
 
     for (method <- classNode.methods.asScala) {
-      // TODO: abstract and native
-      // TODO: signature .sym and has no method body
-      // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
-      if (printMethods) {
-        println("!!!!!!!!!!!!")
-        println(f"method: ${method.name} ${method.signature} ${method.desc}")
-      }
-      if (method.instructions.size == 0) {
-        // TODO: abstract/native vs signature (cl.sym)
-        if (printMethods) {
-          //println("**** Method is empty ****")
-        }
-      } else {
-        if (printMethods) {
-          println("**** ControlFlowGraph ****")
-        }
-        val cfg = ControlFlowGraph(owner, method)
-        if (printMethods) {
-          println(GraphViz.print(cfg))
-          for (v <- cfg.graph.vertexSet().asScala) {
-            println(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
-          }
-          println("**** SSA ****")
-        }
-        val ids = SSA(owner, method, cfg)
-
-        if (printMethods) {
-          println("frames: " + ids.frames.length)
-          for (i <- 0 until method.instructions.size) {
-            println(f"frame($i): ${ids.frames(i)}")
-          }
-
-          println("results and arguments")
-          for (i <- 0 until method.instructions.size) {
-            val insn = method.instructions.get(i)
-            println(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
-          }
-
-          println("ssa")
-          for ((key, value) <- ids.ssaMap) {
-            println(s"ssa: $key -> $value")
-          }
-        }
-      }
+      decompileMethod(owner, classNode, method)
     }
 
     (path, subpath, classNode, compilationUnit)
+  }
+
+  def decompileMethod(owner: String, classNode: ClassNode, method: MethodNode): Unit = {
+    // TODO: abstract and native
+    // TODO: signature .sym and has no method body
+    // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
+    if (printMethods) {
+      println("!!!!!!!!!!!!")
+      println(f"method: ${method.name} ${method.signature} ${method.desc}")
+    }
+    if (method.instructions.size == 0) {
+      // TODO: abstract/native vs signature (cl.sym)
+      if (printMethods) {
+        //println("**** Method is empty ****")
+      }
+    } else {
+      if (printMethods) {
+        println("**** ControlFlowGraph ****")
+      }
+      val cfg = ControlFlowGraph(owner, method)
+      if (printMethods) {
+        println(GraphViz.print(cfg))
+        for (v <- cfg.graph.vertexSet().asScala) {
+          println(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
+        }
+        println("**** SSA ****")
+      }
+      val ids = SSA(owner, method, cfg)
+
+      if (printMethods) {
+        println("frames: " + ids.frames.length)
+        for (i <- 0 until method.instructions.size) {
+          println(f"frame($i): ${ids.frames(i)}")
+        }
+
+        println("results and arguments")
+        for (i <- 0 until method.instructions.size) {
+          val insn = method.instructions.get(i)
+          println(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
+        }
+
+        println("ssa")
+        for ((key, value) <- ids.ssaMap) {
+          println(s"ssa: $key -> $value")
+        }
+      }
+    }
   }
 }
