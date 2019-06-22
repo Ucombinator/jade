@@ -1,15 +1,30 @@
 package org.ucombinator.jade.decompile.method
 
-import org.jgrapht.graph.DirectedPseudograph
+import org.jgrapht.Graph
+import org.jgrapht.graph.{AsGraphUnion, DirectedPseudograph}
 import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}
 import org.objectweb.asm.tree.MethodNode
+import org.ucombinator.jade.decompile.method.ControlFlowGraph.Edge
 import org.ucombinator.jade.util.asm.Insn
+
+import scala.collection.JavaConverters._
 
 case class ControlFlowGraph(
   method: MethodNode,
   graph: DirectedPseudograph[Insn, ControlFlowGraph.Edge],
   frames: Array[Frame[BasicValue]]) {
   val entry = Insn(method, method.instructions.getFirst)
+  val graphWithExceptions: Graph[Insn, Edge] = {
+    val g = new DirectedPseudograph[Insn, Edge](classOf[Edge])
+    for (handler <- method.tryCatchBlocks.asScala) {
+      val s = Insn(method, handler.start)
+      val h = Insn(method, handler.handler)
+      g.addVertex(s)
+      g.addVertex(h)
+      g.addEdge(s, h, Edge(s, h))
+    }
+    new AsGraphUnion(graph, g)
+  }
 }
 
 case object ControlFlowGraph {

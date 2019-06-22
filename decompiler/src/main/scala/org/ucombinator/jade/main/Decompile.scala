@@ -13,7 +13,7 @@ import org.ucombinator.jade.decompile.DecompileClass
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
 import org.ucombinator.jade.util.asm.Insn
-import org.ucombinator.jade.util.jgrapht.GraphViz
+import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 
 import scala.collection.JavaConverters._
 
@@ -131,13 +131,19 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
       }
       val cfg = ControlFlowGraph(owner, method)
       if (printMethods) {
-        println(GraphViz.print(cfg))
+        println(GraphViz.toString(cfg))
         for (v <- cfg.graph.vertexSet().asScala) {
           println(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
         }
         println("**** SSA ****")
       }
       val ids = SSA(owner, method, cfg)
+
+      if (printMethods) {
+        println("**** Dominators ****")
+      }
+
+      val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
 
       if (printMethods) {
         println("frames: " + ids.frames.length)
@@ -155,6 +161,10 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
         for ((key, value) <- ids.ssaMap) {
           println(s"ssa: $key -> $value")
         }
+
+        println("doms")
+        //println(GraphViz.toString(doms))
+        println(Dominator.dominatorNesting(cfg.graphWithExceptions, doms, cfg.entry))
       }
     }
   }
