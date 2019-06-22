@@ -3,7 +3,7 @@ package org.ucombinator.jade.decompile
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
 import com.github.javaparser.ast.body._
 import com.github.javaparser.ast.expr._
-import com.github.javaparser.ast.stmt.BlockStmt
+import com.github.javaparser.ast.stmt.{BlockStmt, ThrowStmt}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
@@ -148,7 +148,7 @@ object DecompileClass {
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
-    val body: BlockStmt = new BlockStmt() // TODO
+    val body: BlockStmt = new BlockStmt(new NodeList(new ThrowStmt(new NullLiteralExpr()))) // TODO
     val receiverParameter: ReceiverParameter = null // TODO
     node.name match {
       case "<clinit>" =>
