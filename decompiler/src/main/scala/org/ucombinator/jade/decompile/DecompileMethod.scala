@@ -6,6 +6,22 @@ import com.github.javaparser.ast.stmt._
 import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
+import org.ucombinator.jade.util.classfile.Descriptor
+
+// TODO: Left -> Stmt; Right -> Expr;
+//
+sealed trait DecompiledInsn
+case class DecompiledStatement(statement: Statement) extends DecompiledInsn
+case class DecompiledExpression(expression: Expression) extends DecompiledInsn
+case class DecompiledMove(/*TODO*/) extends DecompiledInsn
+case class DecompiledIinc(/*TODO*/) extends DecompiledInsn
+case class DecompiledCompare(/*TODO*/) extends DecompiledInsn
+case class DecompiledIf(/*TODO*/) extends DecompiledInsn
+case class DecompiledGoto(/*TODO*/) extends DecompiledInsn
+case class DecompiledSwitch(/*TODO*/) extends DecompiledInsn
+case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
+case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
+case class DecompiledUnsupported(/*TODO*/) extends DecompiledInsn
 
 // TODO: typo in Opcodes.java: visiTableSwitchInsn -> visitTableSwitchInsn
 object DecompileMethod {
@@ -14,63 +30,63 @@ object DecompileMethod {
     ???
   }
 
-  def decompileInsn(node: AbstractInsnNode): Either[Statement, Expression] = {
+  def decompileInsn(node: AbstractInsnNode): DecompiledInsn = {
     val args: Array[Expression] = ???
     node.getOpcode match {
       // InsnNode
-      case Opcodes.NOP => Left(new EmptyStmt())
-      case Opcodes.ACONST_NULL => Right(new NullLiteralExpr())
-      case Opcodes.ICONST_M1 => Right(new IntegerLiteralExpr(-1))
-      case Opcodes.ICONST_0 => Right(new IntegerLiteralExpr(0))
-      case Opcodes.ICONST_1 => Right(new IntegerLiteralExpr(1))
-      case Opcodes.ICONST_2 => Right(new IntegerLiteralExpr(2))
-      case Opcodes.ICONST_3 => Right(new IntegerLiteralExpr(3))
-      case Opcodes.ICONST_4 => Right(new IntegerLiteralExpr(4))
-      case Opcodes.ICONST_5 => Right(new IntegerLiteralExpr(5))
+      case Opcodes.NOP => DecompiledStatement(new EmptyStmt())
+      case Opcodes.ACONST_NULL => DecompiledExpression(new NullLiteralExpr())
+      case Opcodes.ICONST_M1 => DecompiledExpression(new IntegerLiteralExpr(-1))
+      case Opcodes.ICONST_0 => DecompiledExpression(new IntegerLiteralExpr(0))
+      case Opcodes.ICONST_1 => DecompiledExpression(new IntegerLiteralExpr(1))
+      case Opcodes.ICONST_2 => DecompiledExpression(new IntegerLiteralExpr(2))
+      case Opcodes.ICONST_3 => DecompiledExpression(new IntegerLiteralExpr(3))
+      case Opcodes.ICONST_4 => DecompiledExpression(new IntegerLiteralExpr(4))
+      case Opcodes.ICONST_5 => DecompiledExpression(new IntegerLiteralExpr(5))
         // TODO: Research idea distribution of iconst instructions in real code
         // TODO: hex form of constant in comment
-      case Opcodes.LCONST_0 => Right(new LongLiteralExpr("0L"))
-      case Opcodes.LCONST_1 => Right(new LongLiteralExpr("1L"))
-      case Opcodes.FCONST_0 => Right(new DoubleLiteralExpr("0.0F"))
-      case Opcodes.FCONST_1 => Right(new DoubleLiteralExpr("1.0F"))
-      case Opcodes.FCONST_2 => Right(new DoubleLiteralExpr("2.0F"))
-      case Opcodes.DCONST_0 => Right(new DoubleLiteralExpr("0.0D"))
-      case Opcodes.DCONST_1 => Right(new DoubleLiteralExpr("1.0D"))
+      case Opcodes.LCONST_0 => DecompiledExpression(new LongLiteralExpr("0L"))
+      case Opcodes.LCONST_1 => DecompiledExpression(new LongLiteralExpr("1L"))
+      case Opcodes.FCONST_0 => DecompiledExpression(new DoubleLiteralExpr("0.0F"))
+      case Opcodes.FCONST_1 => DecompiledExpression(new DoubleLiteralExpr("1.0F"))
+      case Opcodes.FCONST_2 => DecompiledExpression(new DoubleLiteralExpr("2.0F"))
+      case Opcodes.DCONST_0 => DecompiledExpression(new DoubleLiteralExpr("0.0D"))
+      case Opcodes.DCONST_1 => DecompiledExpression(new DoubleLiteralExpr("1.0D"))
       // IntInsnNode
       case Opcodes.BIPUSH => ???
       case Opcodes.SIPUSH => ???
       // LdcInsnNode
       case Opcodes.LDC =>
-        Right(node.asInstanceOf[LdcInsnNode].cst match {
+        DecompiledExpression(node.asInstanceOf[LdcInsnNode].cst match {
           case cst: java.lang.Integer => new IntegerLiteralExpr(cst)
-          case cst: java.lang.Float => ??? // new DoubleLiteralExpr(???) // TODO: float vs double
+          case cst: java.lang.Float => new DoubleLiteralExpr(cst.toString + "F") // TODO: float vs double
           case cst: java.lang.Long => new LongLiteralExpr(cst)
-          case cst: java.lang.Double => new DoubleLiteralExpr(cst) // TODO: float vs double??
+          case cst: java.lang.Double => new DoubleLiteralExpr(cst.toString + "D") // TODO: float vs double??
           case cst: java.lang.String => new StringLiteralExpr(cst)
           case cst: org.objectweb.asm.Type => new ClassExpr(???)
         })
       // VarInsnNode
-      case Opcodes.ILOAD => Right(args(0))
-      case Opcodes.LLOAD => Right(args(0))
-      case Opcodes.FLOAD => Right(args(0))
-      case Opcodes.DLOAD => Right(args(0))
-      case Opcodes.ALOAD => Right(args(0))
+      case Opcodes.ILOAD => DecompiledExpression(args(0))
+      case Opcodes.LLOAD => DecompiledExpression(args(0))
+      case Opcodes.FLOAD => DecompiledExpression(args(0))
+      case Opcodes.DLOAD => DecompiledExpression(args(0))
+      case Opcodes.ALOAD => DecompiledExpression(args(0))
       // TODO: use `|` patterns
       // InsnNode
-      case Opcodes.IALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.LALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.FALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.DALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.AALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.BALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.CALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
-      case Opcodes.SALOAD => Right(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.IALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.LALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.FALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.DALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.AALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.BALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.CALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
+      case Opcodes.SALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
       // VarInsnNode
-      case Opcodes.ISTORE => Right(args(0))
-      case Opcodes.LSTORE => Right(args(0))
-      case Opcodes.FSTORE => Right(args(0))
-      case Opcodes.DSTORE => Right(args(0))
-      case Opcodes.ASTORE => Right(args(0))
+      case Opcodes.ISTORE => DecompiledExpression(args(0))
+      case Opcodes.LSTORE => DecompiledExpression(args(0))
+      case Opcodes.FSTORE => DecompiledExpression(args(0))
+      case Opcodes.DSTORE => DecompiledExpression(args(0))
+      case Opcodes.ASTORE => DecompiledExpression(args(0))
       // InsnNode
       case Opcodes.IASTORE => ???
       case Opcodes.LASTORE => ???
@@ -89,61 +105,61 @@ object DecompileMethod {
       case Opcodes.DUP2_X1 => ???
       case Opcodes.DUP2_X2 => ???
       case Opcodes.SWAP => ???
-      case Opcodes.IADD => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
-      case Opcodes.LADD => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
-      case Opcodes.FADD => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
-      case Opcodes.DADD => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
-      case Opcodes.ISUB => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
-      case Opcodes.LSUB => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
-      case Opcodes.FSUB => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
-      case Opcodes.DSUB => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
-      case Opcodes.IMUL => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
-      case Opcodes.LMUL => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
-      case Opcodes.FMUL => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
-      case Opcodes.DMUL => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
-      case Opcodes.IDIV => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
-      case Opcodes.LDIV => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
-      case Opcodes.FDIV => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
-      case Opcodes.DDIV => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
-      case Opcodes.IREM => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
-      case Opcodes.LREM => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
-      case Opcodes.FREM => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
-      case Opcodes.DREM => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
+      case Opcodes.IADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
+      case Opcodes.LADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
+      case Opcodes.FADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
+      case Opcodes.DADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
+      case Opcodes.ISUB => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
+      case Opcodes.LSUB => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
+      case Opcodes.FSUB => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
+      case Opcodes.DSUB => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MINUS))
+      case Opcodes.IMUL => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
+      case Opcodes.LMUL => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
+      case Opcodes.FMUL => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
+      case Opcodes.DMUL => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.MULTIPLY))
+      case Opcodes.IDIV => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
+      case Opcodes.LDIV => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
+      case Opcodes.FDIV => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
+      case Opcodes.DDIV => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.DIVIDE))
+      case Opcodes.IREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
+      case Opcodes.LREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
+      case Opcodes.FREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
+      case Opcodes.DREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
       // TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT
-      case Opcodes.INEG => Right(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
-      case Opcodes.LNEG => Right(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
-      case Opcodes.FNEG => Right(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
-      case Opcodes.DNEG => Right(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
-      case Opcodes.ISHL  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.LEFT_SHIFT))
-      case Opcodes.LSHL  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.LEFT_SHIFT))
-      case Opcodes.ISHR  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.SIGNED_RIGHT_SHIFT))
-      case Opcodes.LSHR  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.SIGNED_RIGHT_SHIFT))
-      case Opcodes.IUSHR => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.UNSIGNED_RIGHT_SHIFT))
-      case Opcodes.LUSHR => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.UNSIGNED_RIGHT_SHIFT))
-      case Opcodes.IAND  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_AND))
-      case Opcodes.LAND  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_AND))
-      case Opcodes.IOR   => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_OR))
-      case Opcodes.LOR   => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_OR))
-      case Opcodes.IXOR  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
-      case Opcodes.LXOR  => Right(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
+      case Opcodes.INEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
+      case Opcodes.LNEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
+      case Opcodes.FNEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
+      case Opcodes.DNEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
+      case Opcodes.ISHL  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.LEFT_SHIFT))
+      case Opcodes.LSHL  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.LEFT_SHIFT))
+      case Opcodes.ISHR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.SIGNED_RIGHT_SHIFT))
+      case Opcodes.LSHR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.SIGNED_RIGHT_SHIFT))
+      case Opcodes.IUSHR => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.UNSIGNED_RIGHT_SHIFT))
+      case Opcodes.LUSHR => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.UNSIGNED_RIGHT_SHIFT))
+      case Opcodes.IAND  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_AND))
+      case Opcodes.LAND  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_AND))
+      case Opcodes.IOR   => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_OR))
+      case Opcodes.LOR   => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.BINARY_OR))
+      case Opcodes.IXOR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
+      case Opcodes.LXOR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
       // IincInsnNode
       case Opcodes.IINC => ???
       // InsnNode
-      case Opcodes.I2L => Right(new CastExpr(PrimitiveType.longType  , args(0)))
-      case Opcodes.I2F => Right(new CastExpr(PrimitiveType.floatType , args(0)))
-      case Opcodes.I2D => Right(new CastExpr(PrimitiveType.doubleType, args(0)))
-      case Opcodes.L2I => Right(new CastExpr(PrimitiveType.intType   , args(0)))
-      case Opcodes.L2F => Right(new CastExpr(PrimitiveType.floatType , args(0)))
-      case Opcodes.L2D => Right(new CastExpr(PrimitiveType.doubleType, args(0)))
-      case Opcodes.F2I => Right(new CastExpr(PrimitiveType.intType   , args(0)))
-      case Opcodes.F2L => Right(new CastExpr(PrimitiveType.longType  , args(0)))
-      case Opcodes.F2D => Right(new CastExpr(PrimitiveType.doubleType, args(0)))
-      case Opcodes.D2I => Right(new CastExpr(PrimitiveType.intType   , args(0)))
-      case Opcodes.D2L => Right(new CastExpr(PrimitiveType.longType  , args(0)))
-      case Opcodes.D2F => Right(new CastExpr(PrimitiveType.floatType , args(0)))
-      case Opcodes.I2B => Right(new CastExpr(PrimitiveType.byteType  , args(0)))
-      case Opcodes.I2C => Right(new CastExpr(PrimitiveType.charType  , args(0)))
-      case Opcodes.I2S => Right(new CastExpr(PrimitiveType.shortType , args(0)))
+      case Opcodes.I2L => DecompiledExpression(new CastExpr(PrimitiveType.longType  , args(0)))
+      case Opcodes.I2F => DecompiledExpression(new CastExpr(PrimitiveType.floatType , args(0)))
+      case Opcodes.I2D => DecompiledExpression(new CastExpr(PrimitiveType.doubleType, args(0)))
+      case Opcodes.L2I => DecompiledExpression(new CastExpr(PrimitiveType.intType   , args(0)))
+      case Opcodes.L2F => DecompiledExpression(new CastExpr(PrimitiveType.floatType , args(0)))
+      case Opcodes.L2D => DecompiledExpression(new CastExpr(PrimitiveType.doubleType, args(0)))
+      case Opcodes.F2I => DecompiledExpression(new CastExpr(PrimitiveType.intType   , args(0)))
+      case Opcodes.F2L => DecompiledExpression(new CastExpr(PrimitiveType.longType  , args(0)))
+      case Opcodes.F2D => DecompiledExpression(new CastExpr(PrimitiveType.doubleType, args(0)))
+      case Opcodes.D2I => DecompiledExpression(new CastExpr(PrimitiveType.intType   , args(0)))
+      case Opcodes.D2L => DecompiledExpression(new CastExpr(PrimitiveType.longType  , args(0)))
+      case Opcodes.D2F => DecompiledExpression(new CastExpr(PrimitiveType.floatType , args(0)))
+      case Opcodes.I2B => DecompiledExpression(new CastExpr(PrimitiveType.byteType  , args(0)))
+      case Opcodes.I2C => DecompiledExpression(new CastExpr(PrimitiveType.charType  , args(0)))
+      case Opcodes.I2S => DecompiledExpression(new CastExpr(PrimitiveType.shortType , args(0)))
       case Opcodes.LCMP => ???
       case Opcodes.FCMPL => ???
       case Opcodes.FCMPG => ???
@@ -173,41 +189,54 @@ object DecompileMethod {
       // LookupSwitch
       case Opcodes.LOOKUPSWITCH => ???
       // InsnNode
-      case Opcodes.IRETURN => Left(new ReturnStmt(args(0)))
-      case Opcodes.LRETURN => Left(new ReturnStmt(args(0)))
-      case Opcodes.FRETURN => Left(new ReturnStmt(args(0)))
-      case Opcodes.DRETURN => Left(new ReturnStmt(args(0)))
-      case Opcodes.ARETURN => Left(new ReturnStmt(args(0)))
-      case Opcodes.RETURN  => Left(new ReturnStmt(/*Nothing*/))
+      case Opcodes.IRETURN => DecompiledStatement(new ReturnStmt(args(0)))
+      case Opcodes.LRETURN => DecompiledStatement(new ReturnStmt(args(0)))
+      case Opcodes.FRETURN => DecompiledStatement(new ReturnStmt(args(0)))
+      case Opcodes.DRETURN => DecompiledStatement(new ReturnStmt(args(0)))
+      case Opcodes.ARETURN => DecompiledStatement(new ReturnStmt(args(0)))
+      case Opcodes.RETURN  => DecompiledStatement(new ReturnStmt(/*Nothing*/))
       // FieldInsnNode
       case Opcodes.GETSTATIC => ???
       case Opcodes.PUTSTATIC => ???
-      case Opcodes.GETFIELD => Right(new FieldAccessExpr(args(0), ???, new SimpleName(node.asInstanceOf[FieldInsnNode].name)))
+      case Opcodes.GETFIELD => DecompiledExpression(new FieldAccessExpr(args(0), ???, new SimpleName(node.asInstanceOf[FieldInsnNode].name)))
       case Opcodes.PUTFIELD => ???
       // MethodInsnNode
-      case Opcodes.INVOKEVIRTUAL   => ??? //Right(new MethodCallExpr(???, ???, ???, ???))
+      case Opcodes.INVOKEVIRTUAL   => ??? //DecompiledExpression(new MethodCallExpr(???, ???, ???, ???))
       case Opcodes.INVOKESPECIAL   => ???
-      case Opcodes.INVOKESTATIC    => ??? //Right(new MethodCallExpr(???, ???, ???, ???))
-      case Opcodes.INVOKEINTERFACE => ??? //Right(new MethodCallExpr(???, ???, ???, ???))
+      case Opcodes.INVOKESTATIC    => ??? //DecompiledExpression(new MethodCallExpr(???, ???, ???, ???))
+      case Opcodes.INVOKEINTERFACE => ??? //DecompiledExpression(new MethodCallExpr(???, ???, ???, ???))
       // InvokeDynamicInsnNode
       case Opcodes.INVOKEDYNAMIC => ???
       // TypeInsnNode
       case Opcodes.NEW => ???
       // IntInsnNode
-      case Opcodes.NEWARRAY  => ??? //Right(new ArrayCreationExpr(???, new NodeList(new ArrayCreationLevel(???)), ???))
+      case Opcodes.NEWARRAY  =>
+        val typ = node.asInstanceOf[IntInsnNode].operand match {
+          case Opcodes.T_BOOLEAN => PrimitiveType.booleanType()
+          case Opcodes.T_CHAR    => PrimitiveType.charType()
+          case Opcodes.T_FLOAT   => PrimitiveType.floatType()
+          case Opcodes.T_DOUBLE  => PrimitiveType.doubleType()
+          case Opcodes.T_BYTE    => PrimitiveType.byteType()
+          case Opcodes.T_SHORT   => PrimitiveType.shortType()
+          case Opcodes.T_INT     => PrimitiveType.intType()
+          case Opcodes.T_LONG    => PrimitiveType.longType()
+        }
+        DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
       // TypeInsnNode
-      case Opcodes.ANEWARRAY => ??? //Right(new ArrayCreationExpr(???, new NodeList(new ArrayCreationLevel(???)), ???))
+      case Opcodes.ANEWARRAY =>
+        val typ = Descriptor.fieldDescriptor(asInstanceOf[TypeInsnNode].desc)
+        DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
       // InsnNode
       case Opcodes.ARRAYLENGTH => ???
-      case Opcodes.ATHROW => Left(new ThrowStmt(args(0)))
+      case Opcodes.ATHROW => DecompiledStatement(new ThrowStmt(args(0)))
       // TypeInsnNode
-      case Opcodes.CHECKCAST => ??? // TODO: figure out: Right(new CastExpr(???, ???))
-      case Opcodes.INSTANCEOF => Right(new InstanceOfExpr(args(0), ???/*node.asInstanceOf[TypeInsnNode].desc*/))
+      case Opcodes.CHECKCAST => ??? // TODO: figure out: DecompiledExpression(new CastExpr(???, ???))
+      case Opcodes.INSTANCEOF => DecompiledExpression(new InstanceOfExpr(args(0), Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)))
       // InsnNode
       case Opcodes.MONITORENTER => ???
       case Opcodes.MONITOREXIT => ???
       // MultiANewArrayInsnNode
-      case Opcodes.MULTIANEWARRAY => Right(new ArrayCreationExpr(???, ???, ???))
+      case Opcodes.MULTIANEWARRAY => DecompiledExpression(new ArrayCreationExpr(???, ???, ???))
       // JumpInsnNode
       case Opcodes.IFNULL => ???
       case Opcodes.IFNONNULL => ???
@@ -215,7 +244,7 @@ object DecompileMethod {
       case _ =>
         node match {
           case node: LabelNode =>
-            Left(new LabeledStmt(new SimpleName(node.getLabel.toString), /*TODO*/new EmptyStmt()))
+            DecompiledStatement(new LabeledStmt(new SimpleName(node.getLabel.toString), /*TODO*/new EmptyStmt()))
           case node: FrameNode => ???
           case node: LineNumberNode => ???
           case _ => throw new Exception(f"unknown instruction type: $node")
