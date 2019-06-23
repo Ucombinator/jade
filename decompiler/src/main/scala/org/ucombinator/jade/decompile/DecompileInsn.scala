@@ -1,6 +1,8 @@
 package org.ucombinator.jade.decompile
 
-import com.github.javaparser.ast.`type`.PrimitiveType
+import java.lang.invoke.LambdaMetafactory
+
+import com.github.javaparser.ast.`type`.{ArrayType, PrimitiveType, Type}
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
@@ -8,20 +10,29 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.util.classfile.Descriptor
 
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+
 sealed trait DecompiledInsn
 case class DecompiledStatement(statement: Statement) extends DecompiledInsn
 case class DecompiledExpression(expression: Expression) extends DecompiledInsn
-case class DecompiledMove(/*TODO*/) extends DecompiledInsn
-case class DecompiledIinc(/*TODO*/) extends DecompiledInsn
-case class DecompiledCompare(/*TODO*/) extends DecompiledInsn
-case class DecompiledIf(/*TODO*/) extends DecompiledInsn
-case class DecompiledGoto(/*TODO*/) extends DecompiledInsn
-case class DecompiledSwitch(/*TODO*/) extends DecompiledInsn
-case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
-case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
-case class DecompiledUnsupported(/*TODO*/) extends DecompiledInsn
+case object DecompiledMove/*(TODO)*/ extends DecompiledInsn
+//case class DecompiledCompare(/*TODO*/) extends DecompiledInsn
+case class DecompiledIf(labelNode: LabelNode, condition: Expression) extends DecompiledInsn
+case class DecompiledGoto(labelNode: LabelNode) extends DecompiledInsn
+case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) extends DecompiledInsn
+//case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
+//case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
+case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
+//case class DecompiledSynthetic(/*TODO*/) extends DecompiledInsn
 
 // TODO: typo in Opcodes.java: visiTableSwitchInsn -> visitTableSwitchInsn
+// TODO: typo in javaparser BlockComment: can has -> can have
+// TODO: Research idea: distribution of iconst instructions in real code
+// TODO: add hex form of literals in a comment
+// TODO: literals: float vs double
+// TODO: use `|` patterns
+// TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT: 0: iload_1; 1: iconst_m1; 2: ixor
 
 object DecompileInsn {
   def decompileInsn(node: AbstractInsnNode): DecompiledInsn = {
@@ -37,8 +48,6 @@ object DecompileInsn {
       case Opcodes.ICONST_3 => DecompiledExpression(new IntegerLiteralExpr(3))
       case Opcodes.ICONST_4 => DecompiledExpression(new IntegerLiteralExpr(4))
       case Opcodes.ICONST_5 => DecompiledExpression(new IntegerLiteralExpr(5))
-        // TODO: Research idea distribution of iconst instructions in real code
-        // TODO: hex form of constant in comment
       case Opcodes.LCONST_0 => DecompiledExpression(new LongLiteralExpr("0L"))
       case Opcodes.LCONST_1 => DecompiledExpression(new LongLiteralExpr("1L"))
       case Opcodes.FCONST_0 => DecompiledExpression(new DoubleLiteralExpr("0.0F"))
@@ -47,25 +56,24 @@ object DecompileInsn {
       case Opcodes.DCONST_0 => DecompiledExpression(new DoubleLiteralExpr("0.0D"))
       case Opcodes.DCONST_1 => DecompiledExpression(new DoubleLiteralExpr("1.0D"))
       // IntInsnNode
-      case Opcodes.BIPUSH => ???
-      case Opcodes.SIPUSH => ???
+      case Opcodes.BIPUSH => DecompiledMove
+      case Opcodes.SIPUSH => DecompiledMove
       // LdcInsnNode
       case Opcodes.LDC =>
-        DecompiledExpression(node.asInstanceOf[LdcInsnNode].cst match {
-          case cst: java.lang.Integer => new IntegerLiteralExpr(cst)
-          case cst: java.lang.Float => new DoubleLiteralExpr(cst.toString + "F") // TODO: float vs double
-          case cst: java.lang.Long => new LongLiteralExpr(cst)
-          case cst: java.lang.Double => new DoubleLiteralExpr(cst.toString + "D") // TODO: float vs double
+        DecompiledExpression((node.asInstanceOf[LdcInsnNode].cst match {
+          case cst: java.lang.Integer => new IntegerLiteralExpr(cst.toString).setBlockComment("0x" + java.lang.Integer.toHexString(cst))
+          case cst: java.lang.Float => new DoubleLiteralExpr(cst.toString + "F")
+          case cst: java.lang.Long => new LongLiteralExpr(cst).setBlockComment("0x" + java.lang.Long.toHexString(cst))
+          case cst: java.lang.Double => new DoubleLiteralExpr(cst.toString + "D")
           case cst: java.lang.String => new StringLiteralExpr(cst)
-          case cst: org.objectweb.asm.Type => new ClassExpr(???)
-        })
+          case cst: org.objectweb.asm.Type => new ClassExpr(Descriptor.fieldDescriptor(cst.getDescriptor))
+        }).asInstanceOf[Expression])
       // VarInsnNode
       case Opcodes.ILOAD => DecompiledExpression(args(0))
       case Opcodes.LLOAD => DecompiledExpression(args(0))
       case Opcodes.FLOAD => DecompiledExpression(args(0))
       case Opcodes.DLOAD => DecompiledExpression(args(0))
       case Opcodes.ALOAD => DecompiledExpression(args(0))
-      // TODO: use `|` patterns
       // InsnNode
       case Opcodes.IALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
       case Opcodes.LALOAD => DecompiledExpression(new ArrayAccessExpr(args(0), args(1)))
@@ -82,23 +90,23 @@ object DecompileInsn {
       case Opcodes.DSTORE => DecompiledExpression(args(0))
       case Opcodes.ASTORE => DecompiledExpression(args(0))
       // InsnNode
-      case Opcodes.IASTORE => ???
-      case Opcodes.LASTORE => ???
-      case Opcodes.FASTORE => ???
-      case Opcodes.DASTORE => ???
-      case Opcodes.AASTORE => ???
-      case Opcodes.BASTORE => ???
-      case Opcodes.CASTORE => ???
-      case Opcodes.SASTORE => ???
-      case Opcodes.POP => ???
-      case Opcodes.POP2 => ???
-      case Opcodes.DUP => ???
-      case Opcodes.DUP_X1 => ???
-      case Opcodes.DUP_X2 => ???
-      case Opcodes.DUP2 => ???
-      case Opcodes.DUP2_X1 => ???
-      case Opcodes.DUP2_X2 => ???
-      case Opcodes.SWAP => ???
+      case Opcodes.IASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.LASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.FASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.DASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.AASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.BASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.CASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.SASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
+      case Opcodes.POP     => DecompiledMove
+      case Opcodes.POP2    => DecompiledMove
+      case Opcodes.DUP     => DecompiledMove
+      case Opcodes.DUP_X1  => DecompiledMove
+      case Opcodes.DUP_X2  => DecompiledMove
+      case Opcodes.DUP2    => DecompiledMove
+      case Opcodes.DUP2_X1 => DecompiledMove
+      case Opcodes.DUP2_X2 => DecompiledMove
+      case Opcodes.SWAP    => DecompiledMove
       case Opcodes.IADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
       case Opcodes.LADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
       case Opcodes.FADD => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
@@ -119,7 +127,6 @@ object DecompileInsn {
       case Opcodes.LREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
       case Opcodes.FREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
       case Opcodes.DREM => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.REMAINDER))
-      // TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT
       case Opcodes.INEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
       case Opcodes.LNEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
       case Opcodes.FNEG => DecompiledExpression(new UnaryExpr(args(0), UnaryExpr.Operator.MINUS))
@@ -137,7 +144,8 @@ object DecompileInsn {
       case Opcodes.IXOR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
       case Opcodes.LXOR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
       // IincInsnNode
-      case Opcodes.IINC => ???
+      // TODO: double check that iinc works (because it is a strange instruction)
+      case Opcodes.IINC => DecompiledExpression(new BinaryExpr(args(0), new IntegerLiteralExpr(node.asInstanceOf[IincInsnNode].incr), BinaryExpr.Operator.PLUS))
       // InsnNode
       case Opcodes.I2L => DecompiledExpression(new CastExpr(PrimitiveType.longType  , args(0)))
       case Opcodes.I2F => DecompiledExpression(new CastExpr(PrimitiveType.floatType , args(0)))
@@ -160,28 +168,34 @@ object DecompileInsn {
       case Opcodes.DCMPL => ???
       case Opcodes.DCMPG => ???
       // JumpInsnNode
-      case Opcodes.IFEQ => ???
-      case Opcodes.IFNE => ???
-      case Opcodes.IFLT => ???
-      case Opcodes.IFGE => ???
-      case Opcodes.IFGT => ???
-      case Opcodes.IFLE => ???
-      case Opcodes.IF_ICMPEQ => ???
-      case Opcodes.IF_ICMPNE => ???
-      case Opcodes.IF_ICMPLT => ???
-      case Opcodes.IF_ICMPGE => ???
-      case Opcodes.IF_ICMPGT => ???
-      case Opcodes.IF_ICMPLE => ???
-      case Opcodes.IF_ACMPEQ => ???
-      case Opcodes.IF_ACMPNE => ???
-      case Opcodes.GOTO => ???
-      case Opcodes.JSR => throw new Exception(f"unsupported instruction: JSR: $node")
+      case Opcodes.IFEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.EQUALS))
+      case Opcodes.IFNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.NOT_EQUALS))
+      case Opcodes.IFLT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.LESS))
+      case Opcodes.IFGE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.GREATER_EQUALS))
+      case Opcodes.IFGT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.GREATER))
+      case Opcodes.IFLE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.LESS_EQUALS))
+      case Opcodes.IF_ICMPEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.EQUALS))
+      case Opcodes.IF_ICMPNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.NOT_EQUALS))
+      case Opcodes.IF_ICMPLT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.LESS))
+      case Opcodes.IF_ICMPGE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.GREATER_EQUALS))
+      case Opcodes.IF_ICMPGT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.GREATER))
+      case Opcodes.IF_ICMPLE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.LESS_EQUALS))
+      case Opcodes.IF_ACMPEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.EQUALS))
+      case Opcodes.IF_ACMPNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.NOT_EQUALS))
+      case Opcodes.GOTO => DecompiledGoto(node.asInstanceOf[JumpInsnNode].label)
+      case Opcodes.JSR => DecompiledUnsupported(node)
       // VarInsnNode
-      case Opcodes.RET => throw new Exception(f"unsupported instruction: RET: $node")
+      case Opcodes.RET => DecompiledUnsupported(node)
       // TableSwitchInsnNode
-      case Opcodes.TABLESWITCH => ???
+      case Opcodes.TABLESWITCH =>
+        val insn = node.asInstanceOf[TableSwitchInsnNode]
+        assert(insn.labels.size == insn.max - insn.min)
+        DecompiledSwitch(insn.labels.asScala.zipWithIndex.map({ case (l, i) => insn.min + i -> l }).toMap, insn.dflt)
       // LookupSwitch
-      case Opcodes.LOOKUPSWITCH => ???
+      case Opcodes.LOOKUPSWITCH =>
+        val insn = node.asInstanceOf[LookupSwitchInsnNode]
+        assert(insn.labels.size == insn.keys.size)
+        DecompiledSwitch(insn.labels.asScala.zip(insn.keys.asScala).map({ case (l, i) => i.intValue() -> l }).toMap, insn.dflt)
       // InsnNode
       case Opcodes.IRETURN => DecompiledStatement(new ReturnStmt(args(0)))
       case Opcodes.LRETURN => DecompiledStatement(new ReturnStmt(args(0)))
@@ -193,12 +207,24 @@ object DecompileInsn {
       case Opcodes.GETSTATIC => ???
       case Opcodes.PUTSTATIC => ???
       case Opcodes.GETFIELD => DecompiledExpression(new FieldAccessExpr(args(0), ???, new SimpleName(node.asInstanceOf[FieldInsnNode].name)))
-      case Opcodes.PUTFIELD => ???
+      case Opcodes.PUTFIELD => DecompiledExpression(new AssignExpr(new FieldAccessExpr(args(0), ???, new SimpleName(node.asInstanceOf[FieldInsnNode].name)), args(1), AssignExpr.Operator.ASSIGN))
       // MethodInsnNode
-      case Opcodes.INVOKEVIRTUAL   => ??? //DecompiledExpression(new MethodCallExpr(???, ???, ???, ???))
-      case Opcodes.INVOKESPECIAL   => ???
-      case Opcodes.INVOKESTATIC    => ??? //DecompiledExpression(new MethodCallExpr(???, ???, ???, ???))
-      case Opcodes.INVOKEINTERFACE => ??? //DecompiledExpression(new MethodCallExpr(???, ???, ???, ???))
+      case Opcodes.INVOKEVIRTUAL   =>
+        val insn = node.asInstanceOf[MethodInsnNode]
+        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val typeArguments = new NodeList[Type]()
+        DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
+      case Opcodes.INVOKESPECIAL   => ??? // TODO: only for <init>?
+      case Opcodes.INVOKESTATIC    =>
+        val insn = node.asInstanceOf[MethodInsnNode]
+        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val typeArguments = new NodeList[Type]()
+        DecompiledExpression(new MethodCallExpr(???, typeArguments, insn.name, new NodeList(argumentTypes.indices.map(args):_*)))
+      case Opcodes.INVOKEINTERFACE =>
+        val insn = node.asInstanceOf[MethodInsnNode]
+        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val typeArguments = new NodeList[Type]()
+        DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
       // InvokeDynamicInsnNode
       case Opcodes.INVOKEDYNAMIC => ???
       // TypeInsnNode
@@ -218,10 +244,10 @@ object DecompileInsn {
         DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
       // TypeInsnNode
       case Opcodes.ANEWARRAY =>
-        val typ = Descriptor.fieldDescriptor(asInstanceOf[TypeInsnNode].desc)
+        val typ = Descriptor.fieldDescriptor(node.asInstanceOf[TypeInsnNode].desc)
         DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
       // InsnNode
-      case Opcodes.ARRAYLENGTH => ???
+      case Opcodes.ARRAYLENGTH => DecompiledExpression(new FieldAccessExpr(args(0), new NodeList(), new SimpleName("length")))
       case Opcodes.ATHROW => DecompiledStatement(new ThrowStmt(args(0)))
       // TypeInsnNode
       case Opcodes.CHECKCAST => ??? // TODO: figure out: DecompiledExpression(new CastExpr(???, ???))
@@ -230,13 +256,28 @@ object DecompileInsn {
       case Opcodes.MONITORENTER => ???
       case Opcodes.MONITOREXIT => ???
       // MultiANewArrayInsnNode
-      case Opcodes.MULTIANEWARRAY => DecompiledExpression(new ArrayCreationExpr(???, ???, ???))
+      case Opcodes.MULTIANEWARRAY =>
+        // TODO: use asm.Type functions
+        val dims = node.asInstanceOf[MultiANewArrayInsnNode].dims
+        @tailrec def unwrap(typ: Type, levels: Int = 0): (Type, Int) = {
+          typ match {
+            case typ: ArrayType => unwrap(typ.getComponentType, levels + 1)
+            case _ => (typ, levels)
+          }
+        }
+        var (typ, expectedDims) = unwrap(Descriptor.fieldDescriptor(node.asInstanceOf[MultiANewArrayInsnNode].desc))
+        val levels = new NodeList(
+          args.slice(0, dims).map(new ArrayCreationLevel(_, new NodeList())) ++
+          (dims until expectedDims).map(_ => new ArrayCreationLevel(null, new NodeList()))
+          :_*)
+        DecompiledExpression(new ArrayCreationExpr(typ, levels, new ArrayInitializerExpr()))
       // JumpInsnNode
-      case Opcodes.IFNULL => ???
-      case Opcodes.IFNONNULL => ???
+      case Opcodes.IFNULL => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new NullLiteralExpr(), BinaryExpr.Operator.EQUALS))
+      case Opcodes.IFNONNULL => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new NullLiteralExpr(), BinaryExpr.Operator.NOT_EQUALS))
       // Synthetic instructions
       case _ =>
         node match {
+          // TODO: use DecompiledSynthetic
           case node: LabelNode =>
             DecompiledStatement(new LabeledStmt(new SimpleName(node.getLabel.toString), /*TODO*/new EmptyStmt()))
           case node: FrameNode => ???
@@ -245,4 +286,91 @@ object DecompileInsn {
         }
     }
   }
+
+/*
+  //case class DecodedLambda(interface: SootClass, interfaceMethod: SootMethod, implementationMethod: SootMethod, captures: java.util.List[soot.Value])
+  // https://cr.openjdk.java.net/~briangoetz/lambda/lambda-translation.html
+  def decodeLambda(e: InvokeDynamicInsnNode): LambdaExpr = {
+    // Arguments are the captured variables
+    // Static (bootstrap?) arguments describe lambda
+
+    def decodeSimple(): LambdaExpr = {
+      // Step 1: Find `interface`, which is the type of the closure returned by the lambda.
+      assert(e.getType.isInstanceOf[RefType])
+      val interface = e.getType.asInstanceOf[RefType].getSootClass
+
+      // Step 2: Find the method in `interface` that the lambda corresponds to.
+      // Unfortunately, this is not already computed so we find it manually.
+      // This is complicated by the fact that it may be in a super-class or
+      // super-interface of `interface`.
+      assert(e.bsmArgs(0).isInstanceOf[ClassConstant])
+      val bytecodeSignature = e.bsmArgs(0).asInstanceOf[ClassConstant].getValue
+      val types = Util.v().jimpleTypesOfFieldOrMethodDescriptor(bytecodeSignature)
+      val paramTypes = java.util.Arrays.asList[Type](types:_*).subList(0, types.length - 1)
+      val returnType = types(types.length - 1)
+
+      def findMethod(klass: SootClass): SootMethod = {
+        val m = klass.getMethodUnsafe(e.getMethod.getName, paramTypes, returnType)
+        if (m != null) { return m }
+
+        if (klass.hasSuperclass) {
+          val m = findMethod(klass.getSuperclass)
+          if (m != null) { return m }
+        }
+
+        for (i <- klass.getInterfaces.asScala) {
+          val m = findMethod(i)
+          if (m != null) { return m }
+        }
+
+        return null
+      }
+
+      val interfaceMethod = findMethod(interface)
+
+      // Step 3: Find `implementationMethod`, which is the method implementing the lambda
+      //   Because calling e.getMethodRef.resolve may throw missmatched `static` errors,
+      //   we look for the method manually.
+      assert(e.bsmArgs(1).isInstanceOf[soot.jimple.MethodHandle])
+      val implementationMethodRef = e.getBootstrapArg(1).asInstanceOf[soot.jimple.MethodHandle].getMethodRef
+      val implementationMethod = implementationMethodRef.declaringClass().getMethodUnsafe(implementationMethodRef.getSubSignature)
+
+      // Step 4: Find the `captures` which are values that should be saved and passed
+      //   to `implementationMethod` before any other arguments
+      val captures = e.getArgs
+
+      return DecodedLambda(interface, interfaceMethod, implementationMethod, captures)
+    }
+
+    def bootstrapArgIsInt(index: Int, i: Int): Boolean = {
+      e.bsmArgs(index) match {
+        case arg: Integer => arg == i
+        case _ => false
+      }
+    }
+
+    // Check that this dynamic invoke uses LambdaMetafactory
+    assert(e.bsm.getOwner == "java.lang.invoke.LambdaMetafactory")
+    val bootstrapMethod = e.bsm.getName
+    if (bootstrapMethod == "metafactory") {
+      assert(e.bsmArgs.length == 3)
+      return decodeSimple()
+    } else if (bootstrapMethod == "altMetafactory") {
+      e.bsmArgs(3) match {
+        case flags: Integer =>
+          val bridges = (flags & LambdaMetafactory.FLAG_BRIDGES) != 0
+          val markers = (flags & LambdaMetafactory.FLAG_MARKERS) != 0
+          val isSimple =
+            (bridges && !markers && bootstrapArgIsInt(4, 0)) ||
+            (!bridges && markers && bootstrapArgIsInt(4, 0)) ||
+            (bridges && markers && bootstrapArgIsInt(4, 0) && bootstrapArgIsInt(5, 0))
+          if (isSimple) { decodeSimple() }
+          else { throw new Exception("Unimplemented altMetafactory: e = " + e) }
+        case _ => throw new Exception("Non-int flags passed to altMetafactory: e = " + e)
+      }
+    } else {
+      throw new Exception("Soot.decodeLambda could not decode: e = " + e)
+    }
+  }
+ */
 }

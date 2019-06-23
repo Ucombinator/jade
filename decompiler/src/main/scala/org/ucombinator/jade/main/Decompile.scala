@@ -17,6 +17,7 @@ import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 
 import scala.collection.JavaConverters._
 
+// TODO: support `/` to select jar components (and recursive on those components)
 case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean) {
   type Result = List[(Path, List[String], ClassNode, CompilationUnit)]
   def main(paths: List[Path]): Unit = {
@@ -53,12 +54,12 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     val zipInputStream = new ZipInputStream(new ByteArrayInputStream(bytes, offset, bytes.length - offset))
     // TODO: multi-version jar
     // TODO: figure out jmod files
-    // not using jar file because jmod files are zip files
-    // new Manifest
+    // NOTE: using ZipInputStream instead of JarInputStream so we can also handle `.jmod` files
+    // NOTE: using ZipInputStream instead of ZipFile so we can also handle recursive zip/jar files
     val array = new Array[Byte](4 * 1024)
     var entry: ZipEntry = null
     var entries: Result = List()
-    // TODO: use yeild?
+    // TODO: use yield?
     while ({entry = zipInputStream.getNextEntry; entry != null}) {
       if (!entry.isDirectory) {
         val builder = new ByteArrayOutputStream()
@@ -72,6 +73,10 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     }
     zipInputStream.close()
     entries
+
+    // TODO
+    // extract all (non-recursive)
+
   }
 
   def decompileClassFile(path: Path, subpath: List[String], bytes: Array[Byte]): (Path, List[String], ClassNode, CompilationUnit) = {

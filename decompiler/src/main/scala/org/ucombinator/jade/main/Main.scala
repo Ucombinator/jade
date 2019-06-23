@@ -8,6 +8,8 @@ import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Pa
 
 import scala.collection.JavaConverters._
 
+// TODO: analysis to ensure using only the canonical constructor (helps with detecting forward version changes) (as a compiler plugin?)
+
 ////////////////
 // Top-level command
 
