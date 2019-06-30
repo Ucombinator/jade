@@ -2,7 +2,7 @@ package org.ucombinator.jade.util.jgrapht
 
 import java.io.{StringWriter, Writer}
 
-import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
+import org.jgrapht.graph.SimpleDirectedGraph
 import org.jgrapht.{Graph, Graphs}
 
 import scala.collection.JavaConverters._
@@ -109,11 +109,13 @@ object Dominator {
     dom
   }
 
-  type DominatorTree[V] = Graph[V, DefaultEdge]
+  final case class Edge[V](source: V, target: V)
+
+  type DominatorTree[V] = Graph[V, Edge[V]]
   // Returns a graph with notes pointing to their immediate dominator
   def dominatorTree[V <: AnyRef, E](graph: Graph[V,E], start: V): DominatorTree[V] = {
     val dom = dominators(graph, start)
-    val tree = new SimpleDirectedGraph[V, DefaultEdge](classOf[DefaultEdge])
+    val tree = new SimpleDirectedGraph[V, Edge[V]](classOf[Edge[V]])
 
     object O extends Ordering[V] {
       override def compare(x: V, y: V): Int = {
@@ -145,6 +147,7 @@ object Dominator {
   }
 
 // TODO: unique edge type so types are distinct
+// TODO: alternate background colors
   def dominatorNesting[V,E](out: Writer, graph: Graph[V,E], tree: DominatorTree[V], root: V): Unit = {
     out.write("digraph {\n")
     var cluster = 0
