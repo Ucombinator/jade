@@ -132,7 +132,8 @@ object Dominator {
     for ((k, vs) <- dom) {
       val vs2 = vs - k
       if (vs2.nonEmpty) {
-        tree.addEdge(k, vs2.min(O))
+        val v = vs2.min(O)
+        tree.addEdge(k, v, Edge(k, v))
       }
     }
 
