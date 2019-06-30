@@ -1,10 +1,7 @@
 package org.ucombinator.jade.main
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException, PrintWriter}
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{Files, Path, Paths}
-import java.util.stream.Collectors
-import java.util.zip.{ZipEntry, ZipInputStream}
+import java.io.PrintWriter
+import java.nio.file.Path
 
 import com.github.javaparser.ast.CompilationUnit
 import org.objectweb.asm.ClassReader
@@ -18,34 +15,14 @@ import org.ucombinator.jade.util.asm.Insn
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
-
-sealed trait LoadState
-
-object LoadState {
-  case object Want extends LoadState
-  case object DoNotWant extends LoadState
-  case class Jar(bytes: Array[Byte]) extends LoadState
-  case class Class(bytes: Array[Byte]) extends LoadState
-}
 
 // TODO: nested class?
-
-case class LoadTree(var state: LoadState, children: mutable.Map[String, LoadTree])
-
-object Decompile {
-  private val ZIP_SIGNATURE = Array(0x50, 0x4b, 0x03, 0x04).map(_.toByte)
-  private val JMOD_SIGNATURE = Array(0x4a, 0x4d, 0x01, 0x00, 0x50, 0x4b, 0x03, 0x04).map(_.toByte)
-  private val CLASS_SIGNATURE = Array(0xCA, 0xFE, 0xBA, 0xBE).map(_.toByte)
-}
-
+// TODO: error message
+// TODO: load flag
 // TODO: support stdin for files to decompile
 // TODO: support `/` to select jar components (and recursive on those components)
+// TODO: (if flag enabled) report unsupported file type
 case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: Boolean) {
-
-  val classReaders = mutable.Map[String, ClassReader]()
-
-//  type Result = List[(Path, List[String], ClassNode, CompilationUnit)]
   def main(paths: List[Path]): Unit = {
     for (path <- paths) {
       VFS.get0(path)
@@ -53,98 +30,6 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     for ((name, (path, classReader)) <- VFS.classes) {
       decompileClassFile(path.toString, classReader)
     }
-  }
-  def loadPath(path: Path, rest: List[Path]): Unit = {
-    // TODO: atomic operations on files
-    val attributes = try {
-      Files.readAttributes(path, classOf[BasicFileAttributes])
-    } catch {
-      case ioe: IOException =>
-        // Maybe the user is using nested path syntax
-        path.getParent match {
-          case null => // Could not find the file
-            return // TODO: info warning
-          case p => // Nested path syntax
-            loadPath(path.getParent, path.getFileName :: rest)
-            return
-        }
-    }
-    if (attributes.isRegularFile) {
-      loadBytes(path, rest, Files.readAllBytes(path))
-    } else if (attributes.isDirectory) {
-      if (rest.nonEmpty) {
-        // TODO: desired path does not exist
-        // Do nothing
-      } else {
-        for (p <- Files.list(path).collect(Collectors.toList[Path]).asScala) {
-          loadPath(p, rest)
-        }
-      }
-    } else {
-      // TODO: check rest.nonEmpty
-      println(f"skipping $path ($rest)") // TODO
-    }
-  }
-  /*
-  def loadPath(path: Path): Unit = {
-    if (Files.isRegularFile(path)) {
-      loadBytes(path, List(), Files.readAllBytes(path))
-    } else if (Files.isDirectory(path)) {
-      // TODO: `try` for directory list
-      for (p <- Files.list(path).collect(Collectors.toList[Path]).asScala) {
-        loadPath(p)
-      }
-    } else { // TODO if exists
-      println(f"skipping $path") // TODO
-      List()
-    }
-  }
-   */
-  def loadBytes(path: Path, rest: List[Path], bytes: Array[Byte]): Unit = {
-    if (bytes.startsWith(Decompile.ZIP_SIGNATURE)) {
-      loadZip(path, rest, bytes, 0) // zip file
-    } else if (bytes.startsWith(Decompile.JMOD_SIGNATURE)) {
-      loadZip(path, rest, bytes, 4) // jmod file
-    } else if (bytes.startsWith(Decompile.CLASS_SIGNATURE)) {
-      loadClass(path, rest, bytes) // class file
-    } else {
-      // TODO: (if flag enabled) report unsupported file type
-    }
-  }
-
-  def loadClass(path: Path, rest: List[Path], bytes: Array[Byte]): Unit = {
-    if (rest.nonEmpty) {
-      // TODO: error message
-      // For nested classes, use A$B (i.e., so you name the actual file)
-      println(f"")
-    } else {
-      val classReader = new ClassReader(bytes)
-      classReaders += classReader.getClassName -> classReader
-    }
-    // TODO: recur on nested class names
-    // TODO: load flag
-  }
-
-  def loadZip(path: Path, rest: List[Path], bytes: Array[Byte], offset: Int): Unit = {
-    // TODO: (if flag enabled) println(f"zip: $path $subpath")
-    val zipInputStream = new ZipInputStream(new ByteArrayInputStream(bytes, offset, bytes.length - offset))
-    // TODO: multi-version jar
-    // TODO: figure out jmod files
-    // NOTE: using ZipInputStream instead of JarInputStream so we can also handle `.jmod` files
-    // NOTE: using ZipInputStream instead of ZipFile so we can also handle recursive zip/jar files
-    val array = new Array[Byte](4 * 1024)
-    var entry: ZipEntry = null
-    while ({entry = zipInputStream.getNextEntry; entry != null}) {
-      if (!entry.isDirectory) {
-        val builder = new ByteArrayOutputStream()
-        var len = -1
-        while ({len = zipInputStream.read(array); len != -1}) {
-          builder.write(array, 0, len)
-        }
-        loadBytes(path, rest :+ Paths.get(entry.getName), builder.toByteArray)
-      }
-    }
-    zipInputStream.close()
   }
 
   def decompileClassFile(owner: String, cr: ClassReader): (ClassNode, CompilationUnit) = {
