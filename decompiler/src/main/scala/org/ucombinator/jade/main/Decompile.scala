@@ -47,13 +47,11 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
 
 //  type Result = List[(Path, List[String], ClassNode, CompilationUnit)]
   def main(paths: List[Path]): Unit = {
-//    for (path <- paths) {
-//      loadPath(path, List())
-//    }
     for (path <- paths) {
-      println()
-      println(f"++++++ $path")
       VFS.get0(path)
+    }
+    for ((name, (path, classReader)) <- VFS.classes) {
+      decompileClassFile(path.toString, classReader)
     }
   }
   def loadPath(path: Path, rest: List[Path]): Unit = {
@@ -149,14 +147,11 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
     zipInputStream.close()
   }
 
-  def decompileClassFile(path: Path, subpath: List[String], bytes: Array[Byte]): (Path, List[String], ClassNode, CompilationUnit) = {
-    val owner = (path.toString :: subpath).mkString("!")
-
+  def decompileClassFile(owner: String, cr: ClassReader): (ClassNode, CompilationUnit) = {
     val classNode = new ClassNode
-    val cr = new ClassReader(bytes)
     cr.accept(classNode, 0)
 
-    if (classNode.name == null) { return (path, subpath, null, null) }
+    if (classNode.name == null) { return (null, null) } // TODO
     println(classNode.name)
 
     if (printAsm) {
@@ -184,7 +179,7 @@ case class Decompile(printAsm: Boolean, printJavaParser: Boolean, printMethods: 
       decompileMethod(owner, classNode, method)
     }
 
-    (path, subpath, classNode, compilationUnit)
+    (classNode, compilationUnit)
   }
 
   def decompileMethod(owner: String, classNode: ClassNode, method: MethodNode): Unit = {

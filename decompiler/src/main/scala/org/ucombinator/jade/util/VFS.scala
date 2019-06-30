@@ -1,10 +1,12 @@
 package org.ucombinator.jade.util
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
-import java.nio.file.{Files, Path}
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{Files, Path}
 import java.util.stream.Collectors
 import java.util.zip.{ZipEntry, ZipInputStream}
+
+import org.objectweb.asm.ClassReader
 
 import scala.collection.JavaConverters._
 import scala.collection.SortedMap
@@ -161,8 +163,14 @@ object VFS {
     zipTree
   }
   def readJmod(bytes: Array[Byte]): ZipTree = { readZip(bytes, JMOD_OFFSET) }
+  var classes = Map[String, (String, ClassReader)]()
   def load(path: Path, bytes: Array[Byte]): Unit = {
-    println(f"load: $path")
+    assert(bytes.startsWith(CLASS_SIGNATURE))
+    val classReader = new ClassReader(bytes)
+    classes.get(classReader.getClassName) match {
+      case None => classes += classReader.getClassName -> ((path.toString, classReader))
+      case Some(_) => ignore
+    }
     // TODO
   }
     // fs:
@@ -182,7 +190,6 @@ object VFS {
     // other -> error message | error message | ignore
     // not exist -> error message | error message | error message
   def get(path: PathPosition): Unit = {
-    println(f"path: $path")
     path.read match {
       case RFile(bytes) =>
         if (bytes.startsWith(CLASS_SIGNATURE)) { path(error, load(path.path, bytes), load(path.path, bytes)) }
