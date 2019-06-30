@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
   // Command-line argument parsing
-  "info.picocli" % "picocli" % "4.0.0-alpha-3",
+  "info.picocli" % "picocli" % "4.0.0-beta-2",
 
   // Vertex and edge graphs
   "org.jgrapht" % "jgrapht-core" % "1.3.0",
