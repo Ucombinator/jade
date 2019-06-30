@@ -91,6 +91,8 @@ class DecompileCmd extends Cmd[Unit] {
   @Option(names = Array("--print-methods"))
   var printMethods = false
 
+  // --include-file --exclude-file --include-class --exclude-class
+
   @Parameters(paramLabel = "<path>", arity = "1..*", description = Array("Files or directories to decompile"))
   var path: java.util.List[Path] = _
 
