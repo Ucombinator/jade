@@ -41,7 +41,7 @@ libraryDependencies ++= Seq(
   "org.ow2.asm" % "asm-util" % "7.1",
 
   // General parsing framework
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2",
+  //"org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2",
 
   // Testing framework for `src/test/`
   "org.scalatest" %% "scalatest" % "3.0.7" % Test,
