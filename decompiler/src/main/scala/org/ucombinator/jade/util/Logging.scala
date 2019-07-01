@@ -4,10 +4,19 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{BasicConfigurator, Level, LoggerContext, PatternLayout}
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.Logger
 import org.slf4j.LoggerFactory
 
-trait Logging extends LazyLogging {
+trait Logging {
+  @transient // TODO: why transient?
+  protected lazy val logger: Logger = {
+    val name = getClass.getName
+      .replaceAll("^org.ucombinator.jade.", "")
+      .replace('$', '.')
+      .replace("..", ".")
+      .replaceAll(".$", "")
+    Logger(LoggerFactory.getLogger(name))
+  }
   def childLogger(name: String): com.typesafe.scalalogging.Logger = {
     com.typesafe.scalalogging.Logger(LoggerFactory.getLogger(logger.underlying.getName + "." + name))
   }
@@ -15,7 +24,7 @@ trait Logging extends LazyLogging {
 
 object Logging {
   def logger(name: String): ch.qos.logback.classic.Logger = {
-    val name2 = if (name.isEmpty) { org.slf4j.Logger.ROOT_LOGGER_NAME } else { "org.ucombinator.jade." + name }
+    val name2 = if (name.isEmpty) { org.slf4j.Logger.ROOT_LOGGER_NAME } else { name }
     LoggerFactory.getLogger(name2).asInstanceOf[ch.qos.logback.classic.Logger]
   }
 
