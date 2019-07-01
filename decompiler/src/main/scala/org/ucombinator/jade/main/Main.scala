@@ -3,6 +3,8 @@ package org.ucombinator.jade.main
 import java.nio.file.Path
 import java.util.concurrent.Callable
 
+import ch.qos.logback.classic.Level
+import org.ucombinator.jade.util.Logging
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
 
@@ -19,6 +21,8 @@ import scala.collection.JavaConverters._
 
 object Main {
   val commandLine: CommandLine = new CommandLine(new Main())
+  commandLine.registerConverter(classOf[Level], Logging.level)
+
   def main(args: Array[String]): Unit = {
     System.exit(commandLine.execute(args:_*))
   }
@@ -35,7 +39,7 @@ object Main {
     classOf[GenerateModifierCodeCmd],
     classOf[GenerateInsnTypesCmd]))
 class Main() extends Cmd[Unit] {
-  override def call(): Unit = {
+  override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
   }
 }
@@ -45,11 +49,22 @@ class Main() extends Cmd[Unit] {
 
 @Command(
   mixinStandardHelpOptions = true,
-  requiredOptionMarker = '*', // TODO: `REQ` or at least put in documentation string
+  requiredOptionMarker = '*', // TODO: put in documentation string
   showDefaultValues = true,
   versionProvider = classOf[VersionProvider])
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
+
+  @Option(names = Array("--log"), description = Array("log settings"), paramLabel = "LEVEL")
+  var log = new java.util.LinkedHashMap[String,Level]()
+
+  final override def call(): T = {
+    for ((k, v) <- log.asScala) {
+      Logging.logger(k).setLevel(v)
+    }
+    run()
+  }
+  def run(): T
 }
 
 class VersionProvider extends CommandLine.IVersionProvider {
@@ -66,7 +81,7 @@ class VersionProvider extends CommandLine.IVersionProvider {
   name = "build-info",
   description = Array("Display information about how `jade` was built"))
 class BuildInfoCmd extends Cmd[Unit] {
-  override def call(): Unit = {
+  override def run(): Unit = {
     import org.ucombinator.jade.main.BuildInfo._
     println(f"Build tools: Scala $scalaVersion, SBT $sbtVersion")
     println(f"Build time: $builtAtString UTC")
@@ -82,22 +97,14 @@ class BuildInfoCmd extends Cmd[Unit] {
   name = "decompile",
   description = Array("Decompile class, jar, or jmod files"))
 class DecompileCmd extends Cmd[Unit] {
-  @Option(names = Array("--print-asm"))
-  var printAsm = false
-
-  @Option(names = Array("--print-javaparser"))
-  var printJavaParser = false
-
-  @Option(names = Array("--print-methods"))
-  var printMethods = false
-
   // --include-file --exclude-file --include-class --exclude-class
+  // --include-cxt-file --include-cxt-class
 
   @Parameters(paramLabel = "<path>", arity = "1..*", description = Array("Files or directories to decompile"))
   var path: java.util.List[Path] = _
 
-  override def call(): Unit = {
-    Decompile(printAsm, printJavaParser, printMethods).main(path.asScala.toList)
+  override def run(): Unit = {
+    Decompile.main(path.asScala.toList)
   }
 }
 
@@ -111,7 +118,7 @@ class DownloadJlsCmd extends Cmd[Unit] {
   @Parameters(paramLabel = "<chapter>", index = "1")
   var chapter: Int = _
 
-  override def call(): Unit = {
+  override def run(): Unit = {
     DownloadSpecification.main("jls", version, chapter)
   }
 }
@@ -126,7 +133,7 @@ class DownloadJvmsCmd extends Cmd[Unit] {
   @Parameters(paramLabel = "<chapter>", index = "1")
   var chapter: Int = _
 
-  override def call(): Unit = {
+  override def run(): Unit = {
     DownloadSpecification.main("jvms", version, chapter)
   }
 }
@@ -135,7 +142,7 @@ class DownloadJvmsCmd extends Cmd[Unit] {
   name = "generate-modifier-code",
   description = Array("Generate the code for `Modifier.scala`"))
 class GenerateModifierCodeCmd extends Cmd[Unit] {
-  override def call(): Unit = {
+  override def run(): Unit = {
     GenerateModifierCode.main()
   }
 }
@@ -144,7 +151,7 @@ class GenerateModifierCodeCmd extends Cmd[Unit] {
   name = "generate-insn-types",
   description = Array("Generate the code for `InsnTypes.scala`"))
 class GenerateInsnTypesCmd extends Cmd[Unit] {
-  override def call(): Unit = {
+  override def run(): Unit = {
     GenerateInsnTypes.main()
   }
 }

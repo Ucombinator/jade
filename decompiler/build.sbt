@@ -4,13 +4,20 @@ description := "Jade: The Java Decompiler"
 
 scalaVersion := "2.12.8"
 
+// NOTE: these are sorted alphabetically
 libraryDependencies ++= Seq(
+  // Logging implementation
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
+
   // Abstract Syntax Trees for the Java language
   "com.github.javaparser" % "javaparser-core" % "3.14.3", // Main library
   "com.github.javaparser" % "javaparser-core-serialization" % "3.14.3", // Serialization to/from JSON
   "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.14.3", // Resolving symbols and identifiers
   // Omitting the `javaparser-parent` package as it is just metadata
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
+
+  // Logging
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
 
   // Command-line argument parsing
   "info.picocli" % "picocli" % "4.0.0-beta-2",
