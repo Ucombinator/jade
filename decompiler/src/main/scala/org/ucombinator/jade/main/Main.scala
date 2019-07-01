@@ -6,7 +6,7 @@ import java.util.concurrent.Callable
 import ch.qos.logback.classic.Level
 import org.ucombinator.jade.util.Logging
 import picocli.CommandLine
-import picocli.CommandLine.{Command, HelpCommand, Option, ParameterException, Parameters, ParentCommand}
+import picocli.CommandLine.{Command, HelpCommand, ITypeConverter, Option, ParameterException, Parameters, ParentCommand}
 
 import scala.collection.JavaConverters._
 
@@ -21,8 +21,6 @@ import scala.collection.JavaConverters._
 
 object Main {
   val commandLine: CommandLine = new CommandLine(new Main())
-  commandLine.registerConverter(classOf[Level], Logging.level)
-
   def main(args: Array[String]): Unit = {
     System.exit(commandLine.execute(args:_*))
   }
@@ -55,14 +53,17 @@ class Main() extends Cmd[Unit] {
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
-  @Option(names = Array("--log"), description = Array("log settings"), paramLabel = "LEVEL")
-  var log = new java.util.LinkedHashMap[String,Level]()
+  @Option(names = Array("--log"), description = Array("Set the logging level"), paramLabel = "LEVEL", converter = Array(classOf[LevelConverter]), split=",")
+  var log = new java.util.LinkedList[(String,Level)]()
+
+  // TODO: flag for pause on startup
 
   final override def call(): T = {
     for ((k, v) <- log.asScala) {
       Logging.logger(k).setLevel(v)
     }
     run()
+    // TODO: check for logger typos (after run?)
   }
   def run(): T
 }
@@ -71,6 +72,18 @@ class VersionProvider extends CommandLine.IVersionProvider {
   override def getVersion: Array[String] = {
     import org.ucombinator.jade.main.BuildInfo._
     Array[String](f"$name version $version (https://github.org/ucombinator/jade)")
+  }
+}
+
+class LevelConverter extends ITypeConverter[(String, Level)] {
+  override def convert(value: String): (String, Level) = {
+    val (name, level) = value.split("=") match {
+      case Array(l) => ("", Level.toLevel(l, null))
+      case Array(n, l) => (n, Level.toLevel(l, null))
+      case _ => throw new Exception("could not parse log level")
+    }
+    if (level == null) throw new Exception(f"invalid level: $level")
+    (name, level)
   }
 }
 

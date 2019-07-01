@@ -28,19 +28,6 @@ object Logging {
     LoggerFactory.getLogger(name2).asInstanceOf[ch.qos.logback.classic.Logger]
   }
 
-  def level(s: String): Level = {
-    s.toUpperCase match {
-      case "OFF" => Level.OFF
-      case "ERROR" => Level.ERROR
-      case "WARN" => Level.WARN
-      case "INFO" => Level.INFO
-      case "DEBUG" => Level.DEBUG
-      case "TRACE" => Level.TRACE
-      case "ALL" => Level.ALL
-      case _ => throw new Exception(f"unknown logging level: $s")
-    }
-  }
-
   // TODO: command to list all loggers
   // TODO: better error reporting when there is a typo in the logger name on the command line
   val displayCaller = false // TODO: command line option for this

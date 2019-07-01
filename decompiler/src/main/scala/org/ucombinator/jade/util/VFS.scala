@@ -87,29 +87,29 @@ class PathPosition(basePath: Path, abovePath: List[String], belowPath: /*Reverse
   }
 }
 
-object VFS {
+object VFS extends Logging {
   private val ZIP_SIGNATURE = Array(0x50, 0x4b, 0x03, 0x04).map(_.toByte)
   private val CLASS_SIGNATURE = Array(0xCA, 0xFE, 0xBA, 0xBE).map(_.toByte)
   private val JMOD_SIGNATURE = Array(0x4a, 0x4d, 0x01, 0x00, 0x50, 0x4b, 0x03, 0x04).map(_.toByte)
   private val JMOD_OFFSET = 4
-  def option[A,B](o: Option[A], f: A => B, d: B): B = {
+  def option[A,B](o: Option[A], f: A => B, d: => B): B = {
     o match {
       case None => d
       case Some(a) => f(a)
     }
   }
-  def oneOrZero[A,B](xs: List[A], f: A => Unit, d: => Unit): Unit = {
+  def zeroOneMany[A,B](xs: List[A], zero: => B, one: A => B, many: => B): B = {
     xs match {
-      case List() => d
-      case List(x) => f(x)
-      case _ => error
+      case List() => zero
+      case List(x) => one(x)
+      case _ => many
     }
   }
-  def error: Unit = {
+  def error(): Unit = {
     println("TODO: error")
   }
-  def ignore: Unit = {
-    println("TODO: ignore")
+  def ignore(name: String, pathPosition: PathPosition): Unit = {
+    this.logger.info(f"Ignoring $name at ${pathPosition.path}")
   }
   def add(path: List[String], fileTree: FileTree, bytes: Array[Byte]): FileTree = {
     path match {
@@ -151,28 +151,28 @@ object VFS {
   }
   def readJmod(bytes: Array[Byte]): FileTree = { readZip(bytes, JMOD_OFFSET) }
   var classes = Map[String, (String, ClassReader)]()
-  def load(path: Path, bytes: Array[Byte]): Unit = {
+  def load(path: PathPosition, bytes: Array[Byte]): Unit = {
     assert(bytes.startsWith(CLASS_SIGNATURE))
     val classReader = new ClassReader(bytes)
     classes.get(classReader.getClassName) match {
-      case None => classes += classReader.getClassName -> ((path.toString, classReader))
-      case Some(_) => ignore // TODO
+      case None => classes += classReader.getClassName -> ((path.path.toString, classReader))
+      case Some(_) => ignore(f"already loaded class ${classReader.getClassName}", path) // TODO
     }
   }
   def get(path: PathPosition): Unit = {
     path.read match {
       case RFile(bytes) =>
-        if (bytes.startsWith(CLASS_SIGNATURE)) { path(error, load(path.path, bytes), load(path.path, bytes)) }
+        if (bytes.startsWith(CLASS_SIGNATURE)) { path(error(), load(path, bytes), load(path, bytes)) }
         else if (bytes.startsWith(ZIP_SIGNATURE)) { get(path.withFileTree(readZip(bytes))) }
         else if (bytes.startsWith(JMOD_SIGNATURE)) { get(path.withFileTree(readJmod(bytes))) }
-        else { path(error, error, ignore) }
+        else { path(error(), error(), ignore("non-class, non-jar, and non-jmod", path)) }
       case RDirectory(children) =>
         // Note: one if zip, zero if fs or zip and not found or zip and directory is empty
-        path(oneOrZero(children,get,error), children.foreach(get), children.foreach(get))
+        path(zeroOneMany(children,error(),get,error()), children.foreach(get), children.foreach(get))
       case ROther =>
-        path(error, error, ignore)
+        path(error(), error(), ignore("non-directory and non-file", path))
       case RNotExist =>
-        path(option(path.parent,get,error), option(path.parent,get,error), error)
+        path(option(path.parent,get,error()), option(path.parent,get,error()), error())
     }
   }
   def get0(path: Path): Unit = {
