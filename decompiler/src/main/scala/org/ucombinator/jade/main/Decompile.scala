@@ -32,11 +32,12 @@ case object Decompile extends Logging {
       VFS.get0(path)
     }
     for ((name, (path, classReader)) <- VFS.classes) {
-      decompileClassFile(path.toString, classReader)
+      decompileClassFile(name, path.toString, classReader)
     }
   }
 
-  def decompileClassFile(owner: String, cr: ClassReader): (ClassNode, CompilationUnit) = {
+  def decompileClassFile(name: String, owner: String, cr: ClassReader): (ClassNode, CompilationUnit) = {
+    this.logger.info(f"Decompiling $name from $owner") // TODO: name use "." instead of "/" and "$"
     val classNode = new ClassNode
     cr.accept(classNode, 0)
 
