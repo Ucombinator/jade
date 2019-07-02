@@ -14,6 +14,21 @@ import org.ucombinator.jade.util.classfile.Descriptor
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
+/*
+Non-Linear Stmt Types
+  -Break
+  -Continue
+  -Return/Throw
+  +Try-Catch-Finally
+  +Synchronized
+  +Do/While/For/For-each
+  +If/Switch
+Non-linear expressions
+  Boolean(&&/||/!/==/!=/</>/<=/>=)
+  Trinary Operator/Switch Expression
+Nestings
+*/
+
 sealed trait DecompiledInsn
 case class DecompiledStatement(statement: Statement) extends DecompiledInsn
 case class DecompiledExpression(expression: Expression) extends DecompiledInsn
@@ -25,10 +40,9 @@ case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) ext
 case class DecompiledNew(descriptor: ClassOrInterfaceType) extends DecompiledInsn
 //case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
 //case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
-case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
-//case class DecompiledSynthetic(/*TODO*/) extends DecompiledInsn
 case class DecompiledFrame(node: FrameNode) extends DecompiledInsn
 case class DecompiledLineNumber(node: LineNumberNode) extends DecompiledInsn
+case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
 
 // TODO: typo in Opcodes.java: visiTableSwitchInsn -> visitTableSwitchInsn
 // TODO: typo in javaparser BlockComment: can has -> can have
@@ -297,7 +311,6 @@ object DecompileInsn {
       // Synthetic instructions
       case _ =>
         node match {
-          // TODO: use DecompiledSynthetic
           case node: LabelNode =>
             DecompiledStatement(new LabeledStmt(new SimpleName(node.getLabel.toString), /*TODO*/new EmptyStmt()))
           case node: FrameNode => DecompiledFrame(node)

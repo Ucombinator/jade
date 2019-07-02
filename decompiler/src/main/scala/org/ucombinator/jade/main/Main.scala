@@ -56,7 +56,7 @@ abstract class Cmd[T] extends Callable[T] {
   @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level"), split=",", converter = Array(classOf[LevelConverter]))
   var log = new java.util.LinkedList[(String,Level)]()
 
-  @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print in log messages"))
+  @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print after log messages"))
   var logCallerDepth: Int = 0
 
   // TODO: flag for pause on startup

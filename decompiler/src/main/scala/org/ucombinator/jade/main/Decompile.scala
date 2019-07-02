@@ -10,9 +10,9 @@ import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.decompile.DecompileClass
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
-import org.ucombinator.jade.util.{Logging, VFS}
 import org.ucombinator.jade.util.asm.Insn
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
+import org.ucombinator.jade.util.{Logging, VFS}
 
 import scala.collection.JavaConverters._
 
@@ -20,8 +20,6 @@ import scala.collection.JavaConverters._
 // TODO: error message
 // TODO: load flag
 // TODO: support stdin for files to decompile
-// TODO: support `/` to select jar components (and recursive on those components)
-// TODO: (if flag enabled) report unsupported file type
 case object Decompile extends Logging {
   private lazy val asmLogger = childLogger("asm")
   private lazy val javaLogger = childLogger("java")
@@ -42,24 +40,24 @@ case object Decompile extends Logging {
     cr.accept(classNode, 0)
 
     if (classNode.name == null) { return (null, null) } // TODO
-    this.logger.debug(classNode.name)
+    this.logger.debug("class name: " + classNode.name)
 
     this.asmLogger.whenDebugEnabled({
       val stringWriter = new StringWriter()
       classNode.accept(new TraceClassVisitor(null, new Textifier(), new PrintWriter(stringWriter)))
-      this.asmLogger.debug(stringWriter.toString)
+      this.asmLogger.debug("++++ asm ++++\n" + stringWriter.toString)
     })
 
     val compilationUnit = DecompileClass.decompile(classNode)
 
-    this.javaLogger.debug(compilationUnit.toString)
+    this.javaLogger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
 
     // TODO: classNode.sourceFile, classNode.sourceDebug
     // TODO: classNode.outerClass, classNode.outerMethod, classNode.outerMethodDesc
     // TODO: Inner classes
     val inners: List[InnerClassNode] = classNode.innerClasses.asScala.toList
 
-    inners.foreach(c => this.methodsLogger.debug(c.name))
+    inners.foreach(c => this.methodsLogger.debug("inner class: " + c.name))
 
     for (method <- classNode.methods.asScala) {
       decompileMethod(owner, classNode, method)
@@ -83,7 +81,7 @@ case object Decompile extends Logging {
 
       val cfg = ControlFlowGraph(owner, method)
 
-      this.methodsLogger.debug(GraphViz.toString(cfg))
+      this.methodsLogger.debug("++++ cfg ++++\n" + GraphViz.toString(cfg))
       for (v <- cfg.graph.vertexSet().asScala) {
         this.methodsLogger.debug(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
       }
@@ -91,28 +89,30 @@ case object Decompile extends Logging {
       this.methodsLogger.debug("**** SSA ****")
       val ids = SSA(owner, method, cfg)
 
-      this.methodsLogger.debug("**** Dominators ****")
-      val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
-
-      this.methodsLogger.debug("frames: " + ids.frames.length)
+      this.methodsLogger.debug("++++ frames: " + ids.frames.length + " ++++")
       for (i <- 0 until method.instructions.size) {
         this.methodsLogger.debug(f"frame($i): ${ids.frames(i)}")
       }
 
-      this.methodsLogger.debug("results and arguments")
+      this.methodsLogger.debug("++++ results and arguments ++++")
       for (i <- 0 until method.instructions.size) {
-        val insn = method.instructions.get(i)
+          val insn = method.instructions.get(i)
         this.methodsLogger.debug(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
       }
 
-      this.methodsLogger.debug("ssa")
+      this.methodsLogger.debug("++++ ssa ++++")
       for ((key, value) <- ids.ssaMap) {
         this.methodsLogger.debug(s"ssa: $key -> $value")
       }
 
-      this.methodsLogger.debug("doms")
-      //this.methodsLogger.debug(GraphViz.toString(doms))
-      this.methodsLogger.debug(Dominator.dominatorNesting(cfg.graphWithExceptions, doms, cfg.entry))
+      this.methodsLogger.debug("**** Dominators ****")
+      val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
+
+      this.methodsLogger.debug("++++ dominator tree ++++\n"+
+        GraphViz.toString(doms))
+
+      this.methodsLogger.debug("++++ dominator nesting ++++\n" +
+        Dominator.dominatorNesting(cfg.graphWithExceptions, doms, cfg.entry))
     }
   }
 }

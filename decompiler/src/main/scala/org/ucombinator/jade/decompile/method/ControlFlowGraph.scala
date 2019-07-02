@@ -2,8 +2,8 @@ package org.ucombinator.jade.decompile.method
 
 import org.jgrapht.Graph
 import org.jgrapht.graph.{AsGraphUnion, DirectedPseudograph}
-import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}
 import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}
 import org.ucombinator.jade.decompile.method.ControlFlowGraph.Edge
 import org.ucombinator.jade.util.asm.Insn
 
@@ -50,13 +50,5 @@ case object ControlFlowGraph {
       val target = Insn(method, this.method.instructions.get(successor))
       this.graph.addEdge(source, target, Edge(source, target))
     }
-
-    // Default handling (which returns true) is sufficient
-    //override protected def newControlFlowExceptionEdge(insn: Int, successor: Int): Boolean = ??? // Should never be called
-
-    //override protected def newControlFlowExceptionEdge(insn: Int, successor: TryCatchBlockNode): Boolean = {
-    //  this.handlers += successor
-    //  true // the edge must always be considered by the analyzer
-    //}
   }
 }
