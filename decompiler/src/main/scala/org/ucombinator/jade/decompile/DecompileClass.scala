@@ -2,6 +2,7 @@ package org.ucombinator.jade.decompile
 
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
 import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.comments.BlockComment
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt.BlockStmt
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
@@ -108,11 +109,13 @@ object DecompileClass {
   }
 
   def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
+    val blockComment = new BlockComment("\n" +
+      f"    * Max Stack: ${node.maxStack}\n" +
+      f"    * Max Locals: ${node.maxLocals}\n" +
+      f"    ")
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
-    // maxStack
-    // maxLocals
     // localVariables
     // visibleLocalVariableAnnotations
     // invisibleLocalVariableAnnotations
@@ -150,7 +153,7 @@ object DecompileClass {
     val name: SimpleName = new SimpleName(node.name)
     val body: BlockStmt = DecompileBody.decompileBody(classNode, node)
     val receiverParameter: ReceiverParameter = null // TODO
-    node.name match {
+    val bodyDeclaration = node.name match {
       case "<clinit>" =>
         new InitializerDeclaration(true, body)
       case "<init>" =>
@@ -158,11 +161,14 @@ object DecompileClass {
       case _ =>
         new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
     }
+    bodyDeclaration.setComment(blockComment)
+    bodyDeclaration
   }
 
   def decompileClass(node: ClassNode): CompilationUnit = {
-    // TODO println(f"version: ${node.version}") // TODO
-    // TODO println(f"sourceFile: ${node.sourceFile}") // TODO
+    val blockComment = new BlockComment("\n" +
+      f"* Source File: ${node.sourceFile}\n" +
+      f"* Class-file Format Version: ${node.version}\n")
     // TODO println(f"sourceDebug: ${node.sourceDebug}") // TODO
     // outerClass
     // outerMethod
@@ -226,6 +232,8 @@ object DecompileClass {
     // TODO: ModuleRequireNode
     val module = null // TODO node.module
 
-    new CompilationUnit(packageDeclaration, imports, types, module)
+    val compilationUnit = new CompilationUnit(packageDeclaration, imports, types, module)
+    compilationUnit.setComment(blockComment)
+    compilationUnit
   }
 }
