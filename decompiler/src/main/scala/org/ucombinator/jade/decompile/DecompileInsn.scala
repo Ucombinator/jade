@@ -40,6 +40,7 @@ case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) ext
 case class DecompiledNew(descriptor: ClassOrInterfaceType) extends DecompiledInsn
 //case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
 //case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
+case class DecompiledLabel(node: LabelNode) extends DecompiledInsn
 case class DecompiledFrame(node: FrameNode) extends DecompiledInsn
 case class DecompiledLineNumber(node: LineNumberNode) extends DecompiledInsn
 case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
@@ -311,8 +312,7 @@ object DecompileInsn {
       // Synthetic instructions
       case _ =>
         node match {
-          case node: LabelNode =>
-            DecompiledStatement(new LabeledStmt(new SimpleName(node.getLabel.toString), /*TODO*/new EmptyStmt()))
+          case node: LabelNode => DecompiledLabel(node)
           case node: FrameNode => DecompiledFrame(node)
           case node: LineNumberNode => DecompiledLineNumber(node)
           case _ => throw new Exception(f"unknown instruction type: $node")
