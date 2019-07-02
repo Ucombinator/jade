@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   "com.github.javaparser" % "javaparser-core" % "3.14.3", // Main library
   "com.github.javaparser" % "javaparser-core-serialization" % "3.14.3", // Serialization to/from JSON
   "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.14.3", // Resolving symbols and identifiers
-  // Omitting the `javaparser-parent` package as it is just metadata
+  // Omitting the JavaParser "parent" package as it is just metadata
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
   // Logging
