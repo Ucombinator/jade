@@ -81,15 +81,7 @@ object DecompileInsn {
       case Opcodes.BIPUSH => DecompiledMove
       case Opcodes.SIPUSH => DecompiledMove
       // LdcInsnNode
-      case Opcodes.LDC =>
-        DecompiledExpression((node.asInstanceOf[LdcInsnNode].cst match {
-          case cst: java.lang.Integer => new IntegerLiteralExpr(cst.toString).setBlockComment("0x" + java.lang.Integer.toHexString(cst))
-          case cst: java.lang.Float => new DoubleLiteralExpr(cst.toString + "F")
-          case cst: java.lang.Long => new LongLiteralExpr(cst).setBlockComment("0x" + java.lang.Long.toHexString(cst))
-          case cst: java.lang.Double => new DoubleLiteralExpr(cst.toString + "D")
-          case cst: java.lang.String => new StringLiteralExpr(cst)
-          case cst: org.objectweb.asm.Type => new ClassExpr(Descriptor.fieldDescriptor(cst.getDescriptor))
-        }).asInstanceOf[Expression])
+      case Opcodes.LDC => DecompiledExpression(DecompileClass.decompileLiteral(node.asInstanceOf[LdcInsnNode].cst))
       // VarInsnNode
       case Opcodes.ILOAD => DecompiledExpression(args(0))
       case Opcodes.LLOAD => DecompiledExpression(args(0))

@@ -8,21 +8,25 @@ import com.github.javaparser.ast.stmt.BlockStmt
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
+import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.classfile.{Descriptor, Modifier, Signature}
 
 import scala.collection.JavaConverters._
 
 object DecompileClass {
 
-  private def decompileLiteral(node: Object): LiteralExpr = node match {
-    // TODO: improve formatting of literals?
-    case null => null
-    case node: java.lang.Integer => new IntegerLiteralExpr(String.valueOf(node))
-    case node: java.lang.Float => new DoubleLiteralExpr(String.valueOf(node)) // Note that `JavaParser` uses Double for Floats
-    case node: java.lang.Long => new LongLiteralExpr(String.valueOf(node))
-    case node: java.lang.Double => new DoubleLiteralExpr(String.valueOf(node))
-    case node: java.lang.String => new StringLiteralExpr(node)
-    case _ => throw new Exception(f"unimplemented literal '$node'")
+  def decompileLiteral(node: Object): Expression = {
+    node match {
+      // TODO: improve formatting of literals?
+      case null => null
+      case node: java.lang.Integer => JavaParser.setComment(new IntegerLiteralExpr(node.toString), new BlockComment("0x" + java.lang.Integer.toHexString(node)))
+      case node: java.lang.Float => new DoubleLiteralExpr(node.toString + "F") // Note that `JavaParser` uses Double for Floats
+      case node: java.lang.Long => JavaParser.setComment(new LongLiteralExpr(node), new BlockComment("0x" + java.lang.Long.toHexString(node)))
+      case node: java.lang.Double => new DoubleLiteralExpr(node.toString + "D")
+      case node: java.lang.String => new StringLiteralExpr(node)
+      case node: org.objectweb.asm.Type => new ClassExpr(Descriptor.fieldDescriptor(node.getDescriptor))
+      case _ => throw new Exception(f"unimplemented literal '$node'")
+    }
   }
 
   private def typeToName(t: Type): Name = t match {
@@ -109,7 +113,7 @@ object DecompileClass {
   }
 
   def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
-    val blockComment = new BlockComment("\n" +
+    val comment = new BlockComment("\n" +
       f"    * Max Stack: ${node.maxStack}\n" +
       f"    * Max Locals: ${node.maxLocals}\n" +
       f"    ")
@@ -161,13 +165,12 @@ object DecompileClass {
       case _ =>
         new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
     }
-    bodyDeclaration.setComment(blockComment)
-    bodyDeclaration
+    JavaParser.setComment(bodyDeclaration, comment)
   }
 
   def decompileClass(node: ClassNode): CompilationUnit = {
-    val blockComment = new BlockComment("\n" +
-      f"* Source File: ${node.sourceFile}\n" +
+    val comment = new BlockComment("\n" +
+      f"* Source File Name: ${node.sourceFile}\n" +
       f"* Class-file Format Version: ${node.version}\n")
     // TODO println(f"sourceDebug: ${node.sourceDebug}") // TODO
     // outerClass
@@ -233,7 +236,6 @@ object DecompileClass {
     val module = null // TODO node.module
 
     val compilationUnit = new CompilationUnit(packageDeclaration, imports, types, module)
-    compilationUnit.setComment(blockComment)
-    compilationUnit
+    JavaParser.setComment(compilationUnit, comment)
   }
 }
