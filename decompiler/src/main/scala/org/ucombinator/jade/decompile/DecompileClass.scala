@@ -3,7 +3,7 @@ package org.ucombinator.jade.decompile
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
 import com.github.javaparser.ast.body._
 import com.github.javaparser.ast.expr._
-import com.github.javaparser.ast.stmt.{BlockStmt, ThrowStmt}
+import com.github.javaparser.ast.stmt.BlockStmt
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
@@ -30,7 +30,7 @@ object DecompileClass {
     case _ => throw new Exception(f"failed to convert type $t to a name")
   }
 
-  private def decompile(node: AnnotationNode): AnnotationExpr = {
+  private def decompileAnnotation(node: AnnotationNode): AnnotationExpr = {
     val name = typeToName(Descriptor.fieldDescriptor(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
@@ -46,18 +46,18 @@ object DecompileClass {
     }
   }
 
-  private def decompile(nodes: java.util.List[_ <: AnnotationNode]*): NodeList[AnnotationExpr] = {
+  private def decompileAnnotations(nodes: java.util.List[_ <: AnnotationNode]*): NodeList[AnnotationExpr] = {
     val list = new NodeList[AnnotationExpr]()
     for (node <- nodes) {
-      if (node != null) { list.addAll(node.asScala.map(x => decompile(x)).asJava) }
+      if (node != null) { list.addAll(node.asScala.map(x => decompileAnnotation(x)).asJava) }
     }
     list
   }
 
-  private def decompile(node: FieldNode): FieldDeclaration = {
+  private def decompileField(node: FieldNode): FieldDeclaration = {
     // attrs (ignore?)
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToField(node.access))
-    val annotations: NodeList[AnnotationExpr] = decompile(
+    val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
@@ -81,7 +81,7 @@ object DecompileClass {
     val ((((typ, index), node), a1), a2) = parameter
     val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
     val modifiers = Modifier.modifiersToNodeList(flags)
-    val annotations: NodeList[AnnotationExpr] = decompile(a1, a2, null, null)
+    val annotations: NodeList[AnnotationExpr] = decompileAnnotations(a1, a2, null, null)
     val `type`: Type = typ
     val isVarArgs: Boolean =
       Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
@@ -107,7 +107,7 @@ object DecompileClass {
     }
   }
 
-  def decompile(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
+  def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
@@ -118,7 +118,7 @@ object DecompileClass {
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
     val modifiers = Modifier.modifiersToNodeList(Modifier.intToMethod(node.access))
-    val annotations: NodeList[AnnotationExpr] = decompile(
+    val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
@@ -148,7 +148,7 @@ object DecompileClass {
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
-    val body: BlockStmt = new BlockStmt(new NodeList(new ThrowStmt(new NullLiteralExpr()))) // TODO
+    val body: BlockStmt = DecompileBody.decompileBody(classNode, node)
     val receiverParameter: ReceiverParameter = null // TODO
     node.name match {
       case "<clinit>" =>
@@ -160,7 +160,7 @@ object DecompileClass {
     }
   }
 
-  def decompile(node: ClassNode): CompilationUnit = {
+  def decompileClass(node: ClassNode): CompilationUnit = {
     // TODO println(f"version: ${node.version}") // TODO
     // TODO println(f"sourceFile: ${node.sourceFile}") // TODO
     // TODO println(f"sourceDebug: ${node.sourceDebug}") // TODO
@@ -179,7 +179,7 @@ object DecompileClass {
 
     val classOrInterfaceDeclaration = {
       val modifiers = Modifier.modifiersToNodeList(Modifier.intToClass(node.access))
-      val annotations: NodeList[AnnotationExpr] = decompile(
+      val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
         node.visibleAnnotations,
         node.invisibleAnnotations,
         node.visibleTypeAnnotations,
@@ -202,8 +202,8 @@ object DecompileClass {
       }
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
         val list = new NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]]()
-        list.addAll(node.fields.asScala.map(decompile).asJava)
-        list.addAll(node.methods.asScala.map(decompile(node, _)).asJava)
+        list.addAll(node.fields.asScala.map(decompileField).asJava)
+        list.addAll(node.methods.asScala.map(decompileMethod(node, _)).asJava)
         // TODO
         list
       }

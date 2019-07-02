@@ -48,7 +48,7 @@ case object Decompile extends Logging {
       this.asmLogger.debug("++++ asm ++++\n" + stringWriter.toString)
     })
 
-    val compilationUnit = DecompileClass.decompile(classNode)
+    val compilationUnit = DecompileClass.decompileClass(classNode)
 
     this.javaLogger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
 
@@ -100,7 +100,7 @@ case object Decompile extends Logging {
         this.methodsLogger.debug(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
       }
 
-      this.methodsLogger.debug("++++ ssa ++++")
+      this.methodsLogger.debug("++++ ssa map ++++")
       for ((key, value) <- ids.ssaMap) {
         this.methodsLogger.debug(s"ssa: $key -> $value")
       }
