@@ -15,7 +15,7 @@ object GenerateInsnTypes {
     println("/* Automatically built by GenerateInsnTypes.scala to reflect values in AbstractInsnNode. */")
     println("/* Last checked against ASM 7.1. */")
     println()
-    println("package org.ucombinator.jade.asm")
+    println("package org.ucombinator.jade.util.asm")
     println()
     println("import org.objectweb.asm.tree.AbstractInsnNode")
     println()
@@ -23,7 +23,7 @@ object GenerateInsnTypes {
     println("  val fromString: Map[String, Int] = Map(")
 
     for (field <- classOf[AbstractInsnNode].getDeclaredFields) {
-      // As of ASM 7.1, all final public static int members of AbstractInsNode were ones we want. Updates beware.
+      // As of ASM 7.1, all final public static int members of AbstractInsNode are ones we want. Updates beware.
       if (field.getType == classOf[Int] && field.getModifiers == (Modifier.FINAL |  Modifier.PUBLIC | Modifier.STATIC)) {
         println(f"""    "${field.getName}" -> AbstractInsnNode.${field.getName},""")
       }

@@ -5,7 +5,6 @@ import java.io.{PrintWriter, StringWriter}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
-import org.ucombinator.jade.asm.InsnTypes
 
 import scala.collection.JavaConverters._
 
