@@ -14,6 +14,13 @@ case class Insn(method: MethodNode, insn: AbstractInsnNode) {
   def shortString: String = Insn.shortString(method, insn)
   def longString: String = Insn.longString(method, insn)
   override def toString: String = Insn.longString(method, insn)
+
+  // TODO: temporary until dominator algorithm performance is improved
+  override def hashCode(): Int = insn.hashCode()
+  // TODO: temporary until dominator algorithm performance is improved
+  override def equals(obj: Any): Boolean = {
+    (obj != null) && obj.isInstanceOf[Insn] && (obj.asInstanceOf[Insn].insn == insn)
+  }
 }
 
 object Insn extends Textifier(Opcodes.ASM7) {
