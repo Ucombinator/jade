@@ -7,6 +7,8 @@ import ch.qos.logback.core.encoder.LayoutWrappingEncoder
 import com.typesafe.scalalogging.{Logger => ScalaLogger}
 import org.slf4j.{LoggerFactory, Logger => Slf4jLogger}
 
+import scala.collection.JavaConverters._
+
 trait Logging {
   @transient // TODO: why transient?
   protected lazy val logger: ScalaLogger = {
@@ -26,6 +28,32 @@ object Logging {
   def logger(name: String): LogbackLogger = {
     val modifiedName = if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME } else { name }
     LoggerFactory.getLogger(modifiedName).asInstanceOf[LogbackLogger]
+  }
+
+  def tryLoad(string: String): Boolean = {
+    try { Class.forName(string) } catch { case e: ClassNotFoundException => false }
+    true
+  }
+  def init(string: String): Unit = {
+    // TODO: pass if package exists
+    var s = "org.ucombinator.jade." + string // TODO: allow omitting for non-jade classes
+    println(f"s: $s")
+    while (!tryLoad(s)) {
+      if (s.contains(".")) {
+        s = s.replaceAll("""\.[^.]+$""", "")
+      } else {
+        println(f"fail")
+        return
+      }
+      println(f"s: $s")
+    }
+    println(f"succeed")
+    for (l <- LoggerFactory.getLogger(Slf4jLogger.ROOT_LOGGER_NAME).asInstanceOf[LogbackLogger].getLoggerContext.getLoggerList.asScala) {
+      if (string == l.getName || l.getName.startsWith(string + ".")) {
+        println(f"exists")
+      }
+    }
+    println(f"not exists")
   }
 
   var callerDepth = 0

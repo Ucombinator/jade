@@ -65,6 +65,7 @@ abstract class Cmd[T] extends Callable[T] {
   final override def call(): T = {
     Logging.callerDepth = logCallerDepth
     for ((k, v) <- log.asScala) {
+      // TODO: Logging.init(k)
       // TODO: check for logger typos (parent class must exist, and if init, then child must exist) (after run?)
       Logging.logger(k).setLevel(v)
     }
