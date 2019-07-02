@@ -1,13 +1,14 @@
 package org.ucombinator.jade.decompile
 
-import java.lang.invoke.LambdaMetafactory
+//import java.lang.invoke.LambdaMetafactory
 
-import com.github.javaparser.ast.`type`.{ArrayType, PrimitiveType, Type}
+import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, Type}
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
+import org.ucombinator.jade.decompile.method.ssa.{SSA, Var}
 import org.ucombinator.jade.util.classfile.Descriptor
 
 import scala.annotation.tailrec
@@ -21,10 +22,13 @@ case object DecompiledMove/*(TODO)*/ extends DecompiledInsn
 case class DecompiledIf(labelNode: LabelNode, condition: Expression) extends DecompiledInsn
 case class DecompiledGoto(labelNode: LabelNode) extends DecompiledInsn
 case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) extends DecompiledInsn
+case class DecompiledNew(descriptor: ClassOrInterfaceType) extends DecompiledInsn
 //case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
 //case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
 case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
 //case class DecompiledSynthetic(/*TODO*/) extends DecompiledInsn
+case class DecompiledFrame(node: FrameNode) extends DecompiledInsn
+case class DecompiledLineNumber(node: LineNumberNode) extends DecompiledInsn
 
 // TODO: typo in Opcodes.java: visiTableSwitchInsn -> visitTableSwitchInsn
 // TODO: typo in javaparser BlockComment: can has -> can have
@@ -35,8 +39,11 @@ case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
 // TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT: 0: iload_1; 1: iconst_m1; 2: ixor
 
 object DecompileInsn {
-  def decompileInsn(node: AbstractInsnNode): DecompiledInsn = {
-    val args: Array[Expression] = ???
+  def decompileVar(variable: Var): NameExpr = { ??? }
+  def decompileInsn(node: AbstractInsnNode, ssa: SSA): DecompiledInsn = {
+    val (retVar, argVars) = ssa.instructionArguments(node)
+    val args: Array[Expression] = argVars.toArray.map(decompileVar)
+    //val ret: Expression = decompileVar(retVar)
     node.getOpcode match {
       // InsnNode
       case Opcodes.NOP => DecompiledStatement(new EmptyStmt())
@@ -204,22 +211,35 @@ object DecompileInsn {
       case Opcodes.ARETURN => DecompiledStatement(new ReturnStmt(args(0)))
       case Opcodes.RETURN  => DecompiledStatement(new ReturnStmt(/*Nothing*/))
       // FieldInsnNode
-      case Opcodes.GETSTATIC => ???
-      case Opcodes.PUTSTATIC => ???
-      case Opcodes.GETFIELD => DecompiledExpression(new FieldAccessExpr(args(0), ???, new SimpleName(node.asInstanceOf[FieldInsnNode].name)))
-      case Opcodes.PUTFIELD => DecompiledExpression(new AssignExpr(new FieldAccessExpr(args(0), ???, new SimpleName(node.asInstanceOf[FieldInsnNode].name)), args(1), AssignExpr.Operator.ASSIGN))
+      case Opcodes.GETSTATIC =>
+        val insn = node.asInstanceOf[FieldInsnNode]
+        DecompiledExpression(new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/new NodeList(), new SimpleName(insn.name)))
+      case Opcodes.PUTSTATIC =>
+        val insn = node.asInstanceOf[FieldInsnNode]
+        DecompiledExpression(new AssignExpr(new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/new NodeList(), new SimpleName(insn.name)), args(0), AssignExpr.Operator.ASSIGN))
+      case Opcodes.GETFIELD =>
+        val insn = node.asInstanceOf[FieldInsnNode]
+        DecompiledExpression(new FieldAccessExpr(args(0), /*TODO*/new NodeList(), new SimpleName(insn.name)))
+      case Opcodes.PUTFIELD =>
+        val insn = node.asInstanceOf[FieldInsnNode]
+        DecompiledExpression(new AssignExpr(new FieldAccessExpr(args(0), /*TODO*/new NodeList(), new SimpleName(insn.name)), args(1), AssignExpr.Operator.ASSIGN))
       // MethodInsnNode
-      case Opcodes.INVOKEVIRTUAL   =>
+      case Opcodes.INVOKEVIRTUAL =>
         val insn = node.asInstanceOf[MethodInsnNode]
         val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
         val typeArguments = new NodeList[Type]()
         DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
-      case Opcodes.INVOKESPECIAL   => ??? // TODO: only for <init>?
-      case Opcodes.INVOKESTATIC    =>
+      case Opcodes.INVOKESPECIAL => // TODO: only for <init> (new, this, and super)?
         val insn = node.asInstanceOf[MethodInsnNode]
         val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
         val typeArguments = new NodeList[Type]()
-        DecompiledExpression(new MethodCallExpr(???, typeArguments, insn.name, new NodeList(argumentTypes.indices.map(args):_*)))
+        DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
+      case Opcodes.INVOKESTATIC =>
+        val insn = node.asInstanceOf[MethodInsnNode]
+        val scope = new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/new NodeList(), new SimpleName(insn.name))
+        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val typeArguments = new NodeList[Type]()
+        DecompiledExpression(new MethodCallExpr(scope, typeArguments, insn.name, new NodeList(argumentTypes.indices.map(args):_*)))
       case Opcodes.INVOKEINTERFACE =>
         val insn = node.asInstanceOf[MethodInsnNode]
         val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
@@ -228,7 +248,7 @@ object DecompileInsn {
       // InvokeDynamicInsnNode
       case Opcodes.INVOKEDYNAMIC => ???
       // TypeInsnNode
-      case Opcodes.NEW => ???
+      case Opcodes.NEW => DecompiledNew(Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)) // TODO: pair with <init>
       // IntInsnNode
       case Opcodes.NEWARRAY  =>
         val typ = node.asInstanceOf[IntInsnNode].operand match {
@@ -250,7 +270,7 @@ object DecompileInsn {
       case Opcodes.ARRAYLENGTH => DecompiledExpression(new FieldAccessExpr(args(0), new NodeList(), new SimpleName("length")))
       case Opcodes.ATHROW => DecompiledStatement(new ThrowStmt(args(0)))
       // TypeInsnNode
-      case Opcodes.CHECKCAST => ??? // TODO: figure out: DecompiledExpression(new CastExpr(???, ???))
+      case Opcodes.CHECKCAST => DecompiledExpression(new CastExpr(Descriptor.fieldDescriptor(node.asInstanceOf[TypeInsnNode].desc), args(0))) // TODO: check if works
       case Opcodes.INSTANCEOF => DecompiledExpression(new InstanceOfExpr(args(0), Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)))
       // InsnNode
       case Opcodes.MONITORENTER => ???
@@ -265,7 +285,7 @@ object DecompileInsn {
             case _ => (typ, levels)
           }
         }
-        var (typ, expectedDims) = unwrap(Descriptor.fieldDescriptor(node.asInstanceOf[MultiANewArrayInsnNode].desc))
+        val (typ, expectedDims) = unwrap(Descriptor.fieldDescriptor(node.asInstanceOf[MultiANewArrayInsnNode].desc))
         val levels = new NodeList(
           args.slice(0, dims).map(new ArrayCreationLevel(_, new NodeList())) ++
           (dims until expectedDims).map(_ => new ArrayCreationLevel(null, new NodeList()))
@@ -280,8 +300,8 @@ object DecompileInsn {
           // TODO: use DecompiledSynthetic
           case node: LabelNode =>
             DecompiledStatement(new LabeledStmt(new SimpleName(node.getLabel.toString), /*TODO*/new EmptyStmt()))
-          case node: FrameNode => ???
-          case node: LineNumberNode => ???
+          case node: FrameNode => DecompiledFrame(node)
+          case node: LineNumberNode => DecompiledLineNumber(node)
           case _ => throw new Exception(f"unknown instruction type: $node")
         }
     }

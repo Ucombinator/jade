@@ -1,7 +1,8 @@
 package org.ucombinator.jade.util.classfile
 
+import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type}
-import com.github.javaparser.ast.expr.Name
+import com.github.javaparser.ast.expr.{Expression, FieldAccessExpr, Name, NameExpr, SimpleName}
 
 // NOTE: The structure of this class follows that of the Java Virtual Machine Specification section 4.3 "Descriptors"
 object Descriptor {
@@ -16,6 +17,11 @@ object Descriptor {
   }
   def className(string: String): Name = {
     string.split('/').foldLeft(null: Name){ (qualifier, identifier) => new Name(qualifier, identifier) }
+  }
+  def classNameExpr(string: String): Expression = {
+    string.split('/').foldLeft(null: Expression){
+      case (null, identifier) => new NameExpr(new SimpleName(identifier))
+      case (qualifier, identifier) => new FieldAccessExpr(qualifier, /*TODO*/new NodeList(), new SimpleName(identifier)) }
   }
   def classNameType(string: String): ClassOrInterfaceType = {
     classNameType(className(string))
