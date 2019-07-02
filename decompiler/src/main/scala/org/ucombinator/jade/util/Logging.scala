@@ -39,7 +39,7 @@ object Logging {
       layoutWrappingEncoder.setContext(loggerContext)
 
       val patternLayout = new PatternLayout()
-      patternLayout.setPattern(f"%%highlight(%%level) %%-5logger: %%message%%n%%caller{$callerDepth}")
+      patternLayout.setPattern(f"%%highlight(%%level %%-5logger:) %%message%%n%%caller{$callerDepth}")
 
       patternLayout.setContext(loggerContext)
       patternLayout.start()
