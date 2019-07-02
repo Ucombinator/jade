@@ -22,7 +22,7 @@ import scala.collection.SortedMap
 // TODO: gzip, tar, bzip2
 
 sealed trait ReadResult
-case class RDirectory(children: /*Sorted*/List[PathPosition]) extends ReadResult
+case class RDirectory(children: /*Sorted*/List[PathPosition]) extends ReadResult // TODO: sort
 case class RFile(bytes: Array[Byte]) extends ReadResult
 case object ROther extends ReadResult
 case object RNotExist extends ReadResult
