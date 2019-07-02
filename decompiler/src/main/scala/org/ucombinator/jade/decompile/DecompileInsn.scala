@@ -183,11 +183,11 @@ object DecompileInsn {
       case Opcodes.I2B => DecompiledExpression(new CastExpr(PrimitiveType.byteType  , args(0)))
       case Opcodes.I2C => DecompiledExpression(new CastExpr(PrimitiveType.charType  , args(0)))
       case Opcodes.I2S => DecompiledExpression(new CastExpr(PrimitiveType.shortType , args(0)))
-      case Opcodes.LCMP => ???
-      case Opcodes.FCMPL => ???
-      case Opcodes.FCMPG => ???
-      case Opcodes.DCMPL => ???
-      case Opcodes.DCMPG => ???
+      case Opcodes.LCMP  => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<lcmp>") , new NodeList(args(0), args(1))))
+      case Opcodes.FCMPL => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<fcmpl>"), new NodeList(args(0), args(1))))
+      case Opcodes.FCMPG => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<fcmpg>"), new NodeList(args(0), args(1))))
+      case Opcodes.DCMPL => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<dcmpl>"), new NodeList(args(0), args(1))))
+      case Opcodes.DCMPG => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<dcmpg>"), new NodeList(args(0), args(1))))
       // JumpInsnNode
       case Opcodes.IFEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.EQUALS))
       case Opcodes.IFNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.NOT_EQUALS))
