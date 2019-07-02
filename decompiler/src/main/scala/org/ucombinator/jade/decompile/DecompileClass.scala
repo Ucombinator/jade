@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 
 object DecompileClass {
 
-  private def literal(node: Object): LiteralExpr = node match {
+  private def decompileLiteral(node: Object): LiteralExpr = node match {
     // TODO: improve formatting of literals?
     case null => null
     case node: java.lang.Integer => new IntegerLiteralExpr(String.valueOf(node))
@@ -34,7 +34,7 @@ object DecompileClass {
     val name = typeToName(Descriptor.fieldDescriptor(node.desc))
     node.values.asScala match {
       case null => new MarkerAnnotationExpr(name)
-      case List(v: Object) => new SingleMemberAnnotationExpr(name, literal(v))
+      case List(v: Object) => new SingleMemberAnnotationExpr(name, decompileLiteral(v))
       case vs =>
         new NormalAnnotationExpr(
           name,
@@ -42,7 +42,7 @@ object DecompileClass {
             (for (List(k, v) <- vs.grouped(2)) yield {
               new MemberValuePair(
                 k.asInstanceOf[String],
-                literal(v.asInstanceOf[Object]))}).toList.asJava) )
+                decompileLiteral(v.asInstanceOf[Object]))}).toList.asJava) )
     }
   }
 
@@ -67,7 +67,7 @@ object DecompileClass {
         if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
         else { Signature.typeSignature(node.signature) }
       val name = new SimpleName(node.name)
-      val initializer: Expression = literal(node.value)
+      val initializer: Expression = decompileLiteral(node.value)
       new VariableDeclarator(`type`, name, initializer)})
 
     new FieldDeclaration(modifiers, annotations, variables)
@@ -219,6 +219,11 @@ object DecompileClass {
     val types = new NodeList[TypeDeclaration[_ <: TypeDeclaration[_]]]()
     types.add(classOrInterfaceDeclaration)
 
+    // TODO: ModuleExportNode
+    // TODO: ModuleNode
+    // TODO: ModuleOpenNode
+    // TODO: ModuleProvideNode
+    // TODO: ModuleRequireNode
     val module = null // TODO node.module
 
     new CompilationUnit(packageDeclaration, imports, types, module)

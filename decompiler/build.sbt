@@ -4,6 +4,8 @@ description := "Jade: The Java Decompiler"
 
 scalaVersion := "2.12.8"
 
+// TODO: improve compilation time
+
 // NOTE: these are sorted alphabetically
 libraryDependencies ++= Seq(
   // Logging implementation

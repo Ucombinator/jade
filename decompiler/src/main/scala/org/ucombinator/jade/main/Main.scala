@@ -19,6 +19,7 @@ import scala.collection.JavaConverters._
 // TODO: header/footer?
 // TODO: aliases, description, defaultValueProvider
 
+// TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 object Main {
   val commandLine: CommandLine = new CommandLine(new Main())
   def main(args: Array[String]): Unit = {
@@ -29,6 +30,10 @@ object Main {
 @Command(
   name = "jade",
   subcommands = Array(
+    // TODO: compile: Use a JavaAgent of a nested compiler to test whether the code compiles
+    // TODO:  - Could test whether it compiles under different Java versions
+    // TODO:  - Code could back-off if compilation fails
+    // TODO: compare
     classOf[HelpCommand],
     classOf[BuildInfoCmd],
     classOf[DecompileCmd],
@@ -61,6 +66,7 @@ abstract class Cmd[T] extends Callable[T] {
 
   // TODO: flag for pause on startup
   // TODO: command to list all loggers
+  // TODO: exit code list
 
   final override def call(): T = {
     Logging.callerDepth = logCallerDepth

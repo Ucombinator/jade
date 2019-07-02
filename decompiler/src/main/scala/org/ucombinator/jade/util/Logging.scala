@@ -9,6 +9,7 @@ import org.slf4j.{LoggerFactory, Logger => Slf4jLogger}
 
 import scala.collection.JavaConverters._
 
+// TODO: slf4j.detectLoggerNameMismatch
 trait Logging {
   @transient // TODO: why transient?
   protected lazy val logger: ScalaLogger = {

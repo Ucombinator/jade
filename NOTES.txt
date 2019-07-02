@@ -1,0 +1,147 @@
+*** ASM ***
+https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/BasicVerifier.html
+https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/SimpleVerifier.html
+https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/SourceInterpreter.html
+https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/SourceValue.html
+
+*** Tools to consider ***
+GraalVM
+ScalaNative
+ScalaMeter
+JVM interpreter: https://github.com/lihaoyi/Metascala
+java-wrappers
+Microbenchmarks: https://index.scala-lang.org/ktoso/sbt-jmh/sbt-jmh-extras/0.2.12?target=_2.11
+Guava
+ProGuard: Both for deploy and need to handle output (and optimizes scala?)
+
+*** JDK Downloads ***
+ 8 https://github.com/AdoptOpenJDK/openjdk8-upstream-binaries/releases/download/jdk8u212-b03/OpenJDK8U-x64_linux_8u212b03.tar.gz
+ 9 https://download.java.net/java/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz
+10 https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
+11 https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+12 https://download.java.net/java/GA/jdk12/33/GPL/openjdk-12_linux-x64_bin.tar.gz
+
+*** Maven tests ***
+http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.4.2/junit-jupiter-api-5.4.2.jar
+http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.26/slf4j-api-1.7.26.jar
+http://central.maven.org/maven2/com/google/guava/guava/27.1-jre/guava-27.1-jre.jar
+https://maven.google.com/com/android/support/appcompat-v7/28.0.0/appcompat-v7-28.0.0.aar
+http://central.maven.org/maven2/org/mockito/mockito-core/2.28.2/mockito-core-2.28.2.jar
+http://central.maven.org/maven2/commons-io/commons-io/2.6/commons-io-2.6.jar
+http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3.jar
+http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.11.2/log4j-core-2.11.2.jar
+http://central.maven.org/maven2/org/apache/commons/commons-lang3/3.9/commons-lang3-3.9.jar
+http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.26/slf4j-log4j12-1.7.26.jar
+http://central.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.9.9/jackson-databind-2.9.9.jar
+http://central.maven.org/maven2/org/mockito/mockito-all/1.10.19/mockito-all-1.10.19.jar
+http://central.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar
+http://central.maven.org/maven2/com/google/code/gson/gson/2.8.5/gson-2.8.5.jar
+http://central.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+http://central.maven.org/maven2/org/apache/httpcomponents/httpclient/4.5.8/httpclient-4.5.8.jar
+http://central.maven.org/maven2/org/springframework/spring-context/5.1.7.RELEASE/spring-context-5.1.7.RELEASE.jar
+http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.26/slf4j-simple-1.7.26.jar
+http://central.maven.org/maven2/org/testng/testng/6.14.3/testng-6.14.3.jar
+http://central.maven.org/maven2/commons-codec/commons-codec/1.12/commons-codec-1.12.jar
+
+*** Decompilation ***
+
+Helping Johnny to Analyze Malware: A Usability-Optimized Decompiler and Malware Analysis User Study
+  https://www.semanticscholar.org/paper/Helping-Johnny-to-Analyze-Malware%3A-A-Decompiler-and-Yakdan-Dechand/12945913b496ff349f65565d8b65208147ed3794
+Native x86 Decompilation Using Semantics-Preserving Structural Analysis and Iterative Control-Flow Structuring
+  https://www.semanticscholar.org/paper/Native-x86-Decompilation-Using-Semantics-Preserving-Brumley-Lee/16981623b83e5d8b927a9e1f240ce568f2587862
+Static Single Assignment for Decompilation
+  https://www.semanticscholar.org/paper/Static-Single-Assignment-for-Decompilation-Emmerik/6181cec77dc6fc26973f8d0386d587cf6978609a
+Structural analysis: A new approach to flow analysis in optimizing compilers
+  https://www.sciencedirect.com/science/article/pii/0096055180900077
+
+*** Loops ***
+https://github.com/Sable/soot/blob/master/src/main/java/soot/jimple/toolkits/annotation/logic/LoopFinder.java
+https://github.com/Ucombinator/jaam/blob/master/src/main/scala/org/ucombinator/jaam/util/JGraphT.scala
+
+Loop Nesting Forests, Dominators, and Applications
+  https://link.springer.com/chapter/10.1007%2F978-3-319-07959-2_15
+
+*** Rooted graphs ***
+The Isomorphism Problem For Directed Path Graphs and For Rooted Directed Path Graphs
+  https://www.sciencedirect.com/science/article/pii/S0196677496900589
+https://stackoverflow.com/questions/11338746/directed-graphs-with-a-given-root-node-match-another-directed-graph-for-equali
+
+The Region Problem
+  https://zneak.github.io/fcd/2016/02/17/structuring.html
+
+*** Guarenteed decompilation ***
+No More Gotos: Decompilation Using Pattern-Independent Control-Flow Structuring and Semantics-Preserving Transformations
+  https://www.ndss-symposium.org/ndss2015/ndss-2015-programme/no-more-gotos-decompilation-using-pattern-independent-control-flow-structuring-and-semantics/
+  https://scholar.google.com/scholar?cites=1213140627167738221&as_sdt=5,45&sciodt=0,45&hl=en
+  https://www.semanticscholar.org/paper/No-More-Gotos%3A-Decompilation-Using-Control-Flow-and-Yakdan-Eschweiler/a545e5214086d048624b6176c0017db57652163e?tab=abstract&citingPapersSort=is-influential&citingPapersLimit=10&citingPapersOffset=10&year%5B0%5D=&year%5B1%5D=&citedPapersSort=is-influential&citedPapersLimit=10&citedPapersOffset=0
+Emscripten: an LLVM-to-JavaScript compiler
+  https://dl.acm.org/citation.cfm?doid=2048147.2048224
+
+*** Variable names ***
+
+Recovering clear, natural identifiers from obfuscated JS names
+  https://www.semanticscholar.org/paper/Recovering-clear%2C-natural-identifiers-from-JS-names-Vasilescu-Casalnuovo/53da3749987b3a4d166449e32af7b474ce776096
+Meaningful variable names for decompiled code: a machine translation approach
+  https://www.semanticscholar.org/paper/Meaningful-variable-names-for-decompiled-code%3A-a-Jaffe-Lacomis/44673a5ec512a81e0c366226135d1ce363d782e6?tab=abstract&citingPapersSort=is-influential&citingPapersLimit=10&citingPapersOffset=0&citedPapersSort=is-influential&citedPapersLimit=10&citedPapersOffset=10
+Suggesting meaningful variable names for decompiled code: a machine translation approach
+  https://dl.acm.org/citation.cfm?id=3121274
+
+*** Strongly connected components ***
+
+https://en.wikipedia.org/wiki/Strongly_connected_component
+https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
+https://en.wikipedia.org/wiki/Path-based_strong_component_algorithm
+
+*** Dominators ***
+
+https://en.wikipedia.org/wiki/Dominator_(graph_theory)
+https://tanujkhattar.wordpress.com/2016/01/11/dominator-tree-of-a-directed-graph/
+
+A fast algorithm for finding dominators in a flowgraph
+  https://dl.acm.org/citation.cfm?id=357062.357071
+  https://www.wikidata.org/wiki/Q55934256
+  https://scholar.google.com/scholar?q=A+Fast+Algorithm+for+Finding+Dominators+in+a+Flowgraph.
+Finding Dominators in Practice
+  http://jgaa.info/getPaper?id=119
+  https://scholar.google.com/scholar?q=Finding+Dominators+in+Practice.
+  https://link.springer.com/chapter/10.1007/978-3-540-30140-0_60
+Finding dominators via disjoint set union
+  https://www.sciencedirect.com/science/article/pii/S1570866713001007
+Loop Nesting Forests, Dominators, and Applications
+  https://link.springer.com/chapter/10.1007/978-3-319-07959-2_15
+Dominators in directed graphs: a survey of recent results, applications, and open problems
+Immediate predominators in a directed graph [H]
+  https://dl.acm.org/citation.cfm?doid=361532.361566
+a poset approach to dominator computation
+lengauer-tarjan
+  https://gist.github.com/yuzeh/a5e6602dfdb0db3c2130c10537db54d7
+  https://www.yuzeh.com/code/scala-pseudocode.html
+  https://github.com/google/binnavi/blob/c3f9058/src/main/java/com/google/security/zynamics/zylib/types/graphs/algorithms/LengauerTarjan.java#L37-L38
+  https://www.boost.org/doc/libs/1_43_0/libs/graph/doc/lengauer_tarjan_dominator.htm
+  https://help.eclipse.org/oxygen/index.jsp?topic=%2Forg.eclipse.mat.ui.help%2Fconcepts%2Fdominatortree.html
+Edge-disjoint spanning trees and depth-first search
+  https://link.springer.com/article/10.1007/BF00268499
+Identifying loops in almost linear time
+  https://dl.acm.org/citation.cfm?id=316687
+
+*** Misc ***
+https://jdk.java.net/archive/
+
+https://openjdk.java.net/groups/compiler/
+https://openjdk.java.net/groups/compiler/doc/hhgtjavac/
+https://openjdk.java.net/groups/compiler/doc/package-overview/
+https://openjdk.java.net/groups/compiler/doc/compilation-overview/
+
+Example of how to use? https://github.com/OpenHFT/Java-Runtime-Compiler
+
+https://docs.oracle.com/javacomponents/testing-tools.htm
+
+https://hg.openjdk.java.net/jdk9/jdk9/raw-file/tip/common/doc/testing.html
+https://hg.openjdk.java.net/jdk/jdk/raw-file/tip/doc/testing.html
+https://en.wikipedia.org/wiki/JavaTest_harness
+https://en.wikipedia.org/wiki/Technology_Compatibility_Kit
+
+https://openjdk.java.net/projects/code-tools/
+
+tests: strange nesting is happening (due to parallel execution?)
