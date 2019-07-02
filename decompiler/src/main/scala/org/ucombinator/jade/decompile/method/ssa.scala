@@ -24,7 +24,7 @@ case object EmptyVar                                                        exte
 }
 
 class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) {
-  var copyVersion: Int = 0 // For `copyOperation` // TODO: copyIndex? copyPosition?
+  var copyOperationPosition: Int = 0 // For `copyOperation()`
   var originInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]
   var ssaMap = Map.empty[Var, Set[(AbstractInsnNode, Var)]]
@@ -64,8 +64,8 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
 
   @throws[AnalyzerException]
   override def copyOperation(insn: AbstractInsnNode, value: Var): Var = {
-    this.copyVersion += 1
-    record(insn, List(value), CopyVar(SSA.basicInterpreter.copyOperation(insn, value.basicValue), Insn(method, insn), this.copyVersion))
+    this.copyOperationPosition += 1
+    record(insn, List(value), CopyVar(SSA.basicInterpreter.copyOperation(insn, value.basicValue), Insn(method, insn), this.copyOperationPosition))
   }
 
   @throws[AnalyzerException]
@@ -167,7 +167,7 @@ case object SSA {
     method.instructions = new InsnList {
       override def get(index: Int): AbstractInsnNode = {
         val insn = super.get(index)
-        interpreter.copyVersion = 0
+        interpreter.copyOperationPosition = 0
         interpreter.originInsn = insn
         insn
       }
