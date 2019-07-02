@@ -53,17 +53,22 @@ class Main() extends Cmd[Unit] {
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
-  @Option(names = Array("--log"), description = Array("Set the logging level"), paramLabel = "LEVEL", converter = Array(classOf[LevelConverter]), split=",")
+  @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level"), split=",", converter = Array(classOf[LevelConverter]))
   var log = new java.util.LinkedList[(String,Level)]()
 
+  @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print in log messages"))
+  var logCallerDepth: Int = 0
+
   // TODO: flag for pause on startup
+  // TODO: command to list all loggers
 
   final override def call(): T = {
+    Logging.callerDepth = logCallerDepth
     for ((k, v) <- log.asScala) {
+      // TODO: check for logger typos (parent class must exist, and if init, then child must exist) (after run?)
       Logging.logger(k).setLevel(v)
     }
     run()
-    // TODO: check for logger typos (after run?)
   }
   def run(): T
 }

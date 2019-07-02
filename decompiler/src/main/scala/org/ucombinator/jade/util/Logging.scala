@@ -1,57 +1,55 @@
 package org.ucombinator.jade.util
 
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{BasicConfigurator, Level, LoggerContext, PatternLayout}
+import ch.qos.logback.classic.{BasicConfigurator, Level, LoggerContext, PatternLayout, Logger => LogbackLogger}
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder
-import com.typesafe.scalalogging.Logger
-import org.slf4j.LoggerFactory
+import com.typesafe.scalalogging.{Logger => ScalaLogger}
+import org.slf4j.{LoggerFactory, Logger => Slf4jLogger}
 
 trait Logging {
   @transient // TODO: why transient?
-  protected lazy val logger: Logger = {
+  protected lazy val logger: ScalaLogger = {
     val name = getClass.getName
       .replaceAll("^org.ucombinator.jade.", "")
       .replace('$', '.')
       .replace("..", ".")
       .replaceAll(".$", "")
-    Logger(LoggerFactory.getLogger(name))
+    ScalaLogger (LoggerFactory.getLogger(name))
   }
-  def childLogger(name: String): com.typesafe.scalalogging.Logger = {
-    com.typesafe.scalalogging.Logger(LoggerFactory.getLogger(logger.underlying.getName + "." + name))
+  def childLogger(name: String): ScalaLogger  = {
+    ScalaLogger(LoggerFactory.getLogger(logger.underlying.getName + "." + name))
   }
 }
 
 object Logging {
-  def logger(name: String): ch.qos.logback.classic.Logger = {
-    val name2 = if (name.isEmpty) { org.slf4j.Logger.ROOT_LOGGER_NAME } else { name }
-    LoggerFactory.getLogger(name2).asInstanceOf[ch.qos.logback.classic.Logger]
+  def logger(name: String): LogbackLogger = {
+    val modifiedName = if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME } else { name }
+    LoggerFactory.getLogger(modifiedName).asInstanceOf[LogbackLogger]
   }
 
-  // TODO: command to list all loggers
-  // TODO: better error reporting when there is a typo in the logger name on the command line
-  val displayCaller = false // TODO: command line option for this
+  var callerDepth = 0
+
   class Config() extends BasicConfigurator  {
+    override def configure(loggerContext: LoggerContext): Unit = {
+      val consoleAppender = new ConsoleAppender[ILoggingEvent]
+      consoleAppender.setContext(loggerContext)
+      consoleAppender.setName("console")
+      val layoutWrappingEncoder = new LayoutWrappingEncoder[ILoggingEvent]
+      layoutWrappingEncoder.setContext(loggerContext)
 
-    override def configure(lc: LoggerContext): Unit = {
-      val ca = new ConsoleAppender[ILoggingEvent]
-      ca.setContext(lc)
-      ca.setName("console")
-      val encoder = new LayoutWrappingEncoder[ILoggingEvent]
-      encoder.setContext(lc)
+      val patternLayout = new PatternLayout()
+      patternLayout.setPattern(f"%%highlight(%%level) %%-5logger: %%message%%n%%caller{$callerDepth}")
 
-      val layout = new PatternLayout()
-      layout.setPattern("%highlight(%level) %-5logger: %message%n" + (if (displayCaller) { "%caller" } else { "" }))
+      patternLayout.setContext(loggerContext)
+      patternLayout.start()
+      layoutWrappingEncoder.setLayout(patternLayout)
 
-      layout.setContext(lc)
-      layout.start()
-      encoder.setLayout(layout)
+      consoleAppender.setEncoder(layoutWrappingEncoder)
+      consoleAppender.start()
 
-      ca.setEncoder(encoder)
-      ca.start()
-
-      val rootLogger = lc.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
-      rootLogger.addAppender(ca)
+      val rootLogger = loggerContext.getLogger(Slf4jLogger.ROOT_LOGGER_NAME)
+      rootLogger.addAppender(consoleAppender)
       rootLogger.setLevel(Level.INFO)
     }
   }
