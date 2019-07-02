@@ -98,15 +98,14 @@ object VFS extends Logging {
       case Some(a) => f(a)
     }
   }
-  def zeroOneMany[A,B](xs: List[A], zero: => B, one: A => B, many: => B): B = {
+  def one[A,B](xs: List[A], one: A => B, other: => B): B = {
     xs match {
-      case List() => zero
       case List(x) => one(x)
-      case _ => many
+      case _ => other
     }
   }
-  def error(): Unit = {
-    println("TODO: error")
+  def error(name: String, pathPosition: PathPosition): Unit = {
+    this.logger.error(f"$name at ${pathPosition.path}")
   }
   def ignore(name: String, pathPosition: PathPosition): Unit = {
     this.logger.info(f"Ignoring $name at ${pathPosition.path}")
@@ -162,17 +161,37 @@ object VFS extends Logging {
   def get(path: PathPosition): Unit = {
     path.read match {
       case RFile(bytes) =>
-        if (bytes.startsWith(CLASS_SIGNATURE)) { path(error(), load(path, bytes), load(path, bytes)) }
-        else if (bytes.startsWith(ZIP_SIGNATURE)) { get(path.withFileTree(readZip(bytes))) }
-        else if (bytes.startsWith(JMOD_SIGNATURE)) { get(path.withFileTree(readJmod(bytes))) }
-        else { path(error(), error(), ignore("non-class, non-jar, and non-jmod", path)) }
+        if (bytes.startsWith(CLASS_SIGNATURE)) {
+          path(
+            error("Found class file as parent", path),
+            load(path, bytes),
+            load(path, bytes))
+        } else if (bytes.startsWith(ZIP_SIGNATURE)) {
+          get(path.withFileTree(readZip(bytes)))
+        } else if (bytes.startsWith(JMOD_SIGNATURE)) {
+          get(path.withFileTree(readJmod(bytes)))
+        } else {
+          path(
+            error("File with unknown format", path),
+            error("File with unknown format", path),
+            ignore("file with unknown format", path))
+        }
       case RDirectory(children) =>
         // Note: one if zip, zero if fs or zip and not found or zip and directory is empty
-        path(zeroOneMany(children,error(),get,error()), children.foreach(get), children.foreach(get))
+        path(
+          one(children,get,error("Child does not exist", path)),
+          children.foreach(get),
+          children.foreach(get))
       case ROther =>
-        path(error(), error(), ignore("non-directory and non-file", path))
+        path(
+          error("Non-directory and non-file", path),
+          error("Non-directory and non-file", path),
+          ignore("non-directory and non-file", path))
       case RNotExist =>
-        path(option(path.parent,get,error()), option(path.parent,get,error()), error())
+        path(
+          option(path.parent,get,error("Could not find file or parent", path)),
+          option(path.parent,get,error("Could not find file or parent", path)),
+          error("Missing file", path))
     }
   }
   def get0(path: Path): Unit = {
