@@ -32,29 +32,28 @@ object Logging {
   }
 
   def tryLoad(string: String): Boolean = {
+  println(f"tryLoad: $string")
     try { Class.forName(string) } catch { case e: ClassNotFoundException => false }
     true
   }
-  def init(string: String): Unit = {
-    // TODO: pass if package exists
-    var s = "org.ucombinator.jade." + string // TODO: allow omitting for non-jade classes using "." as a prefix
-    println(f"s: $s")
+
+  def checkName(string: String): Unit = {
+    var s =
+      if (string.startsWith(".")) { string.substring(1) }
+      else { "org.ucombinator.jade." + string }
     while (!tryLoad(s)) {
       if (s.contains(".")) {
         s = s.replaceAll("""\.[^.]+$""", "")
       } else {
-        println(f"fail")
-        return
+        throw new Exception(f"Could not find class for logger $string") // TODO: as error message
       }
-      println(f"s: $s")
     }
-    println(f"succeed")
     for (l <- LoggerFactory.getLogger(Slf4jLogger.ROOT_LOGGER_NAME).asInstanceOf[LogbackLogger].getLoggerContext.getLoggerList.asScala) {
       if (string == l.getName || l.getName.startsWith(string + ".")) {
-        println(f"exists")
+        return // TODO: as error message
       }
     }
-    println(f"not exists")
+    throw new Exception(f"No logger found for $string")
   }
 
   var callerDepth = 0

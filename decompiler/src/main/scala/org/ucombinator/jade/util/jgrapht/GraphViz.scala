@@ -76,7 +76,6 @@ object GraphViz {
       }
       out.write(indent + "}\n")
     }
-    // TODO: flatten a tree chain
     go("", root)
     for (edge <- graph.edgeSet().asScala) {
       // TODO: layout-ignore edges that go to own dominator
