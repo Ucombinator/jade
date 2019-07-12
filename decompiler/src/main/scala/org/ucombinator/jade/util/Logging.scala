@@ -50,7 +50,7 @@ object Logging {
     }
     for (l <- LoggerFactory.getLogger(Slf4jLogger.ROOT_LOGGER_NAME).asInstanceOf[LogbackLogger].getLoggerContext.getLoggerList.asScala) {
       if (string == l.getName || l.getName.startsWith(string + ".")) {
-        return // TODO: as error message
+        return
       }
     }
     throw new Exception(f"No logger found for $string")

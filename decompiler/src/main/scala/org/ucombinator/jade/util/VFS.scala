@@ -155,7 +155,7 @@ object VFS extends Logging {
     val classReader = new ClassReader(bytes)
     classes.get(classReader.getClassName) match {
       case None => classes += classReader.getClassName -> ((path.path.toString, classReader))
-      case Some(_) => ignore(f"already loaded class ${classReader.getClassName}", path) // TODO
+      case Some(_) => ignore(f"already loaded class ${classReader.getClassName}", path)
     }
   }
   def get(path: PathPosition): Unit = {
