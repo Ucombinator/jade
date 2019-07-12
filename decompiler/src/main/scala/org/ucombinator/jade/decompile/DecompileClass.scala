@@ -61,7 +61,7 @@ object DecompileClass {
 
   private def decompileField(node: FieldNode): FieldDeclaration = {
     // attrs (ignore?)
-    val modifiers = Flags.toModifiers(Flags.intToField(node.access))
+    val modifiers = Flags.toModifiers(Flags.fieldFlags(node.access))
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,
       node.invisibleAnnotations,
@@ -84,12 +84,12 @@ object DecompileClass {
     parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])):
     Parameter = {
     val ((((typ, index), node), a1), a2) = parameter
-    val flags = if (node == null) { List() } else { Flags.intToParameter(node.access) }
+    val flags = if (node == null) { List() } else { Flags.parameterFlags(node.access) }
     val modifiers = Flags.toModifiers(flags)
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(a1, a2, null, null)
     val `type`: Type = typ
     val isVarArgs: Boolean =
-      Flags.intToMethod(method.access).contains(Flags.ACC_VARARGS) &&
+      Flags.methodFlags(method.access).contains(Flags.ACC_VARARGS) &&
       index == paramCount - 1
     val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
     val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
@@ -99,8 +99,8 @@ object DecompileClass {
   def parameterTypes(desc: List[Type], sig: List[Type], params: List[ParameterNode]): List[Type] = {
     (desc, sig, params) match {
       case (d :: ds, ss, p :: ps)
-        if Flags.intToParameter(p.access).contains(Flags.ACC_SYNTHETIC)
-        || Flags.intToParameter(p.access).contains(Flags.ACC_MANDATED) =>
+        if Flags.parameterFlags(p.access).contains(Flags.ACC_SYNTHETIC)
+        || Flags.parameterFlags(p.access).contains(Flags.ACC_MANDATED) =>
       // TODO: Flags.checkParameter(access, Modifier)
         d :: parameterTypes(ds, ss, ps)
       case (d :: ds, s :: ss, p :: ps) =>
@@ -124,7 +124,7 @@ object DecompileClass {
     // visibleLocalVariableAnnotations
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
-    val modifiers = Flags.toModifiers(Flags.intToMethod(node.access))
+    val modifiers = Flags.toModifiers(Flags.methodFlags(node.access))
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,
       node.invisibleAnnotations,
@@ -187,7 +187,7 @@ object DecompileClass {
     val imports = new NodeList[ImportDeclaration]() // TODO
 
     val classOrInterfaceDeclaration = {
-      val modifiers = Flags.toModifiers(Flags.intToClass(node.access))
+      val modifiers = Flags.toModifiers(Flags.classFlags(node.access))
       val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
         node.visibleAnnotations,
         node.invisibleAnnotations,

@@ -4,13 +4,12 @@ import org.jsoup.nodes.Element
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-// TODO: intToMethod -> methodFlags (downcase first char)
 // Code for generating `Flags.txt` and `Flags.scala`
 object Flags {
   def javaSpec(spec: String, version: Int, chapter: Int): String = {
-    // TODO: version >= 9? // TODO: catch?
+    assert(version >= 9) // TODO: error message
     val url = f"https://docs.oracle.com/javase/specs/$spec/se$version/html/$spec-$chapter.html"
-    val source = scala.io.Source.fromURL(url)
+    val source = scala.io.Source.fromURL(url) // TODO: catch
     try { source.mkString } finally { source.close() }
   }
 
@@ -157,7 +156,8 @@ object Flags {
     builder.append("\n")
 
     for ((kind, flagInfosForKind) <- flagInfoGroups) {
-      builder.append(f"  val intTo$kind: Int => List[${kind}Flag] = fromInt(${kind}Mapping)\n")
+      val name = kind.substring(0,1).toLowerCase() + kind.substring(1) + "Flags"
+      builder.append(f"  val $name: Int => List[${kind}Flag] = fromInt(${kind}Mapping)\n")
     }
     builder.append("}\n")
 
