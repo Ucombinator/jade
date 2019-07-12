@@ -1,13 +1,12 @@
-package org.ucombinator.jade.main
+package org.ucombinator.jade.decompile
 
 import java.io.{PrintWriter, StringWriter}
 import java.nio.file.Path
 
 import com.github.javaparser.ast.CompilationUnit
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.{ClassNode, InnerClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
-import org.ucombinator.jade.decompile.DecompileClass
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
 import org.ucombinator.jade.util.asm.Insn

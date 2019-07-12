@@ -4,13 +4,14 @@ import java.nio.file.Path
 import java.util.concurrent.Callable
 
 import ch.qos.logback.classic.Level
+import org.ucombinator.jade.decompile.Decompile
 import org.ucombinator.jade.util.Logging
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, ITypeConverter, Option, ParameterException, Parameters, ParentCommand}
 
 import scala.collection.JavaConverters._
 
-// TODO: analysis to ensure using only the canonical constructor (helps with detecting forward version changes) (as a compiler plugin?)
+//  TODO: analysis to ensure using only the canonical constructor (helps with detecting forward version changes) (as a compiler plugin?)
 
 ////////////////
 // Top-level command
