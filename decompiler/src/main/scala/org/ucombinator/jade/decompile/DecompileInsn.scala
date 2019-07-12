@@ -27,6 +27,12 @@ Non-linear expressions
   Boolean(&&/||/!/==/!=/</>/<=/>=)
   Trinary Operator/Switch Expression
 Nestings
+
+Compare
+Compile
+
+CommonLibrary
+Generators
 */
 
 sealed trait DecompiledInsn

@@ -4,6 +4,9 @@ https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/SimpleVerifier.html
 https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/SourceInterpreter.html
 https://asm.ow2.io/javadoc/org/objectweb/asm/tree/analysis/SourceValue.html
 
+** BCEL ***
+"org.apache.bcel" % "bcel" % "6.3.1",
+
 *** Tools to consider ***
 GraalVM
 ScalaNative
@@ -145,3 +148,15 @@ https://en.wikipedia.org/wiki/Technology_Compatibility_Kit
 https://openjdk.java.net/projects/code-tools/
 
 tests: strange nesting is happening (due to parallel execution?)
+
+*** Compile API ***
+
+http://openjdk.java.net/groups/compiler/guide/compilerAPI.html
+https://docs.oracle.com/javase/6/docs/api/javax/tools/ToolProvider.html
+https://docs.oracle.com/javase/7/docs/api/javax/tools/JavaCompiler.html
+https://www.javacodegeeks.com/2015/09/java-compiler-api.html
+
+*** Maven ***
+
+https://mvnrepository.com/popular?p=1
+https://mvnrepository.com/open-source

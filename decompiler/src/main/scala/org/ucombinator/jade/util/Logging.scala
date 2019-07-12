@@ -37,7 +37,7 @@ object Logging {
   }
   def init(string: String): Unit = {
     // TODO: pass if package exists
-    var s = "org.ucombinator.jade." + string // TODO: allow omitting for non-jade classes
+    var s = "org.ucombinator.jade." + string // TODO: allow omitting for non-jade classes using "." as a prefix
     println(f"s: $s")
     while (!tryLoad(s)) {
       if (s.contains(".")) {
