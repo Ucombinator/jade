@@ -112,6 +112,7 @@ import complete.DefaultParsers._
 
 val flagsTableFile = settingKey[File]("Location of the flags table")
 flagsTableFile := (scalaSource in Compile).value / "org" / "ucombinator" / "jade" / "util" / "classfile" / "Flags.txt"
+// TODO: Move out of "util"
 
 val flagsSourceFile = settingKey[File]("Location of the generated `Flags.scala` file")
 flagsSourceFile := (sourceManaged in Compile).value / "org" / "ucombinator" / "jade" / "util" / "classfile" / "Flags.scala"
