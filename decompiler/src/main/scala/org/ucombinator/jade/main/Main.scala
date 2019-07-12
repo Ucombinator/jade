@@ -36,11 +36,7 @@ object Main {
     // TODO: compare
     classOf[HelpCommand],
     classOf[BuildInfoCmd],
-    classOf[DecompileCmd],
-    classOf[DownloadJlsCmd],
-    classOf[DownloadJvmsCmd],
-    classOf[GenerateModifierCodeCmd],
-    classOf[GenerateInsnTypesCmd]))
+    classOf[DecompileCmd]))
 class Main() extends Cmd[Unit] {
   override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -130,53 +126,5 @@ class DecompileCmd extends Cmd[Unit] {
 
   override def run(): Unit = {
     Decompile.main(path.asScala.toList)
-  }
-}
-
-@Command(
-  name = "download-jls",
-  description = Array("Download the Java Langauge Specification"))
-class DownloadJlsCmd extends Cmd[Unit] {
-  @Parameters(paramLabel = "<version>", index = "0")
-  var version: Int = _
-
-  @Parameters(paramLabel = "<chapter>", index = "1")
-  var chapter: Int = _
-
-  override def run(): Unit = {
-    DownloadSpecification.main("jls", version, chapter)
-  }
-}
-
-@Command(
-  name = "download-jvms",
-  description = Array("Download the Java Virtual Machine Specification"))
-class DownloadJvmsCmd extends Cmd[Unit] {
-  @Parameters(paramLabel = "<version>", index = "0")
-  var version: Int = _
-
-  @Parameters(paramLabel = "<chapter>", index = "1")
-  var chapter: Int = _
-
-  override def run(): Unit = {
-    DownloadSpecification.main("jvms", version, chapter)
-  }
-}
-
-@Command(
-  name = "generate-modifier-code",
-  description = Array("Generate the code for `Modifier.scala`"))
-class GenerateModifierCodeCmd extends Cmd[Unit] {
-  override def run(): Unit = {
-    GenerateModifierCode.main()
-  }
-}
-
-@Command(
-  name = "generate-insn-types",
-  description = Array("Generate the code for `InsnTypes.scala`"))
-class GenerateInsnTypesCmd extends Cmd[Unit] {
-  override def run(): Unit = {
-    GenerateInsnTypes.main()
   }
 }

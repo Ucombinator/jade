@@ -31,9 +31,6 @@ libraryDependencies ++= Seq(
   "org.jgrapht" % "jgrapht-io" % "1.3.0",
   "org.jgrapht" % "jgrapht-opt" % "1.3.0",
 
-  // HTML parsing
-  "org.jsoup" % "jsoup" % "1.12.1",
-
   // `.class` file parsing and analysis
   "org.ow2.asm" % "asm" % "7.1",
   "org.ow2.asm" % "asm-analysis" % "7.1",
@@ -41,9 +38,6 @@ libraryDependencies ++= Seq(
   //"org.ow2.asm" % "asm-test" % "7.1",
   "org.ow2.asm" % "asm-tree" % "7.1",
   "org.ow2.asm" % "asm-util" % "7.1",
-
-  // General parsing framework
-  //"org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2",
 
   // Testing framework for `src/test/`
   "org.scalatest" %% "scalatest" % "3.0.7" % Test,
@@ -112,3 +106,106 @@ assemblyMergeStrategy in assembly := {
 
   case _ => MergeStrategy.deduplicate
 }
+
+// Code generation
+import complete.DefaultParsers._
+
+val flagsTableFile = settingKey[File]("Location of the flags table")
+flagsTableFile := (scalaSource in Compile).value / "org" / "ucombinator" / "jade" / "util" / "classfile" / "Flags.txt"
+
+val flagsSourceFile = settingKey[File]("Location of the generated `Flags.scala` file")
+flagsSourceFile := (sourceManaged in Compile).value / "org" / "ucombinator" / "jade" / "util" / "classfile" / "Flags.scala"
+
+val javaSpecParser =
+  Space ~>
+  token((literal("jls") | literal("jvms")) <~ "-") ~
+  token(NatBasic <~ "-") ~
+  token(NatBasic <~ Space) ~
+  fileParser(new java.io.File("."))
+val javaSpec = inputKey[File](
+  """javaSpec jls-<version>-<chapter> <file>
+    |
+    |        Download a chapter of the Java Language Specification
+    |
+    |        Arguments:
+
+    |            <version>   The version number of the specification to download.
+    |            <chapter>   The chapter number of the specification to download
+    |            <file>      The file in which to save the specification.
+    |
+    |        Example:
+    |
+    |            javaSpec jls-12-1 jls-1.html
+    |
+    |javaSpec jvms-<version>-<chapter> <file>
+    |
+    |        Download a chapter of the Java Virtual Machine Specification
+    |
+    |        Arguments:
+
+    |            <version>   The version number of the specification to download.
+    |            <chapter>   The chapter number of the specification to download
+    |            <file>      The file in which to save the specification.
+    |
+    |        Example:
+    |
+    |            javaSpec jvms-12-4 jvms-4.html""".stripMargin)
+javaSpec := {
+  val (((spec, version), chapter), file) = javaSpecParser.parsed
+  IO.write(file, Flags.javaSpec(spec, version, chapter))
+  file
+}
+
+val flagsTableParser = // genMod -f in-file out-file ; genMod -f in-file ; genMod -v 9 out-file ; genMod -v 9
+  Space ~>
+  ((token("-f") ~ Space ~> fileParser(new java.io.File(".")).map(Left(_))) |
+   (token("-v") ~ Space ~> token(NatBasic.map(Right(_))))) ~
+  (Space ~> fileParser(new java.io.File("."))).?
+val flagsTable = inputKey[File](
+  """flagsTable -f <jvmsFile> <file>
+    |
+    |        Generate a flags table based on a copy of the Java Virtual Machine Specification.
+    |
+    |        Arguments:
+    |
+    |            <jvmsFile>  The file containing a copy of the specification.
+    |            <file>      The file in which to save the flags table.
+    |                        Defaults to the flagsTableFile setting if omitted.
+    |
+    |        Examples:
+    |
+    |            flagsTable jvms-4.html Flags.txt
+    |            flagsTable jvms-4.html
+    |
+    |flagsTable -v <version> <file>
+    |
+    |        Generate a flags table based on an online version of the Java Virtual Machine Specification.
+    |
+    |        Arguments:
+    |
+    |            <version>   The version number of the Java Virtual Machine Specification
+    |            <file>      The file in which to save the flags table.
+    |                        Defaults to the flagsTableFile setting if omitted.
+    |
+    |        Examples:
+    |
+    |            flagsTable -v 12 Flags.txt
+    |            flagsTable -v 12""".stripMargin)
+flagsTable := {
+  val (src, dst) = flagsTableParser.parsed
+  val html = src match {
+    case Left(file) => IO.read(file)
+    case Right(version) => Flags.javaSpec("jvms", version, 4)
+  }
+  val tableString = Flags.table(html)
+  val tableFile = dst.getOrElse(flagsTableFile.value)
+  IO.write(tableFile, tableString)
+  tableFile
+}
+
+// TODO: sbt.Tracked.{ inputChanged, outputChanged } etc
+sourceGenerators in Compile += Def.task {
+  val sourceFile = flagsSourceFile.value
+  IO.write(sourceFile, Flags.code(IO.read(flagsTableFile.value)))
+  Seq(sourceFile)
+}.taskValue

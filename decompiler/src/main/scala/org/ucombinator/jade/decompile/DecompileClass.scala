@@ -9,7 +9,7 @@ import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.util.JavaParser
-import org.ucombinator.jade.util.classfile.{Descriptor, Modifier, Signature}
+import org.ucombinator.jade.util.classfile.{Descriptor, Flags, Signature}
 
 import scala.collection.JavaConverters._
 
@@ -61,7 +61,7 @@ object DecompileClass {
 
   private def decompileField(node: FieldNode): FieldDeclaration = {
     // attrs (ignore?)
-    val modifiers = Modifier.modifiersToNodeList(Modifier.intToField(node.access))
+    val modifiers = Flags.toModifiers(Flags.intToField(node.access))
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,
       node.invisibleAnnotations,
@@ -84,12 +84,12 @@ object DecompileClass {
     parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])):
     Parameter = {
     val ((((typ, index), node), a1), a2) = parameter
-    val flags = if (node == null) { List() } else { Modifier.intToParameter(node.access) }
-    val modifiers = Modifier.modifiersToNodeList(flags)
+    val flags = if (node == null) { List() } else { Flags.intToParameter(node.access) }
+    val modifiers = Flags.toModifiers(flags)
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(a1, a2, null, null)
     val `type`: Type = typ
     val isVarArgs: Boolean =
-      Modifier.intToMethod(method.access).contains(Modifier.ACC_VARARGS) &&
+      Flags.intToMethod(method.access).contains(Flags.ACC_VARARGS) &&
       index == paramCount - 1
     val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
     val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
@@ -99,9 +99,9 @@ object DecompileClass {
   def parameterTypes(desc: List[Type], sig: List[Type], params: List[ParameterNode]): List[Type] = {
     (desc, sig, params) match {
       case (d :: ds, ss, p :: ps)
-        if Modifier.intToParameter(p.access).contains(Modifier.ACC_SYNTHETIC)
-        || Modifier.intToParameter(p.access).contains(Modifier.ACC_MANDATED) =>
-      // TODO: Modifier.checkParameter(access, Modifier)
+        if Flags.intToParameter(p.access).contains(Flags.ACC_SYNTHETIC)
+        || Flags.intToParameter(p.access).contains(Flags.ACC_MANDATED) =>
+      // TODO: Flags.checkParameter(access, Modifier)
         d :: parameterTypes(ds, ss, ps)
       case (d :: ds, s :: ss, p :: ps) =>
         s :: parameterTypes(ds, ss, ps)
@@ -124,7 +124,7 @@ object DecompileClass {
     // visibleLocalVariableAnnotations
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
-    val modifiers = Modifier.modifiersToNodeList(Modifier.intToMethod(node.access))
+    val modifiers = Flags.toModifiers(Flags.intToMethod(node.access))
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,
       node.invisibleAnnotations,
@@ -187,7 +187,7 @@ object DecompileClass {
     val imports = new NodeList[ImportDeclaration]() // TODO
 
     val classOrInterfaceDeclaration = {
-      val modifiers = Modifier.modifiersToNodeList(Modifier.intToClass(node.access))
+      val modifiers = Flags.toModifiers(Flags.intToClass(node.access))
       val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
         node.visibleAnnotations,
         node.invisibleAnnotations,
