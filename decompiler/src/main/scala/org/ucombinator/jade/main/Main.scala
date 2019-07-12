@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 // TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 object Main {
   val commandLine: CommandLine = new CommandLine(new Main())
+  commandLine.setOverwrittenOptionsAllowed(true)
   def main(args: Array[String]): Unit = {
     System.exit(commandLine.execute(args:_*))
   }
@@ -31,14 +32,12 @@ object Main {
 @Command(
   name = "jade",
   subcommands = Array(
-    // TODO: compile: Use a JavaAgent of a nested compiler to test whether the code compiles
-    // TODO:  - Could test whether it compiles under different Java versions
-    // TODO:  - Code could back-off if compilation fails
     // TODO: list all loggers
-    // TODO: compare
     classOf[HelpCommand],
     classOf[BuildInfoCmd],
-    classOf[DecompileCmd]))
+    classOf[DecompileCmd],
+    classOf[CompileCmd],
+    classOf[DiffCmd]))
 class Main() extends Cmd[Unit] {
   override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -132,5 +131,26 @@ class DecompileCmd extends Cmd[Unit] {
 
   override def run(): Unit = {
     Decompile.main(path.asScala.toList)
+  }
+}
+
+@Command(
+  name = "compile",
+  description = Array("Compile a java file"))
+class CompileCmd extends Cmd[Unit] {
+  override def run(): Unit = {
+    // TODO: Use a JavaAgent of a nested compiler to test whether the code compiles
+    // TODO: Test whether it compiles under different Java versions
+    // TODO: Back-off if compilation fails
+    ??? // TODO: implement compile
+  }
+}
+
+@Command(
+  name = "diff",
+  description = Array("Compare class files"))
+class DiffCmd extends Cmd[Unit] { // TODO: exit codes
+  override def run(): Unit = {
+    ??? // TODO: implement diff
   }
 }
