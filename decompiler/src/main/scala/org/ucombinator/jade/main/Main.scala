@@ -34,6 +34,7 @@ object Main {
     // TODO: compile: Use a JavaAgent of a nested compiler to test whether the code compiles
     // TODO:  - Could test whether it compiles under different Java versions
     // TODO:  - Code could back-off if compilation fails
+    // TODO: list all loggers
     // TODO: compare
     classOf[HelpCommand],
     classOf[BuildInfoCmd],
@@ -59,10 +60,11 @@ abstract class Cmd[T] extends Callable[T] {
   var log = new java.util.LinkedList[(String,Level)]()
 
   @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print after log messages"))
-  var logCallerDepth: Int = 0
+  var logCallerDepth = 0
 
-  // TODO: flag for pause on startup
-  // TODO: command to list all loggers
+  @Option(names = Array("--wait"), negatable = true, description = Array("Wait for input from user before running (useful when attaching to the process)"))
+  var waitForUser = false
+
   // TODO: exit code list
 
   final override def call(): T = {
@@ -70,6 +72,10 @@ abstract class Cmd[T] extends Callable[T] {
     for ((k, v) <- log.asScala) {
       // Logging.checkName(k) // TODO: doesn't work on package names (search the jar?)
       Logging.logger(k).setLevel(v)
+    }
+    if (waitForUser) {
+      Console.out.println("Waiting.  Press \"Enter\" to continue.")
+      Console.in.readLine()
     }
     run()
   }
