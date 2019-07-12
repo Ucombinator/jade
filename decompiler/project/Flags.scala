@@ -22,7 +22,7 @@ object Flags {
     builder.append(f"\n")
     builder.append(f"# Kind      Name             Value  Keyword      Description\n")
 
-    if (true) {
+    {
       val tables = List[(String, String)](
         "Class" -> "Class access and property modifiers",
         "Field" -> "Field access and property flags",
@@ -44,7 +44,8 @@ object Flags {
         builder.append("\n")
       }
     }
-    if (true) {
+
+    {
       val lists = List[(String, String)](
         "Parameter" -> "access_flags",
         "Module" -> "module_flags",
@@ -65,6 +66,7 @@ object Flags {
         builder.append("\n")
       }
     }
+
     builder.mkString.replaceAll("\n\n$", "\n")
   }
 
