@@ -1,6 +1,7 @@
 package org.ucombinator.jade.util.asm
 
 import java.io.{PrintWriter, StringWriter}
+import java.lang.reflect.Modifier
 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
@@ -46,7 +47,7 @@ object Insn extends Textifier(Opcodes.ASM7) {
       }
     }
     insn.accept(methodVisitor)
-    this.print(printWriter)
+    print(printWriter)
     printWriter.flush()
     val string = stringBuffer.toString.trim
     stringBuffer.setLength(0)
@@ -60,8 +61,8 @@ object Insn extends Textifier(Opcodes.ASM7) {
 
   def longString(insnList: InsnList, insn: AbstractInsnNode): String = {
     val index = insnList.indexOf(insn)
-    val string = this.shortString(insnList, insn)
-    val insnType = InsnTypes.fromInt(insn.getType)
+    val string = shortString(insnList, insn)
+    val insnType = intToType(insn.getType)
     val typeString =
       if (insnType.endsWith("INSN")) {
         insnType.replace("_INSN", "")
@@ -74,4 +75,16 @@ object Insn extends Textifier(Opcodes.ASM7) {
 
     f"$index:$string ($typeString)"
   }
+
+  val typeToInt: Map[String, Int] =
+    (for (field <- classOf[AbstractInsnNode].getDeclaredFields) yield {
+      // As of ASM 7.1, all final public static int members of AbstractInsNode are ones we want. Updates beware.
+      if (field.getType == classOf[Int] && field.getModifiers == (Modifier.FINAL |  Modifier.PUBLIC | Modifier.STATIC)) {
+        Some(field.getName -> field.get(null).asInstanceOf[Integer].intValue())
+      } else {
+        None
+      }
+    }).toList.flatten.toMap
+
+  val intToType: Map[Int, String] = typeToInt map {_.swap}
 }
