@@ -8,6 +8,9 @@ import org.objectweb.asm.tree.MethodNode
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.util.asm.Insn
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 object GraphViz {
   def escape(string: String): String = {
     string
@@ -48,4 +51,38 @@ object GraphViz {
   private class AbstractInsnComponentNameProvider(method: MethodNode) extends ComponentNameProvider[Insn] {
     override def getName(component: Insn): String = { component.longString }
   }
+
+  def nestingTree[V,GE,TE](graph: Graph[V,GE], tree: Graph[V,TE], root: V): String = {
+    val writer = new StringWriter()
+    nestingTree(writer, graph, tree, root)
+    writer.toString
+  }
+
+  // TODO: flag for flattening chains
+  // TODO: alternate background colors
+  def nestingTree[V,GE,TE](out: Writer, graph: Graph[V,GE], tree: Graph[V,TE], root: V): Unit = {
+    out.write("digraph {\n")
+    var cluster = 0
+    val ids = mutable.Map[V,String]()
+    def id(v: V): String = { ids.getOrElseUpdate(v, "n" + ids.size) }
+    def go(indent: String, v: V): Unit = {
+      cluster += 1
+      // NOTE: subgraph must have a name starting with "cluster" to get GraphViz to draw a box around it
+      out.write(indent + s"subgraph cluster${cluster} {\n")
+      val label = "\"" + GraphViz.escape(v.toString) + "\""
+      out.write(indent + f"  ${id(v)} [ label=$label ];\n")
+      for (child <- tree.incomingEdgesOf(v).asScala.map(tree.getEdgeSource)) {
+        go(indent + "  ", child)
+      }
+      out.write(indent + "}\n")
+    }
+    // TODO: flatten a tree chain
+    go("", root)
+    for (edge <- graph.edgeSet().asScala) {
+      // TODO: layout-ignore edges that go to own dominator
+      out.write(f"${id(graph.getEdgeSource(edge))} -> ${id(graph.getEdgeTarget(edge))};\n")
+    }
+    out.write("}\n")
+  }
+
 }

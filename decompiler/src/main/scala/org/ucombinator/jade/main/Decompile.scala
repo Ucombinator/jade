@@ -112,7 +112,7 @@ case object Decompile extends Logging {
         GraphViz.toString(doms))
 
       this.methodsLogger.debug("++++ dominator nesting ++++\n" +
-        Dominator.dominatorNesting(cfg.graphWithExceptions, doms, cfg.entry))
+        GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
     }
   }
 }
