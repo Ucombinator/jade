@@ -23,6 +23,7 @@ case object Decompile extends Logging {
   private lazy val asmLogger = childLogger("asm")
   private lazy val javaLogger = childLogger("java")
   private lazy val methodsLogger = childLogger("methods")
+  private lazy val domLogger = childLogger("dom")
 
   def main(paths: List[Path]): Unit = {
     for (path <- paths) {
@@ -104,14 +105,20 @@ case object Decompile extends Logging {
         this.methodsLogger.debug(s"ssa: $key -> $value")
       }
 
-      this.methodsLogger.debug("**** Dominators ****")
+      this.domLogger.debug("**** Dominators ****")
       val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
+      val slowDoms = Dominator.slowDominatorTree(Dominator.reachableSubgraph(cfg.graphWithExceptions, cfg.entry), cfg.entry)
 
-      this.methodsLogger.debug("++++ dominator tree ++++\n"+
-        GraphViz.toString(doms))
-
-      this.methodsLogger.debug("++++ dominator nesting ++++\n" +
-        GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
+      this.domLogger.debug(f"Dominator equality check ${doms == slowDoms}")
+      assert(doms == slowDoms)
+//
+//      this.domLogger.debug("++++ fast dominator tree ++++\n"+
+//        GraphViz.toString(doms))
+//      this.domLogger.debug("++++ slow dominator tree ++++\n"+
+//        GraphViz.toString(slowDoms))
+//
+//      this.domLogger.debug("++++ dominator nesting ++++\n" +
+//        GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
     }
   }
 }
