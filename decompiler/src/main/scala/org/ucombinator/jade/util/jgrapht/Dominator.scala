@@ -99,6 +99,10 @@ object Dominator {
   }
 
   // TODO: if missing node
+  // drawn from https://gist.github.com/yuzeh/a5e6602dfdb0db3c2130c10537db54d7
+  // paper: A Fast Algorithm for Finding Dominators in a Flowgraph, THOMAS LENGAUER and ROBERT ENDRE TARJAN
+  // ACM Transactions on Programming Languages and Systems, Vol. 1, No. 1, July 1979, Pages 121-141.
+  // https://eden.dei.uc.pt/~amilcar/pdf/CompilerInJava.pdf
   def dominatorTree[V >:Null <: AnyRef, E](graph: Graph[V, E], start: V): DominatorTree[V] = {
 
     // translate to expected data structures
