@@ -1,14 +1,17 @@
 package org.ucombinator.jade.util.jgrapht
 
-import org.jgrapht.graph.SimpleDirectedGraph
+import java.util
+
+import org.jgrapht.graph.{AsSubgraph, SimpleDirectedGraph}
 import org.jgrapht.{Graph, Graphs}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.collection.mutable
 
 object Dominator {
   // Returns a mapping from nodes to the set of nodes that dominate them
-  def dominators[V,E](graph: Graph[V,E], start: V): immutable.Map[V, immutable.Set[V]] = {
+  def dominators[V, E](graph: Graph[V, E], start: V): immutable.Map[V, immutable.Set[V]] = {
     val vs = graph.vertexSet.asScala.toSet
     var dom: immutable.Map[V, immutable.Set[V]] = Map.empty
 
@@ -38,16 +41,45 @@ object Dominator {
   final case class Edge[V](source: V, target: V)
 
   type DominatorTree[V] = Graph[V, Edge[V]]
+
+
+  //Produces an AsSubgraph masking away all non-reachable nodes. Performance of AsSubgraph == ??
+  def reachableSubgraph[V <: AnyRef, E](graph: Graph[V, E], start: V) : Graph[V, E] = {
+    val reached = new util.HashSet[V]()
+
+
+    var stack: List[V] = List(start)
+    while (stack.nonEmpty) {
+      val n = stack.head
+      stack = stack.tail
+      if (!reached.contains(n)) {
+        reached.add(n)
+
+        for (w <- graph.outgoingEdgesOf(n).asScala.map(graph.getEdgeTarget(_))) {
+          stack = w :: stack
+        }
+      }
+
+    }
+    new AsSubgraph(graph, reached)
+  }
+
   // Returns a graph with notes pointing to their immediate dominator
-  def dominatorTree[V <: AnyRef, E](graph: Graph[V,E], start: V): DominatorTree[V] = {
+  def slowDominatorTree[V <: AnyRef, E](graph: Graph[V, E], start: V): DominatorTree[V] = {
     val dom = dominators(graph, start)
     val tree = new SimpleDirectedGraph[V, Edge[V]](classOf[Edge[V]])
 
     object O extends Ordering[V] {
       override def compare(x: V, y: V): Int = {
-        if (dom(x)(y)) { -1 }
-        else if (dom(y)(x)) { 1 }
-        else { 0 }
+        if (dom(x)(y)) {
+          -1
+        }
+        else if (dom(y)(x)) {
+          1
+        }
+        else {
+          0
+        }
       }
     }
 
@@ -65,5 +97,147 @@ object Dominator {
 
     tree
   }
+
   // TODO: if missing node
+  // drawn from https://gist.github.com/yuzeh/a5e6602dfdb0db3c2130c10537db54d7
+  // paper: A Fast Algorithm for Finding Dominators in a Flowgraph, THOMAS LENGAUER and ROBERT ENDRE TARJAN
+  // ACM Transactions on Programming Languages and Systems, Vol. 1, No. 1, July 1979, Pages 121-141.
+  // https://eden.dei.uc.pt/~amilcar/pdf/CompilerInJava.pdf
+  def dominatorTree[V >:Null <: AnyRef, E](graph: Graph[V, E], start: V): DominatorTree[V] = {
+
+    // translate to expected data structures
+    def successors(v: V): Iterable[V] = graph.outgoingEdgesOf(v).asScala.map(graph.getEdgeTarget(_))
+
+    def predecessors(v: V): Iterable[V] = graph.incomingEdgesOf(v).asScala.map(graph.getEdgeSource(_))
+
+    def numNodes: Int = graph.vertexSet().size()
+
+    var N = 0
+    //val bucket = Array.fill(numNodes)(Set.empty[V]) //buckets of nodes with the same sdom
+    val bucket = mutable.Map.empty[V, Set[V]]
+    for (vertex <- graph.vertexSet().asScala){
+      bucket(vertex) = Set.empty[V]
+    }
+
+    //val dfnum = Array.fill(numNodes)(0) //number assigned through depth first search - needs to be map I guess?
+    val dfnum =  mutable.Map.empty[V, Int]
+
+    val vertex: mutable.ArraySeq[V] = new mutable.ArraySeq[V](numNodes) //vertex assigned a given number - int/node conflict
+
+    //val parent = Array.fill(numNodes)(-1) //parent (DFS number?) in the DFS tree
+    val parent =  mutable.Map.empty[V, V]
+
+    //val semi = Array.fill(numNodes)(-1) //Semidominator of each node (by dfnum?)
+    val semi =  mutable.Map.empty[V, V]
+
+    //val ancestor = Array.fill(numNodes)(-1) //holds ancestorWithLowestSemi?
+    val ancestor =  mutable.Map.empty[V, V]
+
+    //val idom = Array.fill(numNodes)(-1)
+    val idom =  mutable.Map.empty[V, V]
+
+    //val samedom = Array.fill(numNodes)(-1)
+    val samedom =  mutable.Map.empty[V, V]
+
+    //val best = Array.fill(numNodes)(-1)
+    val best =  mutable.Map.empty[V, V]
+
+
+    //Performs simple DFS to assign dfnum and vertex appropriately (Update to not assume ints)
+    def dfs(): Unit = {
+      var stack: List[(V, V)] = ((null:V), start) :: Nil //I don't know what to put there. Should be somehting like (null, Graph.source)
+      while (stack.nonEmpty) {
+        val (p, n) = stack.head
+        stack = stack.tail
+        if (!dfnum.contains(n)) {
+          dfnum(n) = N
+          vertex(N) = n
+          parent(n) = p
+          N += 1
+
+          for (w <- successors(n)) {
+            stack = (n, w) :: stack
+          }
+        }
+      }
+    }
+
+
+    //Finds the ancestor of v with the lowest semidominator. Uses path compression to keep runtime down
+    def ancestorWithLowestSemi(v: V): V = {
+      val a = ancestor(v) //ancestor initially means parent; only modified here
+      if (ancestor.contains(a)) { //if defined
+        val b = ancestorWithLowestSemi(a)
+        ancestor(v) = ancestor(a) //v.ancestor = v.ancestor.ancestor
+        if (dfnum(semi(b)) < dfnum(semi(best(v)))) {
+          best(v) = b
+        }
+      }
+      best(v)
+    }
+
+    //helper function: p is parent of n
+    def link(p: V, n: V): Unit = {
+      ancestor(n) = p
+      best(n) = n
+    }
+
+    //Start of execution
+    dfs() //setup DFS tree
+
+    for (i <- (N - 1) until 0 by -1) {
+      val n = vertex(i); val p = parent(n); var s = p //Iterate over nodes from bottom of DFS tree to top.
+      //n is vertex, p is parent, s is also parent
+
+      for (v <- predecessors(n)) {
+        val sPrime = if (dfnum(v) <= dfnum(n)) { //fix lookup (array -> map?)
+          v
+        } else {
+          semi(ancestorWithLowestSemi(v))
+        }
+        if (dfnum(sPrime) < dfnum(s)) { //and here
+          s = sPrime
+        }
+      }
+
+      semi(n) = s
+      bucket(s) = bucket(s) + n
+
+      link(p, n)
+
+
+      for (v <- bucket(p)) {
+        val y = ancestorWithLowestSemi(v)
+        if (semi(y) == semi(v)) {
+          idom(v) = p
+        } else {
+          samedom(v) = y
+        }
+      }
+      bucket(p) = Set.empty
+    }
+
+    for (i <- 0 until N) {
+      val n = vertex(i)
+      if (samedom.contains(n)) {
+        idom(n) = idom(samedom(n))
+      }
+    }
+    val tree = new SimpleDirectedGraph[V, Edge[V]](classOf[Edge[V]])
+    tree.addVertex(start) //suspicious: may or may not be key in idom
+    for ((key, value) <- idom) {
+      tree.addVertex(key)
+    }
+    for ((key, value) <- idom) {
+      tree.addEdge(key, value, Edge(key, value))
+    }
+    tree
+  }
+
+  //find ancestor with lowest semidenominator
+  //If same: Mark idom
+  //If not: mark samedom
+
+  //In order, asign idom
+
 }
