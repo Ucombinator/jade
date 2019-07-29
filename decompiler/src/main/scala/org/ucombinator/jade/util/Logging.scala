@@ -93,7 +93,7 @@ object Logging extends Logging {
       val patternLayout = new PatternLayout()
       patternLayout.getInstanceConverterMap.put("logger", classOf[MyLoggerConverter].getName)
       patternLayout.getInstanceConverterMap.put("highlight", classOf[MyHighlightingCompositeConverter].getName)
-      patternLayout.setPattern(f"%%highlight(%%level %%logger:) %%message%%n%%caller{$callerDepth}")
+      patternLayout.setPattern(f"%%highlight(%%level %%logger:) %%message%%n%%caller{$callerDepth}") // TODO: pad level to 5 columns
       patternLayout.setContext(loggerContext)
       patternLayout.start()
 

@@ -19,10 +19,11 @@ import scala.collection.JavaConverters._
 // TODO: error message
 // TODO: load flag
 // TODO: support stdin for files to decompile
+// TODO: skip over ct.jar as it is just signatures.  Maybe don't skip second load if it is better.
 case object Decompile extends Logging {
   private val asmLogger = childLogger("asm")
   private val javaLogger = childLogger("java")
-  private val methodsLogger = childLogger("methods")
+  private val methodsLogger = childLogger("methods") // TODO: rename to methodLogger?
   private val domLogger = childLogger("dom")
 
   def main(paths: List[Path]): Unit = {
@@ -36,6 +37,7 @@ case object Decompile extends Logging {
 
   def decompileClassFile(name: String, owner: String, cr: ClassReader): (ClassNode, CompilationUnit) = {
     this.logger.info(f"Decompiling $name from $owner") // TODO: name use "." instead of "/" and "$"
+    // TODO: put number (e.g., [n of m]) of class
     val classNode = new ClassNode
     cr.accept(classNode, 0)
 
@@ -67,11 +69,12 @@ case object Decompile extends Logging {
   }
 
   def decompileMethod(owner: String, classNode: ClassNode, method: MethodNode): Unit = {
+    this.methodsLogger.debug("!!!!!!!!!!!!")
+    this.methodsLogger.info(f"Decompiling ${classNode.name}.${method.name} (signature = ${method.signature}, descriptor = ${method.desc})")
+    // TODO: put number (e.g., [n of m]) of method (and class)
     // TODO: abstract and native
     // TODO: signature .sym and has no method body
     // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
-    this.methodsLogger.debug("!!!!!!!!!!!!")
-    this.methodsLogger.debug(f"method: ${method.name} ${method.signature} ${method.desc}")
 
     if (method.instructions.size == 0) {
       // TODO: abstract/native vs signature (cl.sym)
@@ -106,7 +109,9 @@ case object Decompile extends Logging {
       }
 
       this.domLogger.debug("**** Dominators ****")
+      this.domLogger.debug("fast dominator")
       val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
+      this.domLogger.debug("slow dominator")
       val slowDoms = Dominator.slowDominatorTree(Dominator.reachableSubgraph(cfg.graphWithExceptions, cfg.entry), cfg.entry)
 
       this.domLogger.debug(f"Dominator equality check ${doms == slowDoms}")

@@ -56,7 +56,7 @@ class Main() extends Cmd[Unit] {
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
-  @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level"), split=",", converter = Array(classOf[LevelConverter]))
+  @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."), split=",", converter = Array(classOf[LevelConverter])) // TODO: check --help // TODO: explain "LOGGER=LEVEL"
   var log = new java.util.LinkedList[(String,Level)]()
 
   @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print after log messages"))
@@ -76,6 +76,7 @@ abstract class Cmd[T] extends Callable[T] {
       // TODO: warn if logger exists
       val name =
         if (k.startsWith(".")) { k.substring(1) }
+        else if (k == "") { Logging.prefix }
         else { Logging.prefix + k }
       Logging.getLogger(name).setLevel(v)
     }
@@ -102,9 +103,9 @@ class LevelConverter extends ITypeConverter[(String, Level)] {
     val (name, level) = value.split("=") match {
       case Array(l) => ("", Level.toLevel(l, null))
       case Array(n, l) => (n, Level.toLevel(l, null))
-      case _ => throw new Exception("could not parse log level")
+      case _ => throw new Exception("could not parse log level") // TODO: explain notation
     }
-    if (level == null) throw new Exception(f"invalid level: $level")
+    if (level == null) throw new Exception(f"invalid level: $level") // TODO: "must be one of ..."
     (name, level)
   }
 }
