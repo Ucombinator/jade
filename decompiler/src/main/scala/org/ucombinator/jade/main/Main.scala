@@ -37,7 +37,8 @@ object Main {
     classOf[BuildInfoCmd],
     classOf[DecompileCmd],
     classOf[CompileCmd],
-    classOf[DiffCmd]))
+    classOf[DiffCmd],
+    classOf[Loggers]))
 class Main() extends Cmd[Unit] {
   override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -55,7 +56,7 @@ class Main() extends Cmd[Unit] {
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
-  @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level"), split=",", converter = Array(classOf[LevelConverter]))
+  @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."), split=",", converter = Array(classOf[LevelConverter])) // TODO: check --help // TODO: explain "LOGGER=LEVEL"
   var log = new java.util.LinkedList[(String,Level)]()
 
   @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print after log messages"))
@@ -66,19 +67,28 @@ abstract class Cmd[T] extends Callable[T] {
 
   // TODO: exit code list
 
+  def run(): T
+
   final override def call(): T = {
     Logging.callerDepth = logCallerDepth
+
     for ((k, v) <- log.asScala) {
-      // Logging.checkName(k) // TODO: doesn't work on package names (search the jar?)
-      Logging.logger(k).setLevel(v)
+      // TODO: warn if logger exists
+      val name =
+        if (k.startsWith(".")) { k.substring(1) }
+        else if (k == "") { Logging.prefix }
+        else { Logging.prefix + k }
+      Logging.getLogger(name).setLevel(v)
     }
+
     if (waitForUser) {
-      Console.out.println("Waiting.  Press \"Enter\" to continue.")
+      Console.out.println("Waiting for user.  Press \"Enter\" to continue.")
       Console.in.readLine()
     }
-    run()
+
+    val result = run()
+    result
   }
-  def run(): T
 }
 
 class VersionProvider extends CommandLine.IVersionProvider {
@@ -93,9 +103,9 @@ class LevelConverter extends ITypeConverter[(String, Level)] {
     val (name, level) = value.split("=") match {
       case Array(l) => ("", Level.toLevel(l, null))
       case Array(n, l) => (n, Level.toLevel(l, null))
-      case _ => throw new Exception("could not parse log level")
+      case _ => throw new Exception("could not parse log level") // TODO: explain notation
     }
-    if (level == null) throw new Exception(f"invalid level: $level")
+    if (level == null) throw new Exception(f"invalid level: $level") // TODO: "must be one of ..."
     (name, level)
   }
 }
@@ -153,4 +163,11 @@ class DiffCmd extends Cmd[Unit] { // TODO: exit codes
   override def run(): Unit = {
     ??? // TODO: implement diff
   }
+}
+
+@Command(
+  name = "loggers",
+  description = Array("Lists available loggers"))
+class Loggers extends Cmd[Unit] {
+  override def run(): Unit = { Logging.listLoggers() }
 }

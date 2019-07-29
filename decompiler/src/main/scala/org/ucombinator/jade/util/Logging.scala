@@ -1,20 +1,25 @@
 package org.ucombinator.jade.util
 
+import java.util.jar.JarFile
+
+import ch.qos.logback.classic.pattern.NamedConverter
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{BasicConfigurator, Level, LoggerContext, PatternLayout, Logger => LogbackLogger}
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder
+import ch.qos.logback.core.pattern.color.ANSIConstants.{BOLD, DEFAULT_FG, RED_FG}
+import ch.qos.logback.core.pattern.color.ForegroundCompositeConverterBase
 import com.typesafe.scalalogging.{Logger => ScalaLogger}
 import org.slf4j.{LoggerFactory, Logger => Slf4jLogger}
+import org.ucombinator.jade.main.Main
 
 import scala.collection.JavaConverters._
 
 // TODO: slf4j.detectLoggerNameMismatch
+// TODO: Ensure Logging can extends only objects?
 trait Logging {
-  @transient // TODO: why transient?
-  protected lazy val logger: ScalaLogger = {
+  protected val logger: ScalaLogger = {
     val name = getClass.getName
-      .replaceAll("^org.ucombinator.jade.", "")
       .replace('$', '.')
       .replace("..", ".")
       .replaceAll(".$", "")
@@ -25,54 +30,80 @@ trait Logging {
   }
 }
 
-object Logging {
-  def logger(name: String): LogbackLogger = {
+object Logging extends Logging {
+  def getLogger(name: String): LogbackLogger = {
     val modifiedName = if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME } else { name }
     LoggerFactory.getLogger(modifiedName).asInstanceOf[LogbackLogger]
   }
 
-  def tryLoad(string: String): Boolean = {
-  println(f"tryLoad: $string")
-    try { Class.forName(string) } catch { case e: ClassNotFoundException => false }
-    true
-  }
+  def listLoggers(): Unit = {
+    // See https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
+    // Note: toURI is required in order to handle special characters
+    val jar = new java.io.File(classOf[Main].getProtectionDomain.getCodeSource.getLocation.toURI).getPath
+    this.logger.debug(f"jar: $jar")
 
-  def checkName(string: String): Unit = {
-    var s =
-      if (string.startsWith(".")) { string.substring(1) }
-      else { "org.ucombinator.jade." + string }
-    while (!tryLoad(s)) {
-      if (s.contains(".")) {
-        s = s.replaceAll("""\.[^.]+$""", "")
-      } else {
-        throw new Exception(f"Could not find class for logger $string") // TODO: as error message
+    for (entry <- new JarFile(jar).entries().asScala) {
+      if (entry.getName.endsWith(".class")) {
+        try {
+          Class.forName(entry.getName.
+            replaceAll("\\.class$", "").
+            replaceAll("/", "."))
+        } catch {
+          case e: Throwable => /* Ignored */
+            this.logger.debug(s"skipping: ${entry.getName}")
+        }
       }
     }
+
     for (l <- LoggerFactory.getLogger(Slf4jLogger.ROOT_LOGGER_NAME).asInstanceOf[LogbackLogger].getLoggerContext.getLoggerList.asScala) {
-      if (string == l.getName || l.getName.startsWith(string + ".")) {
-        return
-      }
+      println(l.getName)
     }
-    throw new Exception(f"No logger found for $string")
   }
 
   var callerDepth = 0
 
-  class Config() extends BasicConfigurator  {
+  val prefix = "org.ucombinator.jade." // TODO: derive automatically
+
+  class MyLoggerConverter extends NamedConverter { // TODO: better name
+    override protected def getFullyQualifiedName(event: ILoggingEvent): String = {
+      val name = event.getLoggerName
+      if (name.startsWith(prefix)) { name.stripPrefix(prefix) }
+      else { "." + name}
+    }
+  }
+
+  class MyHighlightingCompositeConverter extends ForegroundCompositeConverterBase[ILoggingEvent] { // TODO: better name
+    override protected def getForegroundColorCode(event: ILoggingEvent): String = {
+      val level = event.getLevel
+      level.toInt match {
+        case Level.ERROR_INT =>
+          BOLD + RED_FG
+        case Level.WARN_INT =>
+          RED_FG
+        case Level.INFO_INT =>
+          DEFAULT_FG // Was `BLUE_FG`, but that is hard to read on a black background
+        case _ =>
+          DEFAULT_FG
+      }
+    }
+  }
+
+  class Config extends BasicConfigurator  {
     override def configure(loggerContext: LoggerContext): Unit = {
+      val patternLayout = new PatternLayout()
+      patternLayout.getInstanceConverterMap.put("logger", classOf[MyLoggerConverter].getName)
+      patternLayout.getInstanceConverterMap.put("highlight", classOf[MyHighlightingCompositeConverter].getName)
+      patternLayout.setPattern(f"%%highlight(%%level %%logger:) %%message%%n%%caller{$callerDepth}") // TODO: pad level to 5 columns
+      patternLayout.setContext(loggerContext)
+      patternLayout.start()
+
+      val layoutWrappingEncoder = new LayoutWrappingEncoder[ILoggingEvent]
+      layoutWrappingEncoder.setContext(loggerContext)
+      layoutWrappingEncoder.setLayout(patternLayout)
+
       val consoleAppender = new ConsoleAppender[ILoggingEvent]
       consoleAppender.setContext(loggerContext)
       consoleAppender.setName("console")
-      val layoutWrappingEncoder = new LayoutWrappingEncoder[ILoggingEvent]
-      layoutWrappingEncoder.setContext(loggerContext)
-
-      val patternLayout = new PatternLayout()
-      patternLayout.setPattern(f"%%highlight(%%level %%-5logger:) %%message%%n%%caller{$callerDepth}")
-
-      patternLayout.setContext(loggerContext)
-      patternLayout.start()
-      layoutWrappingEncoder.setLayout(patternLayout)
-
       consoleAppender.setEncoder(layoutWrappingEncoder)
       consoleAppender.start()
 
