@@ -20,9 +20,9 @@ import scala.collection.JavaConverters._
 // TODO: load flag
 // TODO: support stdin for files to decompile
 case object Decompile extends Logging {
-  private lazy val asmLogger = childLogger("asm")
-  private lazy val javaLogger = childLogger("java")
-  private lazy val methodsLogger = childLogger("methods")
+  private val asmLogger = childLogger("asm")
+  private val javaLogger = childLogger("java")
+  private val methodsLogger = childLogger("methods")
 
   def main(paths: List[Path]): Unit = {
     for (path <- paths) {

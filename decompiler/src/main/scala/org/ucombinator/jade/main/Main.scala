@@ -37,7 +37,8 @@ object Main {
     classOf[BuildInfoCmd],
     classOf[DecompileCmd],
     classOf[CompileCmd],
-    classOf[DiffCmd]))
+    classOf[DiffCmd],
+    classOf[Loggers]))
 class Main() extends Cmd[Unit] {
   override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -66,19 +67,27 @@ abstract class Cmd[T] extends Callable[T] {
 
   // TODO: exit code list
 
+  def run(): T
+
   final override def call(): T = {
     Logging.callerDepth = logCallerDepth
+
     for ((k, v) <- log.asScala) {
-      // Logging.checkName(k) // TODO: doesn't work on package names (search the jar?)
-      Logging.logger(k).setLevel(v)
+      // TODO: warn if logger exists
+      val name =
+        if (k.startsWith(".")) { k.substring(1) }
+        else { Logging.prefix + k }
+      Logging.getLogger(name).setLevel(v)
     }
+
     if (waitForUser) {
-      Console.out.println("Waiting.  Press \"Enter\" to continue.")
+      Console.out.println("Waiting for user.  Press \"Enter\" to continue.")
       Console.in.readLine()
     }
-    run()
+
+    val result = run()
+    result
   }
-  def run(): T
 }
 
 class VersionProvider extends CommandLine.IVersionProvider {
@@ -153,4 +162,11 @@ class DiffCmd extends Cmd[Unit] { // TODO: exit codes
   override def run(): Unit = {
     ??? // TODO: implement diff
   }
+}
+
+@Command(
+  name = "loggers",
+  description = Array("Lists available loggers"))
+class Loggers extends Cmd[Unit] {
+  override def run(): Unit = { Logging.listLoggers() }
 }
