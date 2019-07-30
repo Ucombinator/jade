@@ -115,11 +115,11 @@ object VFS extends Logging {
       case List() =>
         fileTree match {
           case null => FileTreeFile(bytes)
-          case _ => throw new Exception("TODO: bad add")
+          case _ => throw new Exception("TODO: bad add") // TODO
         }
       case p :: ps =>
         fileTree match {
-          case FileTreeFile(_) => throw new Exception("TODO: bad add 2")
+          case FileTreeFile(_) => throw new Exception("TODO: bad add 2") // TODO
           case null => FileTreeDirectory(SortedMap(p -> add(ps, null, bytes)))
           case FileTreeDirectory(children) =>
             FileTreeDirectory(children + (p -> add(ps, children.get(p).orNull, bytes)))

@@ -54,7 +54,8 @@ case object Decompile extends Logging {
 
     this.javaLogger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
 
-    // TODO: classNode.sourceFile, classNode.sourceDebug
+    // TODO: classNode.sourceFile: Compiled from "ActualTree.java": JavaParser.setComment(bodyDeclaration, comment)
+    // TODO: classNode.sourceDebug (See JSR-45 https://www.jcp.org/en/jsr/detail?id=045)
     // TODO: classNode.outerClass, classNode.outerMethod, classNode.outerMethodDesc
     // TODO: Inner classes
     val inners: List[InnerClassNode] = classNode.innerClasses.asScala.toList
