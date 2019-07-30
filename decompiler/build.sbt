@@ -111,11 +111,10 @@ assemblyMergeStrategy in assembly := {
 import complete.DefaultParsers._
 
 val flagsTableFile = settingKey[File]("Location of the flags table")
-flagsTableFile := (scalaSource in Compile).value / "org" / "ucombinator" / "jade" / "util" / "classfile" / "Flags.txt"
-// TODO: Move out of "util"
+flagsTableFile := (scalaSource in Compile).value / "org" / "ucombinator" / "jade" / "classfile" / "Flags.txt"
 
 val flagsSourceFile = settingKey[File]("Location of the generated `Flags.scala` file")
-flagsSourceFile := (sourceManaged in Compile).value / "org" / "ucombinator" / "jade" / "util" / "classfile" / "Flags.scala"
+flagsSourceFile := (sourceManaged in Compile).value / "org" / "ucombinator" / "jade" / "classfile" / "Flags.scala"
 
 val javaSpecParser =
   Space ~>

@@ -1,4 +1,4 @@
-package org.ucombinator.jade.util.classfile
+package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.`type`._

@@ -1,4 +1,4 @@
-package org.ucombinator.jade.util.classfile
+package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.`type`.PrimitiveType
 

@@ -1,4 +1,4 @@
-package org.ucombinator.jade.util.classfile
+package org.ucombinator.jade.classfile
 
 import org.scalatest._
 import org.scalatest.prop.TableDrivenPropertyChecks

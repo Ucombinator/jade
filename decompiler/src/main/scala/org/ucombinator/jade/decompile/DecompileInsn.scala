@@ -9,7 +9,7 @@ import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.decompile.method.ssa.{SSA, Var}
-import org.ucombinator.jade.util.classfile.Descriptor
+import org.ucombinator.jade.classfile.Descriptor
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._

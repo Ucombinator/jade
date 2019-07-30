@@ -1,7 +1,7 @@
-package org.ucombinator.jade.util.classfile
+package org.ucombinator.jade.classfile
 
 import org.scalatest._
-import org.ucombinator.jade.util.classfile.Flags._
+import org.ucombinator.jade.classfile.Flags._
 
 class FlagsTest extends FreeSpec {
   "classFlags" - {

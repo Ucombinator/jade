@@ -9,7 +9,7 @@ import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.util.JavaParser
-import org.ucombinator.jade.util.classfile.{Descriptor, Flags, Signature}
+import org.ucombinator.jade.classfile.{Descriptor, Flags, Signature}
 
 import scala.collection.JavaConverters._
 
