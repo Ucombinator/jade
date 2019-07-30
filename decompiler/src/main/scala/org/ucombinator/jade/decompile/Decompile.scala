@@ -109,21 +109,13 @@ case object Decompile extends Logging {
       }
 
       this.domLogger.debug("**** Dominators ****")
-      this.domLogger.debug("fast dominator")
       val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
-      this.domLogger.debug("slow dominator")
-      val slowDoms = Dominator.slowDominatorTree(Dominator.reachableSubgraph(cfg.graphWithExceptions, cfg.entry), cfg.entry)
 
-      this.domLogger.debug(f"Dominator equality check ${doms == slowDoms}")
-      assert(doms == slowDoms)
-//
-//      this.domLogger.debug("++++ fast dominator tree ++++\n"+
-//        GraphViz.toString(doms))
-//      this.domLogger.debug("++++ slow dominator tree ++++\n"+
-//        GraphViz.toString(slowDoms))
-//
-//      this.domLogger.debug("++++ dominator nesting ++++\n" +
-//        GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
+      this.domLogger.debug("++++ dominator tree ++++\n"+
+        GraphViz.toString(doms))
+
+      this.domLogger.debug("++++ dominator nesting ++++\n" +
+        GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
     }
   }
 }
