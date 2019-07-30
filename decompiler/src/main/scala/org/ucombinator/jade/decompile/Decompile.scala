@@ -54,19 +54,17 @@ case object Decompile extends Logging {
 
     val compilationUnit = DecompileClass.decompileClass(classNode)
 
-    this.javaLogger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
-
-    // TODO: classNode.sourceFile: Compiled from "ActualTree.java": JavaParser.setComment(bodyDeclaration, comment)
-    // TODO: classNode.sourceDebug (See JSR-45 https://www.jcp.org/en/jsr/detail?id=045)
-    // TODO: classNode.outerClass, classNode.outerMethod, classNode.outerMethodDesc
-    // TODO: Inner classes
-    val inners: List[InnerClassNode] = classNode.innerClasses.asScala.toList
-
-    inners.foreach(c => this.methodsLogger.debug("inner class: " + c.name))
-
-    for (method <- classNode.methods.asScala) {
-      decompileMethod(owner, classNode, method)
+    for (typ <- compilationUnit.getTypes.iterator().asScala) {
+      for (member <- typ.getMembers.iterator().asScala) {
+        DecompileClass.methods.get(member) match {
+          case None => /* Do nothing */
+          case Some((classNode, methodNode)) => decompileMethod(owner, classNode, methodNode)
+        }
+      }
     }
+//    for (method <- classNode.methods.asScala) {
+//      decompileMethod(owner, classNode, method)
+//    }
 
     (classNode, compilationUnit)
   }

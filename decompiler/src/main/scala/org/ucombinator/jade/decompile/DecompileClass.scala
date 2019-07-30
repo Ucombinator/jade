@@ -8,12 +8,15 @@ import com.github.javaparser.ast.stmt.BlockStmt
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.ucombinator.jade.util.JavaParser
+import org.ucombinator.jade.util.{JavaParser, Logging}
 import org.ucombinator.jade.classfile.{Descriptor, Flags, Signature}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
-object DecompileClass {
+object DecompileClass extends Logging {
+  val classes = mutable.Map[CompilationUnit, ClassNode]()
+  val methods = mutable.Map[BodyDeclaration[_ <: BodyDeclaration[_]], (ClassNode, MethodNode)]()
 
   def decompileLiteral(node: Object): Expression = {
     node match {
@@ -166,13 +169,16 @@ object DecompileClass {
         new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
     }
     JavaParser.setComment(bodyDeclaration, comment)
+    methods += bodyDeclaration -> (classNode, node)
+    bodyDeclaration
   }
 
   def decompileClass(node: ClassNode): CompilationUnit = {
     val comment = new BlockComment("\n" +
-      f"* Source File Name: ${node.sourceFile}\n" +
-      f"* Class-file Format Version: ${node.version}\n")
-    // TODO println(f"sourceDebug: ${node.sourceDebug}") // TODO
+      f"* Source File: ${node.sourceFile}\n" +
+      f"* Class-file Format Version: ${node.version}\n" +
+      f"* Source Debug Extension: ${node.sourceDebug}\n" // See JSR-45 https://www.jcp.org/en/jsr/detail?id=045
+      )
     // outerClass
     // outerMethod
     // outerMethodDesc
@@ -180,6 +186,7 @@ object DecompileClass {
     // innerClasses
     // nestHostClass
     // nestMember
+
     val fullClassName: Name = Descriptor.className(node.name)
 
     val packageDeclaration = new PackageDeclaration(
@@ -187,6 +194,7 @@ object DecompileClass {
     val imports = new NodeList[ImportDeclaration]() // TODO
 
     val classOrInterfaceDeclaration = {
+      // TODO: assert ACC_SUPER
       val modifiers = Flags.toModifiers(Flags.classFlags(node.access))
       val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
         node.visibleAnnotations,
@@ -237,5 +245,8 @@ object DecompileClass {
 
     val compilationUnit = new CompilationUnit(packageDeclaration, imports, types, module)
     JavaParser.setComment(compilationUnit, comment)
+    classes += compilationUnit -> node
+    this.logger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
+    compilationUnit
   }
 }
