@@ -76,7 +76,7 @@ abstract class Cmd[T] extends Callable[T] {
       // TODO: warn if logger exists
       val name =
         if (k.startsWith(".")) { k.substring(1) }
-        else if (k == "") { Logging.prefix }
+        else if (k == "") { "" }
         else { Logging.prefix + k }
       Logging.getLogger(name).setLevel(v)
     }
