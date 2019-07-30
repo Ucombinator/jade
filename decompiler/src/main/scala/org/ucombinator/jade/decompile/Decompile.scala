@@ -30,8 +30,10 @@ case object Decompile extends Logging {
     for (path <- paths) {
       VFS.get0(path)
     }
-    for ((name, (path, classReader)) <- VFS.classes) {
-      decompileClassFile(name, path.toString, classReader)
+    for ((name, readers) <- VFS.classes) {
+      for ((path, classReader) <- readers) { // TODO: pick "best"
+        decompileClassFile(name, path.toString, classReader)
+      }
     }
   }
 

@@ -149,14 +149,12 @@ object VFS extends Logging {
     fileTree
   }
   def readJmod(bytes: Array[Byte]): FileTree = { readZip(bytes, JMOD_OFFSET) }
-  var classes = Map[String, (String, ClassReader)]()
+  var classes = Map[String, List[(String, ClassReader)]]()
   def load(path: PathPosition, bytes: Array[Byte]): Unit = {
     assert(bytes.startsWith(CLASS_SIGNATURE))
     val classReader = new ClassReader(bytes)
-    classes.get(classReader.getClassName) match {
-      case None => classes += classReader.getClassName -> ((path.path.toString, classReader))
-      case Some(_) => ignore(f"already loaded class ${classReader.getClassName}", path)
-    }
+    val old = classes.getOrElse(classReader.getClassName, List())
+    classes += classReader.getClassName -> ((path.path.toString, classReader) :: old)
   }
   def get(path: PathPosition): Unit = {
     path.read match {
