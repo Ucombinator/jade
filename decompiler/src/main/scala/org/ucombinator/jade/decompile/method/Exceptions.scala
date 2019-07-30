@@ -2,7 +2,7 @@ package org.ucombinator.jade.decompile.method
 
 import org.jgrapht.graph.AsGraphUnion
 import org.jgrapht.traverse.DepthFirstIterator
-import org.ucombinator.jade.util.asm.Insn
+import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.util.jgrapht.Dominator
 
 import scala.collection.JavaConverters._

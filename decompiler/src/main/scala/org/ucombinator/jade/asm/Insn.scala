@@ -1,4 +1,4 @@
-package org.ucombinator.jade.util.asm
+package org.ucombinator.jade.asm
 
 import java.io.{PrintWriter, StringWriter}
 import java.lang.reflect.Modifier

@@ -5,7 +5,7 @@ import org.jgrapht.graph.{AsGraphUnion, DirectedPseudograph}
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}
 import org.ucombinator.jade.decompile.method.ControlFlowGraph.Edge
-import org.ucombinator.jade.util.asm.Insn
+import org.ucombinator.jade.asm.Insn
 
 import scala.collection.JavaConverters._
 

@@ -4,7 +4,7 @@ import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
-import org.ucombinator.jade.util.asm.Insn
+import org.ucombinator.jade.asm.Insn
 
 import scala.collection.JavaConverters._
 

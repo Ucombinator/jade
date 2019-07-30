@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.{ClassNode, InnerClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
-import org.ucombinator.jade.util.asm.Insn
+import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 import org.ucombinator.jade.util.{Logging, VFS}
 

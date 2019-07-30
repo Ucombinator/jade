@@ -6,7 +6,7 @@ import org.jgrapht.Graph
 import org.jgrapht.io.{ComponentNameProvider, DOTExporter, IntegerComponentNameProvider, StringComponentNameProvider}
 import org.objectweb.asm.tree.MethodNode
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
-import org.ucombinator.jade.util.asm.Insn
+import org.ucombinator.jade.asm.Insn
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
