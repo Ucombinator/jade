@@ -32,7 +32,6 @@ object Main {
 @Command(
   name = "jade",
   subcommands = Array(
-    // TODO: list all loggers
     classOf[HelpCommand],
     classOf[BuildInfoCmd],
     classOf[DecompileCmd],
