@@ -64,7 +64,7 @@ object Logging extends Logging {
 
   val prefix = "org.ucombinator.jade." // TODO: derive automatically
 
-  class MyLoggerConverter extends NamedConverter { // TODO: better name
+  class LoggerConverter extends NamedConverter {
     override protected def getFullyQualifiedName(event: ILoggingEvent): String = {
       val name = event.getLoggerName
       if (name.startsWith(prefix)) { name.stripPrefix(prefix) }
@@ -72,7 +72,7 @@ object Logging extends Logging {
     }
   }
 
-  class MyHighlightingCompositeConverter extends ForegroundCompositeConverterBase[ILoggingEvent] { // TODO: better name
+  class HighlightingCompositeConverter extends ForegroundCompositeConverterBase[ILoggingEvent] {
     override protected def getForegroundColorCode(event: ILoggingEvent): String = {
       val level = event.getLevel
       level.toInt match {
@@ -91,9 +91,9 @@ object Logging extends Logging {
   class Config extends BasicConfigurator  {
     override def configure(loggerContext: LoggerContext): Unit = {
       val patternLayout = new PatternLayout()
-      patternLayout.getInstanceConverterMap.put("logger", classOf[MyLoggerConverter].getName)
-      patternLayout.getInstanceConverterMap.put("highlight", classOf[MyHighlightingCompositeConverter].getName)
-      patternLayout.setPattern(f"%%highlight(%%level %%logger:) %%message%%n%%caller{$callerDepth}") // TODO: pad level to 5 columns
+      patternLayout.getInstanceConverterMap.put("logger", classOf[LoggerConverter].getName)
+      patternLayout.getInstanceConverterMap.put("highlight", classOf[HighlightingCompositeConverter].getName)
+      patternLayout.setPattern(f"%%highlight(%%-5level %%logger:) %%message%%n%%caller{$callerDepth}")
       patternLayout.setContext(loggerContext)
       patternLayout.start()
 
