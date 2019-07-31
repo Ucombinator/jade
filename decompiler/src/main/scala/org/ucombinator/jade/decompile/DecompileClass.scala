@@ -8,15 +8,12 @@ import com.github.javaparser.ast.stmt.BlockStmt
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.ucombinator.jade.util.{JavaParser, Logging}
 import org.ucombinator.jade.classfile.{Descriptor, Flags, Signature}
+import org.ucombinator.jade.util.{JavaParser, Logging}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 object DecompileClass extends Logging {
-  val classes = mutable.Map[CompilationUnit, ClassNode]()
-  val methods = mutable.Map[BodyDeclaration[_ <: BodyDeclaration[_]], (ClassNode, MethodNode)]()
 
   def decompileLiteral(node: Object): Expression = {
     node match {
@@ -158,7 +155,7 @@ object DecompileClass extends Logging {
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
-    val body: BlockStmt = DecompileBody.decompileBody(classNode, node)
+    val body: BlockStmt = DecompileBody.decompileBodyStub(classNode, node)
     val receiverParameter: ReceiverParameter = null // TODO
     val bodyDeclaration = node.name match {
       case "<clinit>" =>
@@ -169,7 +166,7 @@ object DecompileClass extends Logging {
         new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
     }
     JavaParser.setComment(bodyDeclaration, comment)
-    methods += bodyDeclaration -> (classNode, node)
+    Decompile.methods += bodyDeclaration -> ((classNode, node))
     bodyDeclaration
   }
 
@@ -245,7 +242,7 @@ object DecompileClass extends Logging {
 
     val compilationUnit = new CompilationUnit(packageDeclaration, imports, types, module)
     JavaParser.setComment(compilationUnit, comment)
-    classes += compilationUnit -> node
+    Decompile.classes += compilationUnit -> node
     this.logger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
     compilationUnit
   }

@@ -4,16 +4,14 @@ import java.io.{PrintWriter, StringWriter}
 import java.nio.file.Path
 
 import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.body.BodyDeclaration
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree.{ClassNode, InnerClassNode, MethodNode}
+import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
-import org.ucombinator.jade.decompile.method.ControlFlowGraph
-import org.ucombinator.jade.decompile.method.ssa.SSA
-import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 import org.ucombinator.jade.util.{Logging, VFS}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 // TODO: nested class?
 // TODO: error message
@@ -22,24 +20,29 @@ import scala.collection.JavaConverters._
 // TODO: skip over ct.jar as it is just signatures.  Maybe don't skip second load if it is better.
 case object Decompile extends Logging {
   private val asmLogger = childLogger("asm")
-  private val javaLogger = childLogger("java")
-  private val methodsLogger = childLogger("methods") // TODO: rename to methodLogger?
-  private val domLogger = childLogger("dom")
+
+  val classes = mutable.Map[CompilationUnit, ClassNode]()
+  val methods = mutable.Map[BodyDeclaration[_ <: BodyDeclaration[_]], (ClassNode, MethodNode)]()
 
   def main(paths: List[Path]): Unit = {
     for (path <- paths) {
       VFS.get0(path)
     }
-    for ((name, readers) <- VFS.classes) {
+    for (((name, readers), i) <- VFS.classes.zipWithIndex) {
       for ((path, classReader) <- readers) { // TODO: pick "best"
-        decompileClassFile(name, path.toString, classReader)
+        val (classNode, compilationUnit) = decompileClassFile(name, path.toString, classReader, i)
+        for (typ <- compilationUnit.getTypes.iterator().asScala) {
+          val members = typ.getMembers.iterator().asScala.flatMap(Decompile.methods.get)
+          for (((classNode, methodNode), j) <- members.zipWithIndex) {
+            DecompileBody.decompileBody(path.toString, classNode, i, methodNode, j, members.size)
+          }
+        }
       }
     }
   }
 
-  def decompileClassFile(name: String, owner: String, cr: ClassReader): (ClassNode, CompilationUnit) = {
-    this.logger.info(f"Decompiling $name from $owner") // TODO: name use "." instead of "/" and "$"
-    // TODO: put number (e.g., [n of m]) of class
+  def decompileClassFile(name: String, owner: String, cr: ClassReader, i: Int): (ClassNode, CompilationUnit) = {
+    this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] $name from $owner") // TODO: name use "." instead of "/" and "$"
     val classNode = new ClassNode
     cr.accept(classNode, 0)
 
@@ -54,69 +57,6 @@ case object Decompile extends Logging {
 
     val compilationUnit = DecompileClass.decompileClass(classNode)
 
-    for (typ <- compilationUnit.getTypes.iterator().asScala) {
-      for (member <- typ.getMembers.iterator().asScala) {
-        DecompileClass.methods.get(member) match {
-          case None => /* Do nothing */
-          case Some((classNode, methodNode)) => decompileMethod(owner, classNode, methodNode)
-        }
-      }
-    }
-//    for (method <- classNode.methods.asScala) {
-//      decompileMethod(owner, classNode, method)
-//    }
-
     (classNode, compilationUnit)
-  }
-
-  def decompileMethod(owner: String, classNode: ClassNode, method: MethodNode): Unit = {
-    this.methodsLogger.debug("!!!!!!!!!!!!")
-    this.methodsLogger.info(f"Decompiling ${classNode.name}.${method.name} (signature = ${method.signature}, descriptor = ${method.desc})")
-    // TODO: put number (e.g., [n of m]) of method (and class)
-    // TODO: abstract and native
-    // TODO: signature .sym and has no method body
-    // TODO: identify extent of exception handlers (basically things dominated by exception handler entry)
-
-    if (method.instructions.size == 0) {
-      // TODO: abstract/native vs signature (cl.sym)
-      this.methodsLogger.debug("**** Method is empty ****")
-    } else {
-      this.methodsLogger.debug("**** ControlFlowGraph ****")
-
-      val cfg = ControlFlowGraph(owner, method)
-
-      this.methodsLogger.debug("++++ cfg ++++\n" + GraphViz.toString(cfg))
-      for (v <- cfg.graph.vertexSet().asScala) {
-        this.methodsLogger.debug(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
-      }
-
-      this.methodsLogger.debug("**** SSA ****")
-      val ids = SSA(owner, method, cfg)
-
-      this.methodsLogger.debug("++++ frames: " + ids.frames.length + " ++++")
-      for (i <- 0 until method.instructions.size) {
-        this.methodsLogger.debug(f"frame($i): ${ids.frames(i)}")
-      }
-
-      this.methodsLogger.debug("++++ results and arguments ++++")
-      for (i <- 0 until method.instructions.size) {
-          val insn = method.instructions.get(i)
-        this.methodsLogger.debug(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
-      }
-
-      this.methodsLogger.debug("++++ ssa map ++++")
-      for ((key, value) <- ids.ssaMap) {
-        this.methodsLogger.debug(s"ssa: $key -> $value")
-      }
-
-      this.domLogger.debug("**** Dominators ****")
-      val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
-
-      this.domLogger.debug("++++ dominator tree ++++\n"+
-        GraphViz.toString(doms))
-
-      this.domLogger.debug("++++ dominator nesting ++++\n" +
-        GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
-    }
   }
 }
