@@ -11,6 +11,16 @@ object Dominator {
 
   type DominatorTree[V] = Graph[V, Edge[V]]
 
+  def isDominator[V,E](tree: Graph[V,E], v1: V, v2: V): Boolean = {
+    if (v1 == v2) { true }
+    else {
+      tree.outgoingEdgesOf(v2).asScala.toList match {
+        case List() => false
+        case List(edge) => isDominator(tree, v1, tree.getEdgeTarget(edge))
+      }
+    }
+  }
+
   // This implements the algorithm in the paper:
   //   THOMAS LENGAUER and ROBERT ENDRE TARJAN. A Fast Algorithm for Finding Dominators in a Flowgraph.
   //   ACM Transactions on Programming Languages and Systems, Vol. 1, No. 1, July 1979, Pages 121-141.

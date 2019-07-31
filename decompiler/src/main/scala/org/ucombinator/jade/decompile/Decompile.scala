@@ -32,7 +32,7 @@ case object Decompile extends Logging {
       for ((path, classReader) <- readers) { // TODO: pick "best"
         val (classNode, compilationUnit) = decompileClassFile(name, path.toString, classReader, i)
         for (typ <- compilationUnit.getTypes.iterator().asScala) {
-          val members = typ.getMembers.iterator().asScala.flatMap(Decompile.methods.get)
+          val members = typ.getMembers.iterator().asScala.flatMap(Decompile.methods.get).toList
           for (((classNode, methodNode), j) <- members.zipWithIndex) {
             DecompileBody.decompileBody(path.toString, classNode, i, methodNode, j, members.size)
           }
