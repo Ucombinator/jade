@@ -76,10 +76,10 @@ object GraphViz {
       }
       out.write(indent + "}\n")
     }
-    go("", root)
+    go("  ", root)
     for (edge <- graph.edgeSet().asScala) {
       // TODO: layout-ignore edges that go to own dominator
-      out.write(f"${id(graph.getEdgeSource(edge))} -> ${id(graph.getEdgeTarget(edge))};\n")
+      out.write(f"  ${id(graph.getEdgeSource(edge))} -> ${id(graph.getEdgeTarget(edge))};\n")
     }
     out.write("}\n")
   }
