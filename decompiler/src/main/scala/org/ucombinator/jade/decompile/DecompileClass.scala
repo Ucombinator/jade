@@ -113,10 +113,6 @@ object DecompileClass extends Logging {
   }
 
   def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
-    val comment = new BlockComment("\n" +
-      f"    * Max Stack: ${node.maxStack}\n" +
-      f"    * Max Locals: ${node.maxLocals}\n" +
-      f"    ")
     // attr (ignore?)
     // instructions
     // tryCatchBlocks
@@ -165,7 +161,6 @@ object DecompileClass extends Logging {
       case _ =>
         new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
     }
-    JavaParser.setComment(bodyDeclaration, comment)
     Decompile.methods += bodyDeclaration -> ((classNode, node))
     bodyDeclaration
   }

@@ -15,6 +15,7 @@ object Descriptor {
     assert(s._4.isEmpty)
     (s._2, s._3)
   }
+  // TODO: move to ClassName?
   def className(string: String): Name = {
     string.split('/').foldLeft(null: Name){ (qualifier, identifier) => new Name(qualifier, identifier) }
   }
