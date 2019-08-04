@@ -55,7 +55,13 @@ object DecompileBody extends Logging {
       instructions.lines.map("         *" + _).mkString("\n") + "\n" +
       f"         "))
   }
-
+  def setDeclarationBody(declaration: BodyDeclaration[_ <: BodyDeclaration[_]], body: BlockStmt): Unit = {
+    declaration match {
+      case declaration: InitializerDeclaration => declaration.setBody(body)
+      case declaration: ConstructorDeclaration => declaration.setBody(body)
+      case declaration: MethodDeclaration => declaration.setBody(body)
+    }
+  }
   def decompileBody(owner: String, classNode: ClassNode, i: Int, method: MethodNode, j: Int, methods: Int, declaration: BodyDeclaration[_ <: BodyDeclaration[_]]): Unit = {
     this.logger.debug("!!!!!!!!!!!!")
     this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of $methods] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})")
@@ -74,7 +80,7 @@ object DecompileBody extends Logging {
         }
       }
 
-      declaration match {
+      declaration match { // TODO: use setDeclarationBody
         case declaration: InitializerDeclaration =>
           declaration.setBody(warningBody(f"No implementation for the static initializer for class ${classNode.name}"))
         case declaration: ConstructorDeclaration =>
@@ -132,6 +138,13 @@ object DecompileBody extends Logging {
 
       this.logger.debug("++++ dominator nesting ++++\n" +
         GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
+
+      var statements = List[Statement]()
+      for (insn <- method.instructions.toArray) {
+        statements = statements :+ DecompileInsn.decompileInsn(DecompileInsn.decompileInsn(method, insn, ids))
+      }
+      this.logger.debug("++++ statements ++++\n" + statements.mkString("\n"))
+      setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statements.asJava)))
     }
   }
 }

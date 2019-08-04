@@ -5,6 +5,7 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.util.Logging
 
 import scala.collection.JavaConverters._
 
@@ -14,20 +15,26 @@ sealed trait Var extends Value {
 }
 
 case class ParameterVar  (basicValue: BasicValue,             local: Int  ) extends Var
-case class ReturnVar     (basicValue: BasicValue                          ) extends Var
+case class ReturnVar     (basicValue: BasicValue                          ) extends Var // TODO: used only for "expected" return type
 case class ExceptionVar  (basicValue: BasicValue, insn: Insn              ) extends Var
 case class InstructionVar(basicValue: BasicValue, insn: Insn              ) extends Var
 case class CopyVar       (basicValue: BasicValue, insn: Insn, version: Int) extends Var
-case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  ) extends Var
+case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , isUsed: Boolean = false) extends Var {
+  def used(): PhiVar = { // TODO: rename to "asChanged"
+    if (isUsed) { this }
+    else { this.copy(isUsed = true) }
+  }
+}
 case object EmptyVar                                                        extends Var {
   override val basicValue: BasicValue = BasicValue.UNINITIALIZED_VALUE
 }
 
-class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) {
+class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) with Logging {
   var copyOperationPosition: Int = 0 // For `copyOperation()`
   var originInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]
   var ssaMap = Map.empty[Var, Set[(AbstractInsnNode, Var)]]
+  var returnTypeValue: ReturnVar = _ // There is no getReturn method on frames, so we save it here
 
   override def newValue(`type`: Type): Var = ??? // Should never be called
 
@@ -37,8 +44,10 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
 
   override def newReturnTypeValue(`type`: Type): Var = {
     // ASM requires that we return null when `type` is Type.VOID_TYPE
-    if (`type` == Type.VOID_TYPE) { null }
-    else { ReturnVar(SSA.basicInterpreter.newValue(`type`)) }
+    this.returnTypeValue =
+      if (`type` == Type.VOID_TYPE) { null }
+      else { ReturnVar(SSA.basicInterpreter.newReturnTypeValue(`type`)) }
+    this.returnTypeValue
   }
 
   override def newEmptyValue(local: Int): Var = {
@@ -103,10 +112,11 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
 
   override def merge(value1: Var, value2: Var): Var = {
     if (value1.isInstanceOf[PhiVar]) {
+      val newValue1 = value1.asInstanceOf[PhiVar].used()
       val entry = (this.originInsn, value2)
-      val ids = this.ssaMap.getOrElse(value1, Set.empty)
-      this.ssaMap += (value1 -> (ids + entry))
-      value1
+      val ids = this.ssaMap.getOrElse(newValue1, Set.empty)
+      this.ssaMap += (newValue1 -> (ids + entry))
+      newValue1
     } else if (value1 == EmptyVar) {
       value2
     } else if (value2 == EmptyVar) {
@@ -119,7 +129,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
   }
 }
 
-class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interpreter[Var])
+class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInterpreter)
   extends Analyzer[Var](interpreter) {
 
   override protected def newFrame(numLocals: Int, numStack: Int): Frame[Var] = {
@@ -133,7 +143,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
         || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)) {
         // We are at a join point
         val frame = cfg.frames(insnIndex)
-        val newFrame = new Frame[Var](frame.getLocals, frame.getStackSize)
+        val newFrame = new Frame[Var](frame.getLocals, frame.getMaxStackSize)
         // Note that we leave Frame.returnValue at null
         for (i <- 0 until frame.getLocals) {
           newFrame.setLocal(i, PhiVar(frame.getLocal(i), Insn(method, insn), i))
@@ -148,6 +158,14 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: Interp
     }
 
     super.newFrame(numLocals, numStack)
+  }
+
+  override def init(owner: String, method: MethodNode): Unit = {
+    for (frame <- this.getFrames) {
+      if (frame != null) {
+        frame.setReturn(interpreter.returnTypeValue)
+      }
+    }
   }
 }
 

@@ -3,13 +3,16 @@ package org.ucombinator.jade.decompile
 //import java.lang.invoke.LambdaMetafactory
 
 import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, Type}
+import com.github.javaparser.ast.comments.BlockComment
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.ucombinator.jade.decompile.method.ssa.{SSA, Var}
+import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.decompile.method.ssa.{CopyVar, EmptyVar, ExceptionVar, InstructionVar, ParameterVar, PhiVar, ReturnVar, SSA, Var}
 import org.ucombinator.jade.classfile.Descriptor
+import org.ucombinator.jade.util.{JavaParser, Logging}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -45,7 +48,8 @@ case class DecompiledGoto(labelNode: LabelNode) extends DecompiledInsn
 case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) extends DecompiledInsn
 case class DecompiledNew(descriptor: ClassOrInterfaceType) extends DecompiledInsn
 //case class DecompiledCheckCast(/*TODO*/) extends DecompiledInsn
-//case class DecompiledMonitor(/*TODO*/) extends DecompiledInsn
+case class DecompiledMonitorEnter(expression: Expression) extends DecompiledInsn
+case class DecompiledMonitorExit(expression: Expression) extends DecompiledInsn
 case class DecompiledLabel(node: LabelNode) extends DecompiledInsn
 case class DecompiledFrame(node: FrameNode) extends DecompiledInsn
 case class DecompiledLineNumber(node: LineNumberNode) extends DecompiledInsn
@@ -59,11 +63,58 @@ case class DecompiledUnsupported(insn: AbstractInsnNode) extends DecompiledInsn
 // TODO: use `|` patterns
 // TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT: 0: iload_1; 1: iconst_m1; 2: ixor
 
-object DecompileInsn {
-  def decompileVar(variable: Var): NameExpr = { ??? }
-  def decompileInsn(node: AbstractInsnNode, ssa: SSA): DecompiledInsn = {
-    val (retVar, argVars) = ssa.instructionArguments(node)
+object DecompileInsn extends Logging {
+  def decompileVar(variable: Var): NameExpr = {
+    // TODO: improve variable names (also use debug info for variable names)
+    variable match {
+      case ParameterVar(_, local: Int) => new NameExpr(f"parameter$local") // TODO: parameterVar?
+      case ReturnVar(_) => new NameExpr("returnVar")
+      case ExceptionVar(_, insn: Insn) => new NameExpr(f"exceptionVar${insn.index}")
+      case InstructionVar(_, insn: Insn) => new NameExpr(f"instructionVar${insn.index}")
+      case CopyVar(_, insn: Insn, version: Int) => new NameExpr(f"copyVar${insn.index}_$version")
+      case PhiVar(_, insn: Insn, index: Int, _/*TODO?*/) => new NameExpr(f"phiVar${insn.index}_$index")
+      case EmptyVar => ??? // TODO
+    }
+  }
+  def decompileInsn(insn: DecompiledInsn): Statement = {
+    def comment(string: String): Statement = {
+      JavaParser.setComment(new EmptyStmt(), new BlockComment(string))
+    }
+    insn match {
+      case DecompiledStatement(statement) => statement
+      case DecompiledExpression(expression) => new ExpressionStmt(expression)
+      case DecompiledMove/*(TODO)*/ =>
+        comment(f"TODO: move insn")
+      //case DecompiledCompare(/*TODO*/) => ???
+      case DecompiledIf(labelNode: LabelNode, condition: Expression) =>
+        new IfStmt(condition, new BreakStmt(labelNode.toString), null)
+      case DecompiledGoto(labelNode: LabelNode) =>
+        new BreakStmt(labelNode.toString) // TODO: use instruction number?
+      case DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) =>
+        comment(f"Switch")
+      case DecompiledNew(descriptor: ClassOrInterfaceType) =>
+        comment(f"new $descriptor")
+      //case DecompiledCheckCast(/*TODO*/) => ???
+      case DecompiledMonitorEnter(expression) =>
+        comment(f"Minitor Enter: $expression")
+      case DecompiledMonitorExit(expression) =>
+        comment(f"Minitor Exit: $expression")
+      case DecompiledLabel(node: LabelNode) =>
+        comment(f"Label ${node}") // TODO: use instruction number?
+      case DecompiledFrame(node: FrameNode) =>
+        comment(f"Frame ${node}")
+      case DecompiledLineNumber(node: LineNumberNode) =>
+        comment(f"Line number: ${node.line}")
+      case DecompiledUnsupported(insn: AbstractInsnNode) =>
+        comment(f"Unsupported $insn")
+    }
+  }
+  def decompileInsn(method: MethodNode, node: AbstractInsnNode, ssa: SSA): DecompiledInsn = {
+    this.logger.debug(f"decompileInsn: ${Insn.longString(method, node)}")
+    val (retVar, argVars) = ssa.instructionArguments.getOrElse(node, (null, List()))
+    this.logger.debug(f"decompileInsn: retVar: $retVar argVars: $argVars")
     val args: Array[Expression] = argVars.toArray.map(decompileVar)
+    this.logger.debug(f"decompileInsn: args: $args")
     //val ret: Expression = decompileVar(retVar)
     node.getOpcode match {
       // InsnNode
@@ -259,7 +310,7 @@ object DecompileInsn {
         val typeArguments = new NodeList[Type]()
         DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
       // InvokeDynamicInsnNode
-      case Opcodes.INVOKEDYNAMIC => ???
+      case Opcodes.INVOKEDYNAMIC => ??? // TODO: lambda
       // TypeInsnNode
       case Opcodes.NEW => DecompiledNew(Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)) // TODO: pair with <init>
       // IntInsnNode
@@ -277,17 +328,17 @@ object DecompileInsn {
         DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
       // TypeInsnNode
       case Opcodes.ANEWARRAY =>
-        val typ = Descriptor.fieldDescriptor(node.asInstanceOf[TypeInsnNode].desc)
+        val typ = Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)
         DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
       // InsnNode
       case Opcodes.ARRAYLENGTH => DecompiledExpression(new FieldAccessExpr(args(0), new NodeList(), new SimpleName("length")))
       case Opcodes.ATHROW => DecompiledStatement(new ThrowStmt(args(0)))
       // TypeInsnNode
-      case Opcodes.CHECKCAST => DecompiledExpression(new CastExpr(Descriptor.fieldDescriptor(node.asInstanceOf[TypeInsnNode].desc), args(0))) // TODO: check if works
+      case Opcodes.CHECKCAST => DecompiledExpression(new CastExpr(Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc), args(0))) // TODO: check if works
       case Opcodes.INSTANCEOF => DecompiledExpression(new InstanceOfExpr(args(0), Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)))
       // InsnNode
-      case Opcodes.MONITORENTER => ???
-      case Opcodes.MONITOREXIT => ???
+      case Opcodes.MONITORENTER => DecompiledMonitorEnter(args(0))
+      case Opcodes.MONITOREXIT => DecompiledMonitorExit(args(0))
       // MultiANewArrayInsnNode
       case Opcodes.MULTIANEWARRAY =>
         // TODO: use asm.Type functions
