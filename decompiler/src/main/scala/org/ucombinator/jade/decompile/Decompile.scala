@@ -29,14 +29,19 @@ case object Decompile extends Logging {
       VFS.get0(path)
     }
     for (((name, readers), i) <- VFS.classes.zipWithIndex) {
-      for ((path, classReader) <- readers) { // TODO: pick "best"
+      for ((path, classReader) <- readers) { // TODO: pick "best" classReader
+        // Decompile class structure
         val (classNode, compilationUnit) = decompileClassFile(name, path.toString, classReader, i)
+
+        // Decompile method bodies
         for (typ <- compilationUnit.getTypes.iterator().asScala) {
-          val members = typ.getMembers.iterator().asScala.flatMap(Decompile.methods.get).toList
-          for (((classNode, methodNode), j) <- members.zipWithIndex) {
-            DecompileBody.decompileBody(path.toString, classNode, i, methodNode, j, members.size)
+          val members = typ.getMembers.iterator().asScala.flatMap(x => Decompile.methods.get(x).map((_, x))).toList
+          for ((((classNode, methodNode), bodyDeclaration), j) <- members.zipWithIndex) {
+            DecompileBody.decompileBody(path.toString, classNode, i, methodNode, j, members.size, bodyDeclaration)
           }
         }
+
+        this.logger.debug(f"compilationUnit\n$compilationUnit")
       }
     }
   }
