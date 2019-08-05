@@ -141,7 +141,8 @@ object DecompileBody extends Logging {
 
       var statements = List[Statement]()
       for (insn <- method.instructions.toArray) {
-        statements = statements :+ DecompileInsn.decompileInsn(DecompileInsn.decompileInsn(method, insn, ids))
+        val (retVal, decompiled) = DecompileInsn.decompileInsn(method, insn, ids)
+        statements = statements :+ DecompileInsn.decompileInsn(retVal, decompiled)
       }
       this.logger.debug("++++ statements ++++\n" + statements.mkString("\n"))
       setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statements.asJava)))

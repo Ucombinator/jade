@@ -67,7 +67,8 @@ object DecompileInsn extends Logging {
   def decompileVar(variable: Var): NameExpr = {
     // TODO: improve variable names (also use debug info for variable names)
     variable match {
-      case ParameterVar(_, local: Int) => new NameExpr(f"parameter$local") // TODO: parameterVar?
+      // TODO: +1 parameter if non-static
+      case ParameterVar(_, local: Int) => new NameExpr(f"parameter${local+1}") // TODO: parameterVar?
       case ReturnVar(_) => new NameExpr("returnVar")
       case ExceptionVar(_, insn: Insn) => new NameExpr(f"exceptionVar${insn.index}")
       case InstructionVar(_, insn: Insn) => new NameExpr(f"instructionVar${insn.index}")
@@ -76,13 +77,14 @@ object DecompileInsn extends Logging {
       case EmptyVar => ??? // TODO
     }
   }
-  def decompileInsn(insn: DecompiledInsn): Statement = {
+  def decompileInsn(retVar: Var, insn: DecompiledInsn): Statement = {
     def comment(string: String): Statement = {
       JavaParser.setComment(new EmptyStmt(), new BlockComment(string))
     }
     insn match {
       case DecompiledStatement(statement) => statement
-      case DecompiledExpression(expression) => new ExpressionStmt(expression)
+      case DecompiledExpression(expression) =>
+        new ExpressionStmt(new AssignExpr(decompileVar(retVar), expression, AssignExpr.Operator.ASSIGN))
       case DecompiledMove/*(TODO)*/ =>
         comment(f"TODO: move insn")
       //case DecompiledCompare(/*TODO*/) => ???
@@ -109,14 +111,11 @@ object DecompileInsn extends Logging {
         comment(f"Unsupported $insn")
     }
   }
-  def decompileInsn(method: MethodNode, node: AbstractInsnNode, ssa: SSA): DecompiledInsn = {
-    this.logger.debug(f"decompileInsn: ${Insn.longString(method, node)}")
+  def decompileInsn(method: MethodNode, node: AbstractInsnNode, ssa: SSA): (Var, DecompiledInsn) = {
     val (retVar, argVars) = ssa.instructionArguments.getOrElse(node, (null, List()))
-    this.logger.debug(f"decompileInsn: retVar: $retVar argVars: $argVars")
     val args: Array[Expression] = argVars.toArray.map(decompileVar)
-    this.logger.debug(f"decompileInsn: args: $args")
     //val ret: Expression = decompileVar(retVar)
-    node.getOpcode match {
+    (retVar, node.getOpcode match {
       // InsnNode
       case Opcodes.NOP => DecompiledStatement(new EmptyStmt())
       case Opcodes.ACONST_NULL => DecompiledExpression(new NullLiteralExpr())
@@ -366,7 +365,7 @@ object DecompileInsn extends Logging {
           case node: LineNumberNode => DecompiledLineNumber(node)
           case _ => throw new Exception(f"unknown instruction type: $node")
         }
-    }
+    })
   }
 
 /*
