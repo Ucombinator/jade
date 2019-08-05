@@ -37,10 +37,12 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
   var ssaMap = Map.empty[Var, Set[(AbstractInsnNode, Var)]]
   var returnTypeValue: ReturnVar = _ // There is no getReturn method on frames, so we save it here
 
-  def ssaMap(key: PhiVar, insn: AbstractInsnNode, value: Var): Unit = {
-    val usedKey = key.used
-    val entry = (insn, value)
-    this.ssaMap += (usedKey -> (this.ssaMap.getOrElse(usedKey, Set.empty) + entry))
+  def ssaMap(key: PhiVar, insn: AbstractInsnNode, value: Var, ignoreNull: Boolean = false): Unit = {
+    if (!ignoreNull || value != null) {
+      val usedKey = key.used
+      val entry = (insn, value)
+      this.ssaMap += (usedKey -> (this.ssaMap.getOrElse(usedKey, Set.empty) + entry))
+    }
   }
 
   override def newValue(`type`: Type): Var = ??? // Should never be called
@@ -140,45 +142,40 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInt
   override def init(owner: String, method: MethodNode): Unit = {
     // We override this method because it runs near the start of `Analyzer.analyze`
     // but after the `Analyzer.frames` array is created.
+    //
     // We use this method to:
     //  (1) initialize the frames at join points and
     //  (2) set the returnValue of each frame (as it is not updated by `Frame.merge`)
+    //
+    // We cannot do (1) in `merge` as all merged-in values need to know what instruction they
+    // came from.  By the time `merge` runs, that information for the first value is gone.
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
-      // TODO: cache this computation?
       if (cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > (if (insnIndex == 0) { 0 } else { 1 })
         || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)) {
         // We are at a join point
-        val frame = cfg.frames(insnIndex)
-        val newFrame = this.getFrames()(insnIndex) match {
-          case null => new Frame[Var](frame.getLocals, frame.getMaxStackSize)
+        val cfgFrame = cfg.frames(insnIndex)
+        val frame = this.getFrames()(insnIndex) match {
+          case null => new Frame[Var](cfgFrame.getLocals, cfgFrame.getMaxStackSize)
           case f => f
         }
         // Note that Frame.returnValue is null until `frame.setReturn` later in this method
-        for (i <- 0 until frame.getLocals) {
-          val phiVar = PhiVar(frame.getLocal(i), Insn(method, insn), i) // Note: not `.used`
-          newFrame.getLocal(i) match {
-            case null => /* Do nothing */
-            case local =>
-              assert(insnIndex == 0)
-              this.interpreter.ssaMap(phiVar.used, this.interpreter.originInsn, local)
-          }
-          newFrame.setLocal(i, phiVar)
+        for (i <- 0 until cfgFrame.getLocals) {
+          assert((insnIndex == 0) == (frame.getLocal(i) != null))
+          val phiVar = PhiVar(cfgFrame.getLocal(i), Insn(method, insn), i) // Note: not `.used`
+          this.interpreter.ssaMap(phiVar.used, this.interpreter.originInsn, frame.getLocal(i), true)
+          frame.setLocal(i, phiVar)
         }
         // Note that we use `clearStack` and `push` instead of `setStack` as the `Frame` constructor
         // starts with an empty stack regardless of `stackSize`
-        assert(newFrame.getStackSize == 0)
-        for (i <- 0 until frame.getStackSize) {
-          val phiVar = PhiVar(frame.getStack(i), Insn(method, insn), i + newFrame.getLocals)
-          newFrame.getStack(i) match {
-            case null => /* Do nothing */
-            case local =>
-              assert(insnIndex == 0)
-              this.interpreter.ssaMap(phiVar.used, this.interpreter.originInsn, local) // TODO: current insn unless zero
-          }
-          newFrame.push(phiVar)
+        assert(frame.getStackSize == 0)
+        for (i <- 0 until cfgFrame.getStackSize) {
+          assert((insnIndex == 0) == (frame.getStack(i) != null))
+          val phiVar = PhiVar(cfgFrame.getStack(i), Insn(method, insn), i + frame.getLocals)
+          this.interpreter.ssaMap(phiVar.used, this.interpreter.originInsn, frame.getStack(i), true)
+          frame.push(phiVar)
         }
-        this.getFrames()(insnIndex) = newFrame
+        this.getFrames()(insnIndex) = frame
       }
     }
 
