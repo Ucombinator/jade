@@ -3,8 +3,8 @@ package org.ucombinator.jade.decompile.method.ssa
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
-import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.util.Logging
 
 import scala.collection.JavaConverters._
@@ -19,15 +19,21 @@ case class ReturnVar     (basicValue: BasicValue                          ) exte
 case class ExceptionVar  (basicValue: BasicValue, insn: Insn              ) extends Var
 case class InstructionVar(basicValue: BasicValue, insn: Insn              ) extends Var
 case class CopyVar       (basicValue: BasicValue, insn: Insn, version: Int) extends Var
-case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , isUsed: Boolean = false) extends Var {
-// TODO: used as var option
-  def used(): PhiVar = { // TODO: rename to "asChanged"
-    if (isUsed) { this }
-    else { this.copy(isUsed = true) }
-  }
-}
 case object EmptyVar                                                        extends Var {
   override val basicValue: BasicValue = BasicValue.UNINITIALIZED_VALUE
+}
+case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , var changed: Boolean = false) extends Var {
+  // TODO: use private constructor to hide `changed`
+  // Note that `changed` has to be in the parameters so that the analysis sees that the value has changed
+  private var changedPhiVar: PhiVar = _
+  def change(): PhiVar = {
+    if (this.changedPhiVar != null) { this.changedPhiVar }
+    else {
+      this.changedPhiVar = this.copy(changed = true)
+      this.changedPhiVar.changedPhiVar = this.changedPhiVar
+      this.changedPhiVar
+    }
+  }
 }
 
 class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) with Logging {
@@ -39,7 +45,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
 
   def ssaMap(key: PhiVar, insn: AbstractInsnNode, value: Var, ignoreNull: Boolean = false): Unit = {
     if (!ignoreNull || value != null) {
-      val usedKey = key.used
+      val usedKey = key.change
       val entry = (insn, value)
       this.ssaMap += (usedKey -> (this.ssaMap.getOrElse(usedKey, Set.empty) + entry))
     }
@@ -121,7 +127,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
 
   override def merge(value1: Var, value2: Var): Var = {
     if (value1.isInstanceOf[PhiVar]) {
-      val newValue1 = value1.asInstanceOf[PhiVar].used()
+      val newValue1 = value1.asInstanceOf[PhiVar].change()
       ssaMap(newValue1, this.originInsn, value2)
       newValue1
     } else if (value1 == EmptyVar) {
@@ -163,7 +169,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInt
         for (i <- 0 until cfgFrame.getLocals) {
           assert((insnIndex == 0) == (frame.getLocal(i) != null))
           val phiVar = PhiVar(cfgFrame.getLocal(i), Insn(method, insn), i) // Note: not `.used`
-          this.interpreter.ssaMap(phiVar.used, this.interpreter.originInsn, frame.getLocal(i), true)
+          this.interpreter.ssaMap(phiVar.change, this.interpreter.originInsn, frame.getLocal(i), true)
           frame.setLocal(i, phiVar)
         }
         // Note that we use `clearStack` and `push` instead of `setStack` as the `Frame` constructor
@@ -172,7 +178,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInt
         for (i <- 0 until cfgFrame.getStackSize) {
           assert((insnIndex == 0) == (frame.getStack(i) != null))
           val phiVar = PhiVar(cfgFrame.getStack(i), Insn(method, insn), i + frame.getLocals)
-          this.interpreter.ssaMap(phiVar.used, this.interpreter.originInsn, frame.getStack(i), true)
+          this.interpreter.ssaMap(phiVar.change, this.interpreter.originInsn, frame.getStack(i), true)
           frame.push(phiVar)
         }
         this.getFrames()(insnIndex) = frame
