@@ -17,6 +17,7 @@ import scala.collection.JavaConverters._
 
 // TODO: slf4j.detectLoggerNameMismatch
 // TODO: Ensure Logging can extends only objects?
+// TODO: lowercase/case insensitive logger names
 trait Logging {
   protected val logger: ScalaLogger = {
     val name = getClass.getName

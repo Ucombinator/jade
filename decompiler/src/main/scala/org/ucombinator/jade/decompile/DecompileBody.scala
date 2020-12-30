@@ -52,7 +52,7 @@ object DecompileBody extends Logging {
       f"         * Max Stack: ${node.maxStack}\n" +
       f"         * Max Locals: ${node.maxLocals}\n" +
       f"         * Instructions:\n" +
-      instructions.lines.map("         *" + _).mkString("\n") + "\n" +
+      instructions.lines.iterator.asScala.map("         *" + _).mkString("\n") + "\n" +
       f"         "))
   }
   def setDeclarationBody(declaration: BodyDeclaration[_ <: BodyDeclaration[_]], body: BlockStmt): Unit = {

@@ -324,11 +324,11 @@ object DecompileInsn extends Logging {
           case Opcodes.T_INT     => PrimitiveType.intType()
           case Opcodes.T_LONG    => PrimitiveType.longType()
         }
-        DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
+        DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), null))
       // TypeInsnNode
       case Opcodes.ANEWARRAY =>
         val typ = Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)
-        DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), new ArrayInitializerExpr()))
+        DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), null))
       // InsnNode
       case Opcodes.ARRAYLENGTH => DecompiledExpression(new FieldAccessExpr(args(0), new NodeList(), new SimpleName("length")))
       case Opcodes.ATHROW => DecompiledStatement(new ThrowStmt(args(0)))
@@ -353,7 +353,7 @@ object DecompileInsn extends Logging {
           args.slice(0, dims).map(new ArrayCreationLevel(_, new NodeList())) ++
           (dims until expectedDims).map(_ => new ArrayCreationLevel(null, new NodeList()))
           :_*)
-        DecompiledExpression(new ArrayCreationExpr(typ, levels, new ArrayInitializerExpr()))
+        DecompiledExpression(new ArrayCreationExpr(typ, levels, /*TODO: initializer*/null))
       // JumpInsnNode
       case Opcodes.IFNULL => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new NullLiteralExpr(), BinaryExpr.Operator.EQUALS))
       case Opcodes.IFNONNULL => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new NullLiteralExpr(), BinaryExpr.Operator.NOT_EQUALS))

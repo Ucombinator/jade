@@ -81,7 +81,7 @@ object Flags {
 
   def code(table: String): String = {
     val flagInfos =
-      (for (line <- table.lines if !line.matches("\\s*#.*") && !line.matches("\\s*")) yield {
+      (for (line <- table.lines.iterator.asScala if !line.matches("\\s*#.*") && !line.matches("\\s*")) yield {
         val Array(kind, accName, value, keyword, description) = line.split(" +", 5)
         val k = if (keyword == "-") { None } else { Some(keyword) }
         val intValue = java.lang.Integer.parseInt(value.substring(2), 16)

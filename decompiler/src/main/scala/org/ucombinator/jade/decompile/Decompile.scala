@@ -49,7 +49,7 @@ case object Decompile extends Logging {
   def decompileClassFile(name: String, owner: String, cr: ClassReader, i: Int): (ClassNode, CompilationUnit) = {
     this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] $name from $owner") // TODO: name use "." instead of "/" and "$"
     val classNode = new ClassNode
-    cr.accept(classNode, 0)
+    cr.accept(classNode, 0) // TODO: ClassReader.EXPAND_FRAMES
 
     if (classNode.name == null) { return (null, null) } // TODO
     this.logger.debug("class name: " + classNode.name)
