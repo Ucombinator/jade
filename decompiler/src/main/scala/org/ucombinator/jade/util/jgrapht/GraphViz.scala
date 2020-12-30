@@ -3,7 +3,8 @@ package org.ucombinator.jade.util.jgrapht
 import java.io.{StringWriter, Writer}
 
 import org.jgrapht.Graph
-import org.jgrapht.io.{ComponentNameProvider, DOTExporter, IntegerComponentNameProvider, StringComponentNameProvider}
+import org.jgrapht.nio.DefaultAttribute
+import org.jgrapht.nio.dot.DOTExporter
 import org.objectweb.asm.tree.MethodNode
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
@@ -25,11 +26,7 @@ object GraphViz {
   }
 
   def print[N, E](writer: Writer, graph: Graph[N, E]): Unit = {
-    val dotExporter = new DOTExporter[N, E](
-      new IntegerComponentNameProvider(),
-      new StringComponentNameProvider(),
-      null
-    )
+    val dotExporter = new DOTExporter[N, E]()
     dotExporter.exportGraph(graph, writer)
   }
 
@@ -40,16 +37,9 @@ object GraphViz {
   }
 
   def print[E](writer: Writer, graph: ControlFlowGraph): Unit = {
-    val dotExporter = new DOTExporter[Insn, ControlFlowGraph.Edge](
-      new IntegerComponentNameProvider(),
-      new AbstractInsnComponentNameProvider(graph.method),
-      null
-    )
+    val dotExporter = new DOTExporter[Insn, ControlFlowGraph.Edge]()
+    dotExporter.setVertexAttributeProvider((v: Insn) => Map("label" -> DefaultAttribute.createAttribute(v.longString)).asJava)
     dotExporter.exportGraph(graph.graph, writer)
-  }
-
-  private class AbstractInsnComponentNameProvider(method: MethodNode) extends ComponentNameProvider[Insn] {
-    override def getName(component: Insn): String = { component.longString }
   }
 
   def nestingTree[V,GE,TE](graph: Graph[V,GE], tree: Graph[V,TE], root: V): String = {

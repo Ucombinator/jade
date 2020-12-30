@@ -12,9 +12,9 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
 
   // Abstract Syntax Trees for the Java language
-  "com.github.javaparser" % "javaparser-core" % "3.14.3", // Main library
-  "com.github.javaparser" % "javaparser-core-serialization" % "3.14.3", // Serialization to/from JSON
-  "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.14.3", // Resolving symbols and identifiers
+  "com.github.javaparser" % "javaparser-core" % "3.18.0", // Main library
+  "com.github.javaparser" % "javaparser-core-serialization" % "3.18.0", // Serialization to/from JSON
+  "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.18.0", // Resolving symbols and identifiers
   // Omitting the JavaParser "parent" package as it is just metadata
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
@@ -22,22 +22,22 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
 
   // Command-line argument parsing
-  "info.picocli" % "picocli" % "4.0.0-beta-2",
+  "info.picocli" % "picocli" % "4.0.4",
 
   // Vertex and edge graphs
-  "org.jgrapht" % "jgrapht-core" % "1.3.0",
-  "org.jgrapht" % "jgrapht-ext" % "1.3.0",
-  //"org.jgrapht" % "jgrapht-guava" % "1.3.0",
-  "org.jgrapht" % "jgrapht-io" % "1.3.0",
-  "org.jgrapht" % "jgrapht-opt" % "1.3.0",
+  "org.jgrapht" % "jgrapht-core" % "1.5.0",
+  "org.jgrapht" % "jgrapht-ext" % "1.5.0",
+  //"org.jgrapht" % "jgrapht-guava" % "1.5.0",
+  "org.jgrapht" % "jgrapht-io" % "1.5.0",
+  "org.jgrapht" % "jgrapht-opt" % "1.5.0",
 
   // `.class` file parsing and analysis
-  "org.ow2.asm" % "asm" % "7.1",
-  "org.ow2.asm" % "asm-analysis" % "7.1",
-  "org.ow2.asm" % "asm-commons" % "7.1",
-  //"org.ow2.asm" % "asm-test" % "7.1",
-  "org.ow2.asm" % "asm-tree" % "7.1",
-  "org.ow2.asm" % "asm-util" % "7.1",
+  "org.ow2.asm" % "asm" % "9.0",
+  "org.ow2.asm" % "asm-analysis" % "9.0",
+  "org.ow2.asm" % "asm-commons" % "9.0",
+  //"org.ow2.asm" % "asm-test" % "9.0",
+  "org.ow2.asm" % "asm-tree" % "9.0",
+  "org.ow2.asm" % "asm-util" % "9.0",
 
   // Testing framework for `src/test/`
   "org.scalatest" %% "scalatest" % "3.2.3" % Test,
@@ -100,6 +100,7 @@ assemblyMergeStrategy in assembly := {
   ).contains(file) => MergeStrategy.rename
 
   case PathList("META-INF", file) if List(
+    "LICENSE.txt",
     "MANIFEST.MF",
     "NOTICE.txt"
   ).contains(file) => MergeStrategy.rename
