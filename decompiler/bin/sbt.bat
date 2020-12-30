@@ -1,1 +1,1 @@
-../lib/sbt-1.2.8/bin/sbt.bat
+../lib/sbt-1.4.5/bin/sbt.bat
