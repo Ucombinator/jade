@@ -5,6 +5,7 @@ import org.jgrapht.graph.SimpleDirectedGraph
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 object Dominator {
   final case class Edge[V](source: V, target: V)
@@ -26,7 +27,7 @@ object Dominator {
   //   ACM Transactions on Programming Languages and Systems, Vol. 1, No. 1, July 1979, Pages 121-141.
   // Based on the code at https://gist.github.com/yuzeh/a5e6602dfdb0db3c2130c10537db54d7
   // A useful description: https://eden.dei.uc.pt/~amilcar/pdf/CompilerInJava.pdf
-  def dominatorTree[V >:Null <: AnyRef, E](graph: Graph[V, E], start: V): DominatorTree[V] = {
+  def dominatorTree[V >:Null <: AnyRef, E](graph: Graph[V, E], start: V)(implicit m: ClassTag[V]): DominatorTree[V] = {
 
     // Original dealt in Ints, not Vs.
     def successors(v: V): Iterable[V] = graph.outgoingEdgesOf(v).asScala.map(graph.getEdgeTarget)
@@ -41,7 +42,7 @@ object Dominator {
     }
 
     val dfnum = mutable.Map.empty[V, Int] // The order of nodes reached in DFS
-    val vertex: mutable.ArraySeq[V] = new mutable.ArraySeq[V](numNodes) // The vertex assigned to a given number
+    val vertex: mutable.ArraySeq[V] = new mutable.ArraySeq.ofRef[V](new Array(numNodes)) // The vertex assigned to a given number
     val parent = mutable.Map.empty[V, V] // The parent of node in DFS tree
     val semi = mutable.Map.empty[V, V] // The semidominaor of each V
     val ancestor = mutable.Map.empty[V, V] // Used by ancestorWithLowestSemi. Mutable and path compressed.

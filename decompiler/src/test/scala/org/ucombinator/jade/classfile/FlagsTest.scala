@@ -1,9 +1,10 @@
-package org.ucombinator.jade.classfile
+package org.ucombinator.jade.classfile 
 
-import org.scalatest._
 import org.ucombinator.jade.classfile.Flags._
 
-class FlagsTest extends FreeSpec {
+import org.scalatest.freespec.AnyFreeSpec
+
+class FlagsTest extends AnyFreeSpec {
   "classFlags" - {
     val flags = List(
       ACC_PUBLIC,

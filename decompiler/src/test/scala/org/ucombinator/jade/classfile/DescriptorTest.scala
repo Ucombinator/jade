@@ -2,9 +2,9 @@ package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.`type`.PrimitiveType
 
-import org.scalatest._
+import org.scalatest.freespec.AnyFreeSpec
 
-class DescriptorTest extends FreeSpec {
+class DescriptorTest extends AnyFreeSpec {
   "fieldDescriptor" - {
     "BaseType" in {
       val types = List(

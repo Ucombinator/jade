@@ -2,7 +2,7 @@ organization := "org.ucombinator"
 name := "Jade"
 description := "Jade: The Java Decompiler"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.13.4"
 
 // TODO: improve compilation time
 
@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
   "org.ow2.asm" % "asm-util" % "7.1",
 
   // Testing framework for `src/test/`
-  "org.scalatest" %% "scalatest" % "3.0.7" % Test,
+  "org.scalatest" %% "scalatest" % "3.2.3" % Test,
 )
 
 filterScalaLibrary := false // include scala library in output of sbt-dependency-graph

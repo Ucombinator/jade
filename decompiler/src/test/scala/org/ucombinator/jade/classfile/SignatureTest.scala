@@ -1,9 +1,9 @@
 package org.ucombinator.jade.classfile
 
-import org.scalatest._
+import org.scalatest.freespec.AnyFreeSpec 
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-class SignatureTest extends FreeSpec with TableDrivenPropertyChecks {
+class SignatureTest extends AnyFreeSpec with TableDrivenPropertyChecks {
 
   sealed trait SignatureType
   case object TypeSignature extends SignatureType
