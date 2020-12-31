@@ -11,7 +11,7 @@ import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.{Descriptor, Flags, Signature}
 import org.ucombinator.jade.util.{JavaParser, Logging}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object DecompileClass extends Logging {
 
@@ -19,11 +19,11 @@ object DecompileClass extends Logging {
     node match {
       // TODO: improve formatting of literals?
       case null => null
-      case node: java.lang.Integer => JavaParser.setComment(new IntegerLiteralExpr(node.toString), new BlockComment("0x" + java.lang.Integer.toHexString(node)))
+      case node: java.lang.Integer => new IntegerLiteralExpr(node.toString)
+      case node: java.lang.Long => new LongLiteralExpr(node.toString)
       case node: java.lang.Float => new DoubleLiteralExpr(node.toString + "F") // Note that `JavaParser` uses Double for Floats
-      case node: java.lang.Long => JavaParser.setComment(new LongLiteralExpr(node), new BlockComment("0x" + java.lang.Long.toHexString(node)))
       case node: java.lang.Double => new DoubleLiteralExpr(node.toString + "D")
-      case node: java.lang.String => new StringLiteralExpr(node)
+      case node: java.lang.String => new StringLiteralExpr(node.toString)
       case node: org.objectweb.asm.Type => new ClassExpr(Descriptor.fieldDescriptor(node.getDescriptor))
       case _ => throw new Exception(f"unimplemented literal '$node'")
     }
@@ -144,8 +144,8 @@ object DecompileClass extends Logging {
       val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes)
         .zipWithIndex
         .zipAll(parameterNodes, null, null)
-        .zipAll(nullToList(node.visibleParameterAnnotations), null, null)
-        .zipAll(nullToList(node.invisibleParameterAnnotations), null, null)
+        .zipAll(nullToList(node.visibleParameterAnnotations.toIndexedSeq), null, null)
+        .zipAll(nullToList(node.invisibleParameterAnnotations.toIndexedSeq), null, null)
       new NodeList(ps.map(decompileParameter(node, sig._2.length, _)):_*)
     }
     val `type`: Type = sig._3

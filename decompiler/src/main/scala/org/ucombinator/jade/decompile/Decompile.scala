@@ -10,7 +10,7 @@ import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
 import org.ucombinator.jade.util.{Logging, VFS}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 // TODO: nested class?

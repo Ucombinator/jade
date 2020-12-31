@@ -3,7 +3,7 @@ package org.ucombinator.jade.util.jgrapht
 import org.jgrapht.Graph
 import org.jgrapht.graph.SimpleDirectedGraph
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.reflect.ClassTag
 

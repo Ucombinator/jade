@@ -9,7 +9,7 @@ import org.ucombinator.jade.util.Logging
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, ITypeConverter, Option, ParameterException, Parameters, ParentCommand}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 //  TODO: analysis to ensure using only the canonical constructor (helps with detecting forward version changes) (as a compiler plugin?)
 

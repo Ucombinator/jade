@@ -13,7 +13,7 @@ import com.typesafe.scalalogging.{Logger => ScalaLogger}
 import org.slf4j.{LoggerFactory, Logger => Slf4jLogger}
 import org.ucombinator.jade.main.Main
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 // TODO: slf4j.detectLoggerNameMismatch
 // TODO: Ensure Logging can extends only objects?

@@ -1,7 +1,7 @@
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 // Code for generating `Flags.txt` and `Flags.scala`
@@ -122,7 +122,7 @@ object Flags {
     builder.append(
       """object Flags {
         |  def toModifiers(flags: List[Flag]): NodeList[Modifier] = {
-        |    import scala.collection.JavaConverters._
+        |    import scala.jdk.CollectionConverters._
         |    new NodeList(flags.flatMap(_.modifier).asJava)
         |  }
         |

@@ -7,7 +7,7 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 case class Insn(method: MethodNode, insn: AbstractInsnNode) {
   def index: Int = method.instructions.indexOf(insn)

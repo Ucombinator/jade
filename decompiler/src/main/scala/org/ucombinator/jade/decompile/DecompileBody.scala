@@ -14,9 +14,9 @@ import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.decompile.method.ssa.SSA
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
-import org.ucombinator.jade.util.{JavaParser, Logging, VFS}
+import org.ucombinator.jade.util.{Errors, JavaParser, Logging, VFS}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object DecompileBody extends Logging {
   private def stubBody(message: String, comment: BlockComment): BlockStmt = {
@@ -60,6 +60,7 @@ object DecompileBody extends Logging {
       case declaration: InitializerDeclaration => declaration.setBody(body)
       case declaration: ConstructorDeclaration => declaration.setBody(body)
       case declaration: MethodDeclaration => declaration.setBody(body)
+      case declaration => Errors.unmatchedType(declaration)
     }
   }
   def decompileBody(owner: String, classNode: ClassNode, i: Int, method: MethodNode, j: Int, methods: Int, declaration: BodyDeclaration[_ <: BodyDeclaration[_]]): Unit = {
@@ -93,6 +94,7 @@ object DecompileBody extends Logging {
           } else {
             declaration.setBody(warningBody(s"No implementation for non-abstract, non-native method: ${classNode.name}.${method.name}(signature = ${method.signature}, descriptor = ${method.desc})"))
           }
+        case declaration => Errors.unmatchedType(declaration)
       }
     } else {
       this.logger.debug(f"**** Method has a body with ${method.instructions.size} instructions ****")

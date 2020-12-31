@@ -5,7 +5,7 @@ import org.jgrapht.traverse.DepthFirstIterator
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.util.jgrapht.Dominator
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Exceptions {
   def apply(cfg: ControlFlowGraph): Unit = {

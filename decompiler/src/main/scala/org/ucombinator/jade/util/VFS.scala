@@ -8,8 +8,8 @@ import java.util.zip.{ZipEntry, ZipInputStream}
 
 import org.objectweb.asm.ClassReader
 
-import scala.collection.JavaConverters._
-import scala.collection.SortedMap
+import scala.jdk.CollectionConverters._
+import scala.collection.immutable.SortedMap
 
 // This code is more complicated than one would think due to a few things.
 // The first is supporting treating compressed files as directories.

@@ -1,12 +1,14 @@
 package org.ucombinator.jade.classfile
 
+import org.ucombinator.jade.util.Errors
+
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.`type`._
 import com.github.javaparser.ast.expr.{AnnotationExpr, SimpleName}
 import sun.reflect.generics.parser.SignatureParser
 import sun.reflect.generics.tree._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 // NOTE: The structure of this class follows that of the Java Virtual Machine Specification section 4.7.9.1 "Signatures"
 object Signature {
@@ -25,6 +27,7 @@ object Signature {
     t match {
       case t: FieldTypeSignature => translate(t)
       case t: BaseType => translate(t)
+      case _ => Errors.unmatchedType(t)
     }
   }
   private def translate(t: BaseType): PrimitiveType = {
@@ -37,8 +40,8 @@ object Signature {
       case _: LongSignature => PrimitiveType.longType()
       case _: ShortSignature => PrimitiveType.shortType()
       case _: BooleanSignature => PrimitiveType.booleanType()
-      // The following case should never happen:
-      //case baseType: FieldTypeSignature => ???
+      case _: FieldTypeSignature => Errors.impossibleMatch(t)
+      case _ => Errors.unmatchedType(t)
     }
   }
   private def translate(t: FieldTypeSignature): ReferenceType = {
@@ -46,9 +49,9 @@ object Signature {
       case t: ClassTypeSignature => translate(t)
       case t: TypeVariableSignature => translate(t)
       case t: ArrayTypeSignature => translate(t)
-      // The following cases should never happen:
-      //case t: SimpleClassTypeSignature => ???
-      //case t: BottomSignature => ???
+      case t: SimpleClassTypeSignature => Errors.impossibleMatch(t)
+      case t: BottomSignature => Errors.impossibleMatch(t)
+      case _ => Errors.unmatchedType(t)
     }
   }
   private def translate(t: ClassTypeSignature): ClassOrInterfaceType = {
@@ -69,6 +72,7 @@ object Signature {
     t match {
       case t: FieldTypeSignature => translate(t)
       case t: Wildcard => translate(t)
+      case _ => Errors.unmatchedType(t)
     }
   }
   private def translate(t: Wildcard): WildcardType = {
@@ -105,6 +109,7 @@ object Signature {
         assert(t.getTypeBound.isEmpty, f"non-empty type bounds in $t")
         // TODO: mark this as a type parameter
         new ClassOrInterfaceType(null, t.getName, null)
+      case _ => Errors.unmatchedType(t)
     }
   }
   private def translate(t: FormalTypeParameter): TypeParameter = {
@@ -125,6 +130,7 @@ object Signature {
     t match {
       case t: TypeSignature => translate(t)
       case _: VoidDescriptor => new VoidType
+      case _ => Errors.unmatchedType(t)
     }
   }
 }

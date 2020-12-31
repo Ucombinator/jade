@@ -7,7 +7,7 @@ import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 import org.ucombinator.jade.util.Logging
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 sealed trait Var extends Value {
   def basicValue: BasicValue
@@ -45,7 +45,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
 
   def ssaMap(key: PhiVar, insn: AbstractInsnNode, value: Var, ignoreNull: Boolean = false): Unit = {
     if (!ignoreNull || value != null) {
-      val usedKey = key.change
+      val usedKey = key.change()
       val entry = (insn, value)
       this.ssaMap += (usedKey -> (this.ssaMap.getOrElse(usedKey, Set.empty) + entry))
     }
@@ -169,7 +169,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInt
         for (i <- 0 until cfgFrame.getLocals) {
           assert((insnIndex == 0) == (frame.getLocal(i) != null))
           val phiVar = PhiVar(cfgFrame.getLocal(i), Insn(method, insn), i) // Note: not `.used`
-          this.interpreter.ssaMap(phiVar.change, this.interpreter.originInsn, frame.getLocal(i), true)
+          this.interpreter.ssaMap(phiVar.change(), this.interpreter.originInsn, frame.getLocal(i), true)
           frame.setLocal(i, phiVar)
         }
         // Note that we use `clearStack` and `push` instead of `setStack` as the `Frame` constructor
@@ -178,7 +178,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInt
         for (i <- 0 until cfgFrame.getStackSize) {
           assert((insnIndex == 0) == (frame.getStack(i) != null))
           val phiVar = PhiVar(cfgFrame.getStack(i), Insn(method, insn), i + frame.getLocals)
-          this.interpreter.ssaMap(phiVar.change, this.interpreter.originInsn, frame.getStack(i), true)
+          this.interpreter.ssaMap(phiVar.change(), this.interpreter.originInsn, frame.getStack(i), true)
           frame.push(phiVar)
         }
         this.getFrames()(insnIndex) = frame

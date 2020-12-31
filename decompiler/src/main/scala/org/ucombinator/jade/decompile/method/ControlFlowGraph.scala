@@ -7,7 +7,7 @@ import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, 
 import org.ucombinator.jade.decompile.method.ControlFlowGraph.Edge
 import org.ucombinator.jade.asm.Insn
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 case class ControlFlowGraph(
   method: MethodNode,

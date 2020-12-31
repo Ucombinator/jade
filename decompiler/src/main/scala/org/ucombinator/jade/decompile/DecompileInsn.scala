@@ -15,7 +15,7 @@ import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.util.{JavaParser, Logging}
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /*
 Non-Linear Stmt Types
@@ -119,13 +119,13 @@ object DecompileInsn extends Logging {
       // InsnNode
       case Opcodes.NOP => DecompiledStatement(new EmptyStmt())
       case Opcodes.ACONST_NULL => DecompiledExpression(new NullLiteralExpr())
-      case Opcodes.ICONST_M1 => DecompiledExpression(new IntegerLiteralExpr(-1))
-      case Opcodes.ICONST_0 => DecompiledExpression(new IntegerLiteralExpr(0))
-      case Opcodes.ICONST_1 => DecompiledExpression(new IntegerLiteralExpr(1))
-      case Opcodes.ICONST_2 => DecompiledExpression(new IntegerLiteralExpr(2))
-      case Opcodes.ICONST_3 => DecompiledExpression(new IntegerLiteralExpr(3))
-      case Opcodes.ICONST_4 => DecompiledExpression(new IntegerLiteralExpr(4))
-      case Opcodes.ICONST_5 => DecompiledExpression(new IntegerLiteralExpr(5))
+      case Opcodes.ICONST_M1 => DecompiledExpression(new IntegerLiteralExpr("-1"))
+      case Opcodes.ICONST_0 => DecompiledExpression(new IntegerLiteralExpr("0"))
+      case Opcodes.ICONST_1 => DecompiledExpression(new IntegerLiteralExpr("1"))
+      case Opcodes.ICONST_2 => DecompiledExpression(new IntegerLiteralExpr("2"))
+      case Opcodes.ICONST_3 => DecompiledExpression(new IntegerLiteralExpr("3"))
+      case Opcodes.ICONST_4 => DecompiledExpression(new IntegerLiteralExpr("4"))
+      case Opcodes.ICONST_5 => DecompiledExpression(new IntegerLiteralExpr("5"))
       case Opcodes.LCONST_0 => DecompiledExpression(new LongLiteralExpr("0L"))
       case Opcodes.LCONST_1 => DecompiledExpression(new LongLiteralExpr("1L"))
       case Opcodes.FCONST_0 => DecompiledExpression(new DoubleLiteralExpr("0.0F"))
@@ -215,7 +215,7 @@ object DecompileInsn extends Logging {
       case Opcodes.LXOR  => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.XOR))
       // IincInsnNode
       // TODO: double check that iinc works (because it is a strange instruction)
-      case Opcodes.IINC => DecompiledExpression(new BinaryExpr(args(0), new IntegerLiteralExpr(node.asInstanceOf[IincInsnNode].incr), BinaryExpr.Operator.PLUS))
+      case Opcodes.IINC => DecompiledExpression(new BinaryExpr(args(0), new IntegerLiteralExpr(node.asInstanceOf[IincInsnNode].incr.toString), BinaryExpr.Operator.PLUS))
       // InsnNode
       case Opcodes.I2L => DecompiledExpression(new CastExpr(PrimitiveType.longType  , args(0)))
       case Opcodes.I2F => DecompiledExpression(new CastExpr(PrimitiveType.floatType , args(0)))
@@ -238,12 +238,12 @@ object DecompileInsn extends Logging {
       case Opcodes.DCMPL => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<dcmpl>"), new NodeList(args(0), args(1))))
       case Opcodes.DCMPG => DecompiledExpression(new MethodCallExpr(null, null, new SimpleName("<dcmpg>"), new NodeList(args(0), args(1))))
       // JumpInsnNode
-      case Opcodes.IFEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.EQUALS))
-      case Opcodes.IFNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.NOT_EQUALS))
-      case Opcodes.IFLT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.LESS))
-      case Opcodes.IFGE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.GREATER_EQUALS))
-      case Opcodes.IFGT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.GREATER))
-      case Opcodes.IFLE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr(0), BinaryExpr.Operator.LESS_EQUALS))
+      case Opcodes.IFEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr("0"), BinaryExpr.Operator.EQUALS))
+      case Opcodes.IFNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr("0"), BinaryExpr.Operator.NOT_EQUALS))
+      case Opcodes.IFLT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr("0"), BinaryExpr.Operator.LESS))
+      case Opcodes.IFGE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr("0"), BinaryExpr.Operator.GREATER_EQUALS))
+      case Opcodes.IFGT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr("0"), BinaryExpr.Operator.GREATER))
+      case Opcodes.IFLE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), new IntegerLiteralExpr("0"), BinaryExpr.Operator.LESS_EQUALS))
       case Opcodes.IF_ICMPEQ => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.EQUALS))
       case Opcodes.IF_ICMPNE => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.NOT_EQUALS))
       case Opcodes.IF_ICMPLT => DecompiledIf(node.asInstanceOf[JumpInsnNode].label, new BinaryExpr(args(0), args(0), BinaryExpr.Operator.LESS))

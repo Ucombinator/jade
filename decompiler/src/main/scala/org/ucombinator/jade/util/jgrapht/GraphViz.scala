@@ -5,11 +5,10 @@ import java.io.{StringWriter, Writer}
 import org.jgrapht.Graph
 import org.jgrapht.nio.DefaultAttribute
 import org.jgrapht.nio.dot.DOTExporter
-import org.objectweb.asm.tree.MethodNode
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.decompile.method.ControlFlowGraph
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 object GraphViz {
