@@ -26,6 +26,7 @@ object GraphViz {
 
   def print[N, E](writer: Writer, graph: Graph[N, E]): Unit = {
     val dotExporter = new DOTExporter[N, E]()
+    dotExporter.setVertexAttributeProvider((v: N) => Map("label" -> DefaultAttribute.createAttribute(v.toString)).asJava)
     dotExporter.exportGraph(graph, writer)
   }
 
