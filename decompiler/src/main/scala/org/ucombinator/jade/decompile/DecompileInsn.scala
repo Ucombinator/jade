@@ -102,7 +102,7 @@ object DecompileInsn extends Logging {
         comment(f"Unsupported $insn")
     }
   }
-  def decompileInsn(method: MethodNode, node: AbstractInsnNode, ssa: SSA): (Var, DecompiledInsn) = {
+  def decompileInsn(node: AbstractInsnNode, ssa: SSA): (Var, DecompiledInsn) = {
     val (retVar, argVars) = ssa.instructionArguments.getOrElse(node, (null, List()))
     val args: Array[Expression] = argVars.toArray.map(decompileVar)
     //val ret: Expression = decompileVar(retVar)

@@ -150,7 +150,7 @@ object DecompileMethodBody extends Logging {
 
       var statements = List[Statement]()
       for (insn <- method.instructions.toArray) {
-        val (retVal, decompiled) = DecompileInsn.decompileInsn(method, insn, ids)
+        val (retVal, decompiled) = DecompileInsn.decompileInsn(insn, ids)
         statements = statements :+ DecompileInsn.decompileInsn(retVal, decompiled)
       }
       this.logger.debug("++++ statements ++++\n" + statements.mkString("\n"))

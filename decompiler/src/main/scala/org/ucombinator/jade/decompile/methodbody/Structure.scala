@@ -13,7 +13,7 @@ case class Loop() extends StructureKind
 case class Structure(kind: StructureKind, head: Insn, tail: Structure)
 
 object Structure {
-  def get(): Map[Insn,List[Insn]] = {
+  def get(): Map[Insn,List[Insn]] = { ???
     // maps from vertex to list of vertices that are loop heads
 
           // for each loop

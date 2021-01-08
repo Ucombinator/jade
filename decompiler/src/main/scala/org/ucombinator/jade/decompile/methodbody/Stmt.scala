@@ -1,12 +1,17 @@
 package org.ucombinator.jade.decompile.methodbody
 
+import scala.collection.immutable._
+import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 
 import org.jgrapht.graph._
 
 import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.decompile.DecompileInsn
+import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.asm.Insn.InsnOrdering
+import org.ucombinator.jade.util.Errors
 
 /*
 Non-Linear Stmt Types
@@ -31,14 +36,14 @@ object Stmt {
   is it a loop head, which loop head is this part of
   */
 
-  def run(cfg: ControlFlowGraph, structures: Map[Insn, Structure]): BlockStmt = {
+  def run(cfg: ControlFlowGraph, ssa: SSA, structures: Map[Insn, Structure]): Statement = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
 
     // TODO: remove back edges
-    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, v: Insn => true, e => e.isForwardEdge))
+    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (v: Insn) => true, (e: ControlFlowGraph.Edge) => e.isForwardEdge))
 
-    def structuredBlock(head: Insn): (Stmt, Set[Insn]/* pendingOutside */) = {
+    def structuredBlock(head: Insn): (Statement, Set[Insn]/* pendingOutside */) = {
       // do statements in instruction order if possible
       // constraints (loops *must* be together):
       // 1. Respect edges
@@ -78,12 +83,12 @@ object Stmt {
       }
 
       // ASSUMPTION: structured statements have a single entry point
-      def structuredStmt(insn: Insn): Stmt = {
+      def structuredStmt(insn: Insn): Statement = {
         if (structures(insn).head eq insn) { // insn is the head of a structured statement
           // TODO: multiple nested structures starting at same place (for now assume everything is a loop)
           val (block, newPending) = structuredBlock(insn)
           addPending(newPending)
-          return new Labeled("LOOP"+vertex, new WhileStmt(new TrueExpr(), block))
+          return new LabeledStmt("LOOP" + insn.index, new WhileStmt(new BooleanLiteralExpr(true), block))
         // } else if (tryCatchFinally) {
         //   // TODO
         // } else if (synchronized) {
@@ -93,15 +98,16 @@ object Stmt {
         }
       }
 
-      def simpleStmt(vertex: Vertex): Stmt = {
+      def simpleStmt(insn: Insn): Statement = {
         // ASSUMPTION: we ignore allocs but implement the constructors
-        val (retVal, decompiled) = DecompileInsn.decompileInsn(method, insn, ids)
+        val (retVal, decompiled) = DecompileInsn.decompileInsn(insn.insn, ssa)
         // TODO: break vs continue
+        // TODO: labels in break or continue
         return DecompileInsn.decompileInsn(retVal, decompiled)
       }
       // TODO: explicitly labeled instructions
 
-      var currentInsn: Insn = loopHead
+      var currentInsn: Insn = head
       // If the next instruction is an outgoing edge via normal control,
       //   if it is available, use it
       //   otherwise, insert a 'break' ('continue' is impossible since we are looking at the next instruction), then do part two
@@ -123,7 +129,7 @@ object Stmt {
               // Use the next instruction
               Some(next)
             } else {
-              stmt = new BlockStmt(stmt, new BreakStmt(next))
+              currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, new BreakStmt(next)))
               // Use the smallest available instruction
               pendingInside.minOption
             }
@@ -134,11 +140,11 @@ object Stmt {
         }
       }
 
-      var currentStmt: Stmt = simpleStmt(insn)
+      var currentStmt: Statement = simpleStmt(currentInsn)
       while ({ currentInsn = getNextInsn(); currentInsn != null }) {
-        pendingInside -= insn
+        pendingInside -= currentInsn
 
-        currentStmt = new BlockStmt(stmt, structuredStmt(currentInsn))
+        currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, structuredStmt(currentInsn)))
 
         if (currentInsn.jumpTarget) {
           currentStmt = new LabeledStmt("L" + currentInsn.index, currentStmt)
@@ -148,6 +154,8 @@ object Stmt {
       return (currentStmt, pendingOutside)
     }
 
-    return stmt(graph.entry)
+    var (stmt, pendingOutside) = structuredBlock(graph.entry)
+    if (!pendingOutside.isEmpty) { Errors.fatal(f"Non-empty pending ${pendingOutside}") }
+    return stmt
   }
 }
