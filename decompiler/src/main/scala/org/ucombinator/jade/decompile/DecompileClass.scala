@@ -112,6 +112,9 @@ object DecompileClass extends Logging {
     }
   }
 
+  def nullToSeq[A](x: java.util.List[A]): Seq[A] = { if (x eq null) { Seq() } else { Seq.from(x.asScala) } }
+  def nullToSeq[A](x: Array[A]): Seq[A] = { if (x eq null) { Seq() } else { x.toSeq } }
+
   def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
     // instructions
@@ -133,19 +136,17 @@ object DecompileClass extends Logging {
         (Array(), descriptor._1, descriptor._2, node.exceptions.asScala.toArray.map(x => Descriptor.classNameType(x)))
       }
     }
-    // TODO: use nullToList
-    val parameterNodes: List[ParameterNode] = if (node.parameters == null) { List() } else { node.parameters.asScala.toList }
+    val parameterNodes = nullToSeq(node.parameters)
     if (node.parameters != null && sig._2.length != node.parameters.size()) {
       // TODO: check if always in an enum
     }
     val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1:_*)
-    def nullToList[A](x: Seq[A]): Seq[A] = { if (x == null) { List() } else { x } }
     val parameters: NodeList[Parameter] = {
-      val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes)
+      val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes.toList)
         .zipWithIndex
         .zipAll(parameterNodes, null, null)
-        .zipAll(nullToList(node.visibleParameterAnnotations).toIndexedSeq, null, null)
-        .zipAll(nullToList(node.invisibleParameterAnnotations).toIndexedSeq, null, null)
+        .zipAll(nullToSeq(node.visibleParameterAnnotations), null, null)
+        .zipAll(nullToSeq(node.invisibleParameterAnnotations), null, null)
       new NodeList(ps.map(decompileParameter(node, sig._2.length, _)):_*)
     }
     val `type`: Type = sig._3
