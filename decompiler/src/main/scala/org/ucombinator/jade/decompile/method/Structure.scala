@@ -7,6 +7,25 @@ import org.ucombinator.jade.util.jgrapht.Dominator
 
 import scala.jdk.CollectionConverters._
 
+sealed trait StructureType
+case class Loop extends StructureType
+
+case class Structure(type: StructureType, head: Insn, tail: Structure)
+
+object Structure {
+  def get(): Map[Insn,List[Insn]] = {
+    // maps from vertex to list of vertices that are loop heads
+
+          // for each loop
+      // what is the query that loops need
+      /*
+      Loop heads dominate a predicesor
+      Whole loop = all vertecies backwards from predicestor until loop head
+      */
+  }
+}
+
+
 object Exceptions {
   def apply(cfg: ControlFlowGraph): Unit = {
     // TODO: check that handlers properly nest

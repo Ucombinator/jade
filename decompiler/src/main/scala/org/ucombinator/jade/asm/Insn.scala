@@ -9,7 +9,7 @@ import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 
 import scala.jdk.CollectionConverters._
 
-case class Insn(method: MethodNode, insn: AbstractInsnNode) {
+case class Insn(method: MethodNode, insn: AbstractInsnNode) extends Ordered[Insn] {
   def index: Int = method.instructions.indexOf(insn)
   def shortString: String = Insn.shortString(method, insn)
   def longString: String = Insn.longString(method, insn)
@@ -80,4 +80,15 @@ object Insn extends Textifier(Opcodes.ASM7) {
     }).toList.flatten.toMap
 
   val intToType: Map[Int, String] = typeToInt map {_.swap}
+
+  // NOTE: valid only for Insn for the same method
+  class InsnOrdering extends Ordering[Insn] {
+    override def compare(x: Insn, y: Insn): Int = {
+      assert(x.method eq y.method) // TODO: assert message or log message
+      if (x eq y) { 0 }
+      else if (x.index < y.index) { -1 }
+      else if (x.index > y.index) { 1 }
+      else { assert(false) } // TODO: assert message or log message
+    }
+  }
 }
