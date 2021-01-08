@@ -1,4 +1,5 @@
 *.class
 target
+.bsp
 specifications
 lib/jade/jade.jar
