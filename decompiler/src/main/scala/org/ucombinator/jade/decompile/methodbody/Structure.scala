@@ -1,4 +1,4 @@
-package org.ucombinator.jade.decompile.method
+package org.ucombinator.jade.decompile.methodbody
 
 import org.jgrapht.graph.AsGraphUnion
 import org.jgrapht.traverse.DepthFirstIterator
@@ -7,10 +7,10 @@ import org.ucombinator.jade.util.jgrapht.Dominator
 
 import scala.jdk.CollectionConverters._
 
-sealed trait StructureType
-case class Loop extends StructureType
+sealed trait StructureKind
+case class Loop() extends StructureKind
 
-case class Structure(type: StructureType, head: Insn, tail: Structure)
+case class Structure(kind: StructureKind, head: Insn, tail: Structure)
 
 object Structure {
   def get(): Map[Insn,List[Insn]] = {

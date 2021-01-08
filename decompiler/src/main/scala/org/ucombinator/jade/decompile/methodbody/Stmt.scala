@@ -1,8 +1,11 @@
-package org.ucombinator.jade.decompile.method
+package org.ucombinator.jade.decompile.methodbody
 
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 
+import org.jgrapht.graph._
+
+import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.Insn.InsnOrdering
 
 /*
@@ -33,7 +36,7 @@ object Stmt {
     // TODO: LocalClassDeclarationStmt
 
     // TODO: remove back edges
-    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, v => true, e => e.isForwardEdge))
+    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, v: Insn => true, e => e.isForwardEdge))
 
     def structuredBlock(head: Insn): (Stmt, Set[Insn]/* pendingOutside */) = {
       // do statements in instruction order if possible

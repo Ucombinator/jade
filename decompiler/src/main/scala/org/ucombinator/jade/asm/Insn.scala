@@ -9,6 +9,8 @@ import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 
 import scala.jdk.CollectionConverters._
 
+import org.ucombinator.jade.util.Errors
+
 case class Insn(method: MethodNode, insn: AbstractInsnNode) extends Ordered[Insn] {
   def index: Int = method.instructions.indexOf(insn)
   def shortString: String = Insn.shortString(method, insn)
@@ -88,7 +90,7 @@ object Insn extends Textifier(Opcodes.ASM7) {
       if (x eq y) { 0 }
       else if (x.index < y.index) { -1 }
       else if (x.index > y.index) { 1 }
-      else { assert(false) } // TODO: assert message or log message
+      else { Errors.fatal(f"Incomparable Insn ${x.longString} and ${y.longString}") }
     }
   }
 }

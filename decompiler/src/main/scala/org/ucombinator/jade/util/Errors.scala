@@ -8,4 +8,8 @@ object Errors {
   def impossibleMatch(x: Any): Nothing = {
     throw new Exception("Impossible type found in match: " + x.getClass.getName)
   }
+
+  def fatal(msg: String): Nothing = {
+    throw new Exception("Fatal error: " + msg)
+  }
 }

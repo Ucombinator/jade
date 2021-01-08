@@ -151,7 +151,7 @@ object DecompileClass extends Logging {
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
-    val body: BlockStmt = DecompileBody.decompileBodyStub(classNode, node)
+    val body: BlockStmt = DecompileMethodBody.decompileBodyStub(classNode, node)
     val receiverParameter: ReceiverParameter = null // TODO
     val bodyDeclaration = node.name match {
       case "<clinit>" =>

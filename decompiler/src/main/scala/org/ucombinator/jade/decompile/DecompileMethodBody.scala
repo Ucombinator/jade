@@ -11,14 +11,14 @@ import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.decompile.method.ControlFlowGraph
-import org.ucombinator.jade.decompile.method.ssa.SSA
+import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 import org.ucombinator.jade.util.{Errors, JavaParser, Logging, VFS}
 
 import scala.jdk.CollectionConverters._
 
-object DecompileBody extends Logging {
+object DecompileMethodBody extends Logging {
   private def stubBody(message: String, comment: BlockComment): BlockStmt = {
     val statements = new NodeList[Statement](
       JavaParser.setComment(

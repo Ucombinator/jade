@@ -10,7 +10,7 @@ import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.decompile.method.ssa.{CopyVar, EmptyVar, ExceptionVar, InstructionVar, ParameterVar, PhiVar, ReturnVar, SSA, Var}
+import org.ucombinator.jade.decompile.methodbody.ssa.{CopyVar, EmptyVar, ExceptionVar, InstructionVar, ParameterVar, PhiVar, ReturnVar, SSA, Var}
 import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.util.{JavaParser, Logging}
 

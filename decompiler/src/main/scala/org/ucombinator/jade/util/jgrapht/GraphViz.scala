@@ -6,7 +6,7 @@ import org.jgrapht.Graph
 import org.jgrapht.nio.DefaultAttribute
 import org.jgrapht.nio.dot.DOTExporter
 import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.decompile.method.ControlFlowGraph
+import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
 
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
