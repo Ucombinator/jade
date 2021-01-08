@@ -31,7 +31,7 @@ Non-linear expressions
 */
 
 // TODO: rename to Statement
-object Stmt {
+object Statements {
   /*
   As long as one is jumping forwards, we can always encode as a sequence of breaks
   Use topo-sort with a sort order that groups loop heads with their body
