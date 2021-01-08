@@ -60,7 +60,7 @@ object Signature {
       { (scope, simpleClassTypeSignature) => translate(scope, simpleClassTypeSignature) }
   }
   private def translate(scope: ClassOrInterfaceType, t: SimpleClassTypeSignature): ClassOrInterfaceType = {
-    val name :: names = (t.getName.split('.').toList.reverse: @scala.annotation.nowarn("msg=match may not be exhaustive"))
+    val name :: names = t.getName.split('.').toList.reverse: @scala.annotation.nowarn("msg=match may not be exhaustive")
     // TODO: ignored: simpleClassTypeSignature.getDollar
     new ClassOrInterfaceType(
       names.foldRight(scope){ (name, scope) => new ClassOrInterfaceType(scope, name) },

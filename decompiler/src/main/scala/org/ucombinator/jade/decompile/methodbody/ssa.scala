@@ -6,6 +6,7 @@ import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
 import org.ucombinator.jade.util.Logging
+import org.ucombinator.jade.util.Errors
 
 import scala.jdk.CollectionConverters._
 
@@ -51,7 +52,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
     }
   }
 
-  override def newValue(`type`: Type): Var = ??? // Should never be called
+  override def newValue(`type`: Type): Var = Errors.fatal(f"Impossible call of newValue on ${`type`}")
 
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, `type`: Type): Var = {
     ParameterVar(SSA.basicInterpreter.newValue(`type`), local)
