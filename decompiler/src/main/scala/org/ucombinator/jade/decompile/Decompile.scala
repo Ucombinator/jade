@@ -31,7 +31,7 @@ case object Decompile extends Logging {
     for (((name, readers), i) <- VFS.classes.zipWithIndex) {
       for ((path, classReader) <- readers) { // TODO: pick "best" classReader
         // Decompile class structure
-        val (classNode, compilationUnit) = decompileClassFile(name, path.toString, classReader, i)
+        val compilationUnit = decompileClassFile(name, path.toString, classReader, i)
 
         // Decompile method bodies
         for (typ <- compilationUnit.getTypes.iterator().asScala) {
@@ -46,12 +46,12 @@ case object Decompile extends Logging {
     }
   }
 
-  def decompileClassFile(name: String, owner: String, cr: ClassReader, i: Int): (ClassNode, CompilationUnit) = {
+  def decompileClassFile(name: String, owner: String, cr: ClassReader, i: Int): CompilationUnit = {
     this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] $name from $owner") // TODO: name use "." instead of "/" and "$"
     val classNode = new ClassNode
     cr.accept(classNode, 0) // TODO: ClassReader.EXPAND_FRAMES
 
-    if (classNode.name == null) { return (null, null) } // TODO
+    if (classNode.name == null) { return null } // TODO
     this.logger.debug("class name: " + classNode.name)
 
     this.asmLogger.whenDebugEnabled({
@@ -60,8 +60,6 @@ case object Decompile extends Logging {
       this.asmLogger.debug("++++ asm ++++\n" + stringWriter.toString)
     })
 
-    val compilationUnit = DecompileClass.decompileClass(classNode)
-
-    (classNode, compilationUnit)
+    DecompileClass.decompileClass(classNode)
   }
 }

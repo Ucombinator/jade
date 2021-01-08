@@ -33,7 +33,7 @@ object DecompileMethodBody extends Logging {
     new BlockStmt(statements)
   }
 
-  def decompileBodyStub(classNode: ClassNode, node: MethodNode): BlockStmt = {
+  def decompileBodyStub(node: MethodNode): BlockStmt = {
     val instructions = {
       if (node.instructions.size() == 0) {
         "   <no instructions>" // TODO: check
@@ -57,9 +57,9 @@ object DecompileMethodBody extends Logging {
   }
   def setDeclarationBody(declaration: BodyDeclaration[_ <: BodyDeclaration[_]], body: BlockStmt): Unit = {
     declaration match {
-      case declaration: InitializerDeclaration => declaration.setBody(body)
-      case declaration: ConstructorDeclaration => declaration.setBody(body)
-      case declaration: MethodDeclaration => declaration.setBody(body)
+      case declaration: InitializerDeclaration => declaration.setBody(body); ()
+      case declaration: ConstructorDeclaration => declaration.setBody(body); ()
+      case declaration: MethodDeclaration => declaration.setBody(body); ()
       case declaration => Errors.unmatchedType(declaration)
     }
   }
@@ -84,15 +84,19 @@ object DecompileMethodBody extends Logging {
       declaration match { // TODO: use setDeclarationBody
         case declaration: InitializerDeclaration =>
           declaration.setBody(warningBody(f"No implementation for the static initializer for class ${classNode.name}"))
+          ()
         case declaration: ConstructorDeclaration =>
           declaration.setBody(warningBody(f"No implementation for constructor ${classNode.name}(signature = ${method.signature}, descriptor = ${method.desc})"))
+          ()
         case declaration: MethodDeclaration =>
           val modifiers = declaration.getModifiers
           // TODO: if !(*.sym)
           if (modifiers.contains(Modifier.abstractModifier) || modifiers.contains(Modifier.nativeModifier)) {
             declaration.setBody(null)
+            ()
           } else {
             declaration.setBody(warningBody(s"No implementation for non-abstract, non-native method: ${classNode.name}.${method.name}(signature = ${method.signature}, descriptor = ${method.desc})"))
+            ()
           }
         case declaration => Errors.unmatchedType(declaration)
       }

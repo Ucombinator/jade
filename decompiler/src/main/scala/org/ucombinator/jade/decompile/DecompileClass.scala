@@ -103,7 +103,7 @@ object DecompileClass extends Logging {
         || Flags.parameterFlags(p.access).contains(Flags.ACC_MANDATED) =>
       // TODO: Flags.checkParameter(access, Modifier)
         d :: parameterTypes(ds, ss, ps)
-      case (d :: ds, s :: ss, p :: ps) =>
+      case (_ :: ds, s :: ss, _ :: ps) =>
         s :: parameterTypes(ds, ss, ps)
       case (_, ss, List()) =>
         ss
@@ -152,7 +152,7 @@ object DecompileClass extends Logging {
     val `type`: Type = sig._3
     val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
     val name: SimpleName = new SimpleName(node.name)
-    val body: BlockStmt = DecompileMethodBody.decompileBodyStub(classNode, node)
+    val body: BlockStmt = DecompileMethodBody.decompileBodyStub(node)
     val receiverParameter: ReceiverParameter = null // TODO
     val bodyDeclaration = node.name match {
       case "<clinit>" =>

@@ -5,7 +5,7 @@ import org.ucombinator.jade.classfile.Flags._
 import org.scalatest.freespec.AnyFreeSpec
 
 class FlagsTest extends AnyFreeSpec {
-  "classFlags" - {
+  "classFlags" in {
     val flags = List(
       ACC_PUBLIC,
       ACC_FINAL,
@@ -21,7 +21,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.classFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "fieldFlags" - {
+  "fieldFlags" in {
     val flags = List(
       ACC_PUBLIC,
       ACC_PRIVATE,
@@ -37,7 +37,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.fieldFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "methodFlags" - {
+  "methodFlags" in {
     val flags = List(
       ACC_PUBLIC,
       ACC_PRIVATE,
@@ -56,7 +56,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.methodFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "nestedClassFlags" - {
+  "nestedClassFlags" in {
     val flags = List(
       ACC_PUBLIC,
       ACC_PRIVATE,
@@ -73,7 +73,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.nestedClassFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "parameterFlags" - {
+  "parameterFlags" in {
     val flags = List(
       ACC_FINAL,
       ACC_SYNTHETIC,
@@ -83,7 +83,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.parameterFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "moduleFlags" - {
+  "moduleFlags" in {
     val flags = List(
       ACC_OPEN,
       ACC_SYNTHETIC,
@@ -93,7 +93,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.moduleFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "requiresFlags" - {
+  "requiresFlags" in {
     val flags = List(
       ACC_TRANSITIVE,
       ACC_STATIC_PHASE,
@@ -104,7 +104,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.requiresFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "exportsFlags" - {
+  "exportsFlags" in {
     val flags = List(
       ACC_SYNTHETIC,
       ACC_MANDATED)
@@ -113,7 +113,7 @@ class FlagsTest extends AnyFreeSpec {
     assertResult(flags) { Flags.exportsFlags(flagValues.fold(0) { _ | _ } ) }
   }
 
-  "opensFlags" - {
+  "opensFlags" in {
     val flags = List(
       ACC_SYNTHETIC,
       ACC_MANDATED)

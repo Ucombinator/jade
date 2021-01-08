@@ -63,12 +63,12 @@ lazy val root = (project in file(".")).
 
 // Flags to `scalac`.  Try to get as much error and warning detection as possible.
 scalacOptions ++= Seq(
-  "-deprecation",  // Emit warning and location for usages of deprecated APIs.
-  "-explaintypes", // Explain type errors in more detail.
-  "-feature",      // Emit warning and location for usages of features that should be imported explicitly.
   "-opt:l:inline", // Generates faster bytecode by applying optimisations to the program
-  "-unchecked",    // Enable additional warnings where generated code depends on assumptions.
-  "-Xlint:_",      // Turn on all lint messages
+  "-Xlint:_",      // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
+)
+// Flags to `scalac` that are turned on by `sbt-tpolecat` but that we want off
+scalacOptions --= Seq(
+  "-Xfatal-warnings", // Fail the compilation if there are any warnings
 )
 
 // Flags to `javac`

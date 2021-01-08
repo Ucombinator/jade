@@ -53,7 +53,7 @@ object Statement {
       })
 
     // TODO: remove back edges
-    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (v: Insn) => true, (e: ControlFlowGraph.Edge) => !structure.backEdges(e)))
+    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (_: Insn) => true, (e: ControlFlowGraph.Edge) => !structure.backEdges(e)))
 
     def structuredBlock(head: Insn): (Statement, Set[Insn]/* pendingOutside */) = {
       // do statements in instruction order if possible

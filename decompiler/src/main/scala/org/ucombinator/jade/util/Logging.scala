@@ -50,7 +50,7 @@ object Logging extends Logging {
             replaceAll("\\.class$", "").
             replaceAll("/", "."))
         } catch {
-          case e: Throwable => /* Ignored */
+          case _: Throwable => /* Ignored */
             this.logger.debug(s"skipping: ${entry.getName}")
         }
       }

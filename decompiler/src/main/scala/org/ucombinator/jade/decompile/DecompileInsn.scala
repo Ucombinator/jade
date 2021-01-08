@@ -84,7 +84,7 @@ object DecompileInsn extends Logging {
       case DecompiledGoto(labelNode: LabelNode) =>
         new BreakStmt(labelNode.toString) // TODO: use instruction number?
       case DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) =>
-        comment(f"Switch")
+        comment(f"Switch ${labels} ${default}")
       case DecompiledNew(descriptor: ClassOrInterfaceType) =>
         comment(f"new $descriptor")
       //case DecompiledCheckCast(/*TODO*/) => ???
@@ -280,23 +280,23 @@ object DecompileInsn extends Logging {
       // MethodInsnNode
       case Opcodes.INVOKEVIRTUAL =>
         val insn = node.asInstanceOf[MethodInsnNode]
-        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val (argumentTypes, _) = Descriptor.methodDescriptor(insn.desc)
         val typeArguments = new NodeList[Type]()
         DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
       case Opcodes.INVOKESPECIAL => // TODO: only for <init> (new, this, and super)?
         val insn = node.asInstanceOf[MethodInsnNode]
-        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val (argumentTypes, _) = Descriptor.methodDescriptor(insn.desc)
         val typeArguments = new NodeList[Type]()
         DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
       case Opcodes.INVOKESTATIC =>
         val insn = node.asInstanceOf[MethodInsnNode]
         val scope = new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/new NodeList(), new SimpleName(insn.name))
-        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val (argumentTypes, _) = Descriptor.methodDescriptor(insn.desc)
         val typeArguments = new NodeList[Type]()
         DecompiledExpression(new MethodCallExpr(scope, typeArguments, insn.name, new NodeList(argumentTypes.indices.map(args):_*)))
       case Opcodes.INVOKEINTERFACE =>
         val insn = node.asInstanceOf[MethodInsnNode]
-        val (argumentTypes, resultType) = Descriptor.methodDescriptor(insn.desc)
+        val (argumentTypes, _) = Descriptor.methodDescriptor(insn.desc)
         val typeArguments = new NodeList[Type]()
         DecompiledExpression(new MethodCallExpr(/*TODO: cast to insn.owner?*/args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)):_*)))
       // InvokeDynamicInsnNode

@@ -49,6 +49,7 @@ case object ControlFlowGraph {
       val source = Insn(method, this.method.instructions.get(insn))
       val target = Insn(method, this.method.instructions.get(successor))
       this.graph.addEdge(source, target, Edge(source, target))
+      ()
     }
   }
 }

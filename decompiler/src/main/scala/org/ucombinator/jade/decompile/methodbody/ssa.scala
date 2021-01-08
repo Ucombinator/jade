@@ -124,6 +124,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
     // Note that `unaryOperation` is also called whenever `returnOperation` is called
     SSA.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
     record(insn, List(value), null)
+    ()
   }
 
   override def merge(value1: Var, value2: Var): Var = {
@@ -143,7 +144,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
   }
 }
 
-class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInterpreter)
+class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter)
   extends Analyzer[Var](interpreter) {
 
   override def init(owner: String, method: MethodNode): Unit = {
@@ -156,6 +157,7 @@ class SSAAnalyzer(method: MethodNode, cfg: ControlFlowGraph, interpreter: SSAInt
     //
     // We cannot do (1) in `merge` as all merged-in values need to know what instruction they
     // came from.  By the time `merge` runs, that information for the first value is gone.
+    assert(cfg.method eq method)
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
       if (cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > (if (insnIndex == 0) { 0 } else { 1 })
@@ -221,7 +223,7 @@ case object SSA {
       method.instructions.add(i)
     }
 
-    val frames = new SSAAnalyzer(method, cfg, interpreter).analyze(owner, method)
+    val frames = new SSAAnalyzer(cfg, interpreter).analyze(owner, method)
 
     SSA(method, frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
