@@ -1,6 +1,7 @@
 package org.ucombinator.jade.decompile.methodbody
 
 import scala.collection.immutable._
+import scala.jdk.CollectionConverters._
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
@@ -8,10 +9,12 @@ import com.github.javaparser.ast.stmt._
 import org.jgrapht.graph._
 
 import org.ucombinator.jade.asm.Insn
+import org.objectweb.asm.tree.JumpInsnNode
 import org.ucombinator.jade.decompile.DecompileInsn
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
-import org.ucombinator.jade.asm.Insn.InsnOrdering
+import org.ucombinator.jade.asm.Insn.ordering
 import org.ucombinator.jade.util.Errors
+import org.objectweb.asm.tree.AbstractInsnNode
 
 /*
 Non-Linear Stmt Types
@@ -27,6 +30,7 @@ Non-linear expressions
   Trinary Operator/Switch Expression
 */
 
+// TODO: rename to Statement
 object Stmt {
   /*
   As long as one is jumping forwards, we can always encode as a sequence of breaks
@@ -39,9 +43,16 @@ object Stmt {
   def run(cfg: ControlFlowGraph, ssa: SSA, structures: Map[Insn, Structure]): Statement = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
+    val jumpTargets = cfg.graph.vertexSet().asScala
+      .map(_.insn)
+      .flatMap({
+        case e: JumpInsnNode => Set(e.label: AbstractInsnNode)
+        case _ => Set()
+      })
+    val backEdges = Structure.backEdges(cfg)
 
     // TODO: remove back edges
-    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (v: Insn) => true, (e: ControlFlowGraph.Edge) => e.isForwardEdge))
+    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (v: Insn) => true, (e: ControlFlowGraph.Edge) => !backEdges(e)))
 
     def structuredBlock(head: Insn): (Statement, Set[Insn]/* pendingOutside */) = {
       // do statements in instruction order if possible
@@ -75,11 +86,11 @@ object Stmt {
       }
 
       def removeOutEdges(insn: Insn): Set[Insn] = {
-        val outEdges = graph.outEdges(insn).asScala
+        val outEdges = Set.from(graph.outgoingEdgesOf(insn).asScala)
         val targets = outEdges.map(e => graph.getEdgeTarget(e))
         outEdges.foreach(e => graph.removeEdge(e))
         addPending(targets.filter(e => graph.inDegreeOf(e) == 0))
-        outEdges
+        outEdges.map(e => graph.getEdgeTarget(e))
       }
 
       // ASSUMPTION: structured statements have a single entry point
@@ -108,6 +119,7 @@ object Stmt {
       // TODO: explicitly labeled instructions
 
       var currentInsn: Insn = head
+      var currentStmt: Statement = simpleStmt(currentInsn)
       // If the next instruction is an outgoing edge via normal control,
       //   if it is available, use it
       //   otherwise, insert a 'break' ('continue' is impossible since we are looking at the next instruction), then do part two
@@ -117,19 +129,20 @@ object Stmt {
         // TODO: switch?
         // TODO: constructor?
         val outEdges = removeOutEdges(currentInsn)
+        val (_, decompiled) = DecompileInsn.decompileInsn(currentInsn.insn, ssa)
         val nextInsn =
-          if (!currentInsn.usesNextInsn) {
+          if (!decompiled.usesNextInsn) {
             // Use the smallest available instruction
             pendingInside.minOption
           } else {
             // ASSUMPTION: last Insn in method does not use next
-            val next = currentInsn.getNext
+            val next = currentInsn.next
             assert(outEdges.contains(next))
             if (pendingInside(next)) {
               // Use the next instruction
               Some(next)
             } else {
-              currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, new BreakStmt(next)))
+              currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, new BreakStmt("L" + next.index)))
               // Use the smallest available instruction
               pendingInside.minOption
             }
@@ -140,13 +153,12 @@ object Stmt {
         }
       }
 
-      var currentStmt: Statement = simpleStmt(currentInsn)
       while ({ currentInsn = getNextInsn(); currentInsn != null }) {
         pendingInside -= currentInsn
 
         currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, structuredStmt(currentInsn)))
 
-        if (currentInsn.jumpTarget) {
+        if (jumpTargets(currentInsn.insn)) {
           currentStmt = new LabeledStmt("L" + currentInsn.index, currentStmt)
         }
       }
@@ -154,7 +166,7 @@ object Stmt {
       return (currentStmt, pendingOutside)
     }
 
-    var (stmt, pendingOutside) = structuredBlock(graph.entry)
+    var (stmt, pendingOutside) = structuredBlock(cfg.entry)
     if (!pendingOutside.isEmpty) { Errors.fatal(f"Non-empty pending ${pendingOutside}") }
     return stmt
   }

@@ -28,7 +28,7 @@ Generators
 */
 
 sealed trait DecompiledInsn {
-  def usesNextInsn = true
+  def usesNextInsn = true // TODO
 }
 case class DecompiledStatement(statement: Statement) extends DecompiledInsn
 case class DecompiledExpression(expression: Expression) extends DecompiledInsn

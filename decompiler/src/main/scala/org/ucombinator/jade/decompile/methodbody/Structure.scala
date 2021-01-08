@@ -10,7 +10,11 @@ import scala.jdk.CollectionConverters._
 sealed trait StructureKind
 case class Loop() extends StructureKind
 
-case class Structure(kind: StructureKind, head: Insn, tail: Structure)
+case class Structure(kind: StructureKind, head: Insn, tail: Structure) extends PartiallyOrdered[Structure] {
+  override def tryCompareTo[B >: Structure](that: B)(implicit arg0: AsPartiallyOrdered[B]): Option[Int] = {
+    ???
+  }
+}
 
 object Structure {
   def get(): Map[Insn,List[Insn]] = { ???
@@ -23,6 +27,9 @@ object Structure {
       Whole loop = all vertecies backwards from predicestor until loop head
       */
   }
+  def backEdges(cfg: ControlFlowGraph): Set[ControlFlowGraph.Edge] = { ??? }
+
+
 }
 
 

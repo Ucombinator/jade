@@ -11,8 +11,9 @@ import scala.jdk.CollectionConverters._
 
 import org.ucombinator.jade.util.Errors
 
-case class Insn(method: MethodNode, insn: AbstractInsnNode) extends Ordered[Insn] {
+case class Insn(method: MethodNode, insn: AbstractInsnNode) {
   def index: Int = method.instructions.indexOf(insn)
+  def next: Insn = Insn(method, insn.getNext)
   def shortString: String = Insn.shortString(method, insn)
   def longString: String = Insn.longString(method, insn)
   override def toString: String = Insn.longString(method, insn)
@@ -84,7 +85,7 @@ object Insn extends Textifier(Opcodes.ASM7) {
   val intToType: Map[Int, String] = typeToInt map {_.swap}
 
   // NOTE: valid only for Insn for the same method
-  class InsnOrdering extends Ordering[Insn] {
+  implicit val ordering = new Ordering[Insn] {
     override def compare(x: Insn, y: Insn): Int = {
       assert(x.method eq y.method) // TODO: assert message or log message
       if (x eq y) { 0 }
