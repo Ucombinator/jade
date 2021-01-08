@@ -13,8 +13,10 @@ import org.objectweb.asm.tree.JumpInsnNode
 import org.ucombinator.jade.decompile.DecompileInsn
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.asm.Insn.ordering
+import org.ucombinator.jade.util.MyersList
 import org.ucombinator.jade.util.Errors
 import org.objectweb.asm.tree.AbstractInsnNode
+import org.ucombinator.jade.decompile.methodbody.Structure
 
 /*
 Non-Linear Stmt Types
@@ -31,7 +33,7 @@ Non-linear expressions
 */
 
 // TODO: rename to Statement
-object Statements {
+object Statement {
   /*
   As long as one is jumping forwards, we can always encode as a sequence of breaks
   Use topo-sort with a sort order that groups loop heads with their body
@@ -40,7 +42,7 @@ object Statements {
   is it a loop head, which loop head is this part of
   */
 
-  def run(cfg: ControlFlowGraph, ssa: SSA, structures: Map[Insn, Structure]): Statement = {
+  def run(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): Statement = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
     val jumpTargets = cfg.graph.vertexSet().asScala
@@ -49,10 +51,9 @@ object Statements {
         case e: JumpInsnNode => Set(e.label: AbstractInsnNode)
         case _ => Set()
       })
-    val backEdges = Structure.backEdges(cfg)
 
     // TODO: remove back edges
-    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (v: Insn) => true, (e: ControlFlowGraph.Edge) => !backEdges(e)))
+    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (v: Insn) => true, (e: ControlFlowGraph.Edge) => !structure.backEdges(e)))
 
     def structuredBlock(head: Insn): (Statement, Set[Insn]/* pendingOutside */) = {
       // do statements in instruction order if possible
@@ -65,7 +66,7 @@ object Statements {
       // Any instruction could require a "break" or "continue" attached to it.
       // Only loops are allowed to be continue targets.
 
-      val headStructure = structures(head)
+      val headStructure = structure.nesting(head)
 
       // worklist of vertexes with no more incoming edges that are inside the current loop (back edges do not count)
       // NOTE: We use TreeSet so we have `minOption()`
@@ -77,7 +78,7 @@ object Statements {
       def addPending(insns: Set[Insn]): Unit = {
         for (insn <- insns) {
           assert(graph.inDegreeOf(insn) == 0)
-          if (structures(insn) >= headStructure) {
+          if (MyersList.partialOrdering.gteq(structure.nesting(insn), headStructure)) {
             pendingInside += insn
           } else {
             pendingOutside += insn
@@ -95,7 +96,7 @@ object Statements {
 
       // ASSUMPTION: structured statements have a single entry point
       def structuredStmt(insn: Insn): Statement = {
-        if (structures(insn).head eq insn) { // insn is the head of a structured statement
+        if (structure.nesting(insn).head eq insn) { // insn is the head of a structured statement
           // TODO: multiple nested structures starting at same place (for now assume everything is a loop)
           val (block, newPending) = structuredBlock(insn)
           addPending(newPending)
