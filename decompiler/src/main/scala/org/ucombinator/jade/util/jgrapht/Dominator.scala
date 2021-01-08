@@ -7,6 +7,7 @@ import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
+import org.ucombinator.jade.util.Errors
 object Dominator {
   final case class Edge[V](source: V, target: V)
 
@@ -18,6 +19,7 @@ object Dominator {
       tree.outgoingEdgesOf(v2).asScala.toList match {
         case List() => false
         case List(edge) => isDominator(tree, v1, tree.getEdgeTarget(edge))
+        case x => Errors.impossibleMatch(x)
       }
     }
   }
