@@ -141,6 +141,13 @@ object DecompileBody extends Logging {
       this.logger.debug("++++ dominator nesting ++++\n" +
         GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
 
+      this.logger.debug("**** Loops ****")
+
+      this.logger.debug("++++ loop heads ++++\n")
+      // JEP 334: JVM Constants API: https://openjdk.java.net/jeps/334 
+
+      this.logger.debug("++++ loop heads ++++\n")
+
       var statements = List[Statement]()
       for (insn <- method.instructions.toArray) {
         val (retVal, decompiled) = DecompileInsn.decompileInsn(method, insn, ids)

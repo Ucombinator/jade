@@ -18,17 +18,6 @@ import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 
 /*
-Non-Linear Stmt Types
-  -Break
-  -Continue
-  -Return/Throw
-  +Try-Catch-Finally
-  +Synchronized
-  +Do/While/For/For-each
-  +If/Switch
-Non-linear expressions
-  Boolean(&&/||/!/==/!=/</>/<=/>=)
-  Trinary Operator/Switch Expression
 Nestings
 
 Compare
@@ -38,7 +27,9 @@ CommonLibrary
 Generators
 */
 
-sealed trait DecompiledInsn
+sealed trait DecompiledInsn {
+  def usesNextInsn = true
+}
 case class DecompiledStatement(statement: Statement) extends DecompiledInsn
 case class DecompiledExpression(expression: Expression) extends DecompiledInsn
 case object DecompiledMove/*(TODO)*/ extends DecompiledInsn
@@ -98,9 +89,9 @@ object DecompileInsn extends Logging {
         comment(f"new $descriptor")
       //case DecompiledCheckCast(/*TODO*/) => ???
       case DecompiledMonitorEnter(expression) =>
-        comment(f"Minitor Enter: $expression")
+        comment(f"Monitor Enter: $expression")
       case DecompiledMonitorExit(expression) =>
-        comment(f"Minitor Exit: $expression")
+        comment(f"Monitor Exit: $expression")
       case DecompiledLabel(node: LabelNode) =>
         comment(f"Label ${node}") // TODO: use instruction number?
       case DecompiledFrame(node: FrameNode) =>

@@ -144,8 +144,8 @@ object DecompileClass extends Logging {
       val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes)
         .zipWithIndex
         .zipAll(parameterNodes, null, null)
-        .zipAll(nullToList(node.visibleParameterAnnotations.toIndexedSeq), null, null)
-        .zipAll(nullToList(node.invisibleParameterAnnotations.toIndexedSeq), null, null)
+        .zipAll(nullToList(node.visibleParameterAnnotations).toIndexedSeq, null, null)
+        .zipAll(nullToList(node.invisibleParameterAnnotations).toIndexedSeq, null, null)
       new NodeList(ps.map(decompileParameter(node, sig._2.length, _)):_*)
     }
     val `type`: Type = sig._3
