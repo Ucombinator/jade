@@ -6,9 +6,9 @@ scalaVersion := "2.13.4"
 
 // TODO: improve compilation time
 
-// NOTE: these are sorted alphabetically
-// scalafmt: { trailingCommas = preserve, newlines.source = keep }
 libraryDependencies ++= Seq(
+  // NOTE: these are sorted alphabetically
+
   // Logging implementation
   "ch.qos.logback" % "logback-classic" % "1.2.3",
 
@@ -53,21 +53,27 @@ enablePlugins(GitVersioning)
 git.useGitDescribe := true
 git.uncommittedSignifier := Some("dirty")
 
-lazy val root = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
-  settings(
+lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
     buildInfoKeys := Seq[BuildInfoKey](
-      name, version, scalaVersion, sbtVersion, libraryDependencies,
-      BuildInfoKey.action("username") { System.getProperty("user.name") }),
+      name,
+      version,
+      scalaVersion,
+      sbtVersion,
+      libraryDependencies,
+      BuildInfoKey.action("username") { System.getProperty("user.name") },
+    ),
     buildInfoPackage := "org.ucombinator.jade.main",
-    buildInfoOptions += BuildInfoOption.BuildTime)
+    buildInfoOptions += BuildInfoOption.BuildTime,
+  )
 
 // Flags to `scalac`.  Try to get as much error and warning detection as possible.
 scalacOptions ++= Seq(
-  // "-help",
-  // "-Wconf:help",
+  // "-help", // Show scalac help
+  // "-Wconf:help", // Show scalac help for warning options
   "-opt:l:inline", // Generates faster bytecode by applying optimisations to the program
-  "-Xlint:_",      // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
+  "-Xlint:_", // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
 )
 // Flags to `scalac` that are turned on by `sbt-tpolecat` but that we want off
 scalacOptions --= Seq(
@@ -76,7 +82,8 @@ scalacOptions --= Seq(
 
 // Flags to `javac`
 javacOptions in compile ++= Seq(
-  "-Xlint") // Turn on all warnings
+  "-Xlint", // Turn on all warnings
+)
 
 // Setup `sbt-assembly`
 assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
@@ -98,15 +105,19 @@ assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 //  - https://github.com/sbt/sbt-onejar
 
 assemblyMergeStrategy in assembly := {
-  case PathList(file) if List(
-    "module-info.class",
-  ).contains(file) => MergeStrategy.rename
+  case PathList(file)
+      if List(
+        "module-info.class",
+      ).contains(file) =>
+    MergeStrategy.rename
 
-  case PathList("META-INF", file) if List(
-    "LICENSE.txt",
-    "MANIFEST.MF",
-    "NOTICE.txt"
-  ).contains(file) => MergeStrategy.rename
+  case PathList("META-INF", file)
+      if List(
+        "LICENSE.txt",
+        "MANIFEST.MF",
+        "NOTICE.txt",
+      ).contains(file) =>
+    MergeStrategy.rename
 
   case _ => MergeStrategy.deduplicate
 }
@@ -122,10 +133,10 @@ flagsSourceFile := (sourceManaged in Compile).value / "org" / "ucombinator" / "j
 
 val javaSpecParser =
   Space ~>
-  token((literal("jls") | literal("jvms")) <~ "-") ~
-  token(NatBasic <~ "-") ~
-  token(NatBasic <~ Space) ~
-  fileParser(new java.io.File("."))
+    token((literal("jls") | literal("jvms")) <~ "-") ~
+    token(NatBasic <~ "-") ~
+    token(NatBasic <~ Space) ~
+    fileParser(new java.io.File("."))
 val javaSpec = inputKey[File](
   """javaSpec jls-<version>-<chapter> <file>
     |
@@ -153,7 +164,8 @@ val javaSpec = inputKey[File](
     |
     |        Example:
     |
-    |            javaSpec jvms-12-4 jvms-4.html""".stripMargin)
+    |            javaSpec jvms-12-4 jvms-4.html""".stripMargin
+)
 javaSpec := {
   val (((spec, version), chapter), file) = javaSpecParser.parsed
   IO.write(file, FlagsGen.javaSpec(spec, version, chapter))
@@ -162,9 +174,9 @@ javaSpec := {
 
 val flagsTableParser = // genMod -f in-file out-file ; genMod -f in-file ; genMod -v 9 out-file ; genMod -v 9
   Space ~>
-  ((token("-f") ~ Space ~> fileParser(new java.io.File(".")).map(Left(_))) |
-   (token("-v") ~ Space ~> token(NatBasic.map(Right(_))))) ~
-  (Space ~> fileParser(new java.io.File("."))).?
+    ((token("-f") ~ Space ~> fileParser(new java.io.File(".")).map(Left(_))) |
+      (token("-v") ~ Space ~> token(NatBasic.map(Right(_))))) ~
+    (Space ~> fileParser(new java.io.File("."))).?
 val flagsTable = inputKey[File](
   """flagsTable -f <jvmsFile> <file>
     |
@@ -194,7 +206,8 @@ val flagsTable = inputKey[File](
     |        Examples:
     |
     |            flagsTable -v 12 Flags.txt
-    |            flagsTable -v 12""".stripMargin)
+    |            flagsTable -v 12""".stripMargin
+)
 flagsTable := {
   val (src, dst) = flagsTableParser.parsed
   val html = src match {
