@@ -1,5 +1,9 @@
 *.class
 target
-.bsp
 specifications
 lib/jade/jade.jar
+# VisualStudio Code
+.bsp
+.bloop
+.metals
+metals.sbt

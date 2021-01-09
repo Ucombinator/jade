@@ -4,8 +4,6 @@
 # InteliJ IDEA
 .idea
 *.iml
-# VisualStudio Code
-.metals
 # Vim
 .*.sw?
 # Max OSX
