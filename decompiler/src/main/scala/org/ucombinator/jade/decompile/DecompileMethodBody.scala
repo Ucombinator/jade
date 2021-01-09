@@ -65,7 +65,7 @@ object DecompileMethodBody extends Logging {
   }
   def decompileBody(owner: String, classNode: ClassNode, i: Int, method: MethodNode, j: Int, methods: Int, declaration: BodyDeclaration[_ <: BodyDeclaration[_]]): Unit = {
     this.logger.debug("!!!!!!!!!!!!")
-    this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of $methods] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})")
+    this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of ${methods}] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})")
 
     if (method.instructions.size == 0) {
       // The method has no body as even methods with empty bodies have a `return` instruction
@@ -95,7 +95,7 @@ object DecompileMethodBody extends Logging {
             declaration.setBody(null)
             ()
           } else {
-            declaration.setBody(warningBody(s"No implementation for non-abstract, non-native method: ${classNode.name}.${method.name}(signature = ${method.signature}, descriptor = ${method.desc})"))
+            declaration.setBody(warningBody(f"No implementation for non-abstract, non-native method: ${classNode.name}.${method.name}(signature = ${method.signature}, descriptor = ${method.desc})"))
             ()
           }
         case declaration => Errors.unmatchedType(declaration)
@@ -114,7 +114,7 @@ object DecompileMethodBody extends Logging {
 
       this.logger.debug("++++ cfg ++++\n" + GraphViz.toString(cfg))
       for (v <- cfg.graph.vertexSet().asScala) {
-        this.logger.debug(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: $v")
+        this.logger.debug(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: ${v}")
       }
 
       this.logger.debug("**** SSA ****")
@@ -122,18 +122,18 @@ object DecompileMethodBody extends Logging {
 
       this.logger.debug("++++ frames: " + ids.frames.length + " ++++")
       for (i <- 0 until method.instructions.size) {
-        this.logger.debug(f"frame($i): ${ids.frames(i)}")
+        this.logger.debug(f"frame(${i}): ${ids.frames(i)}")
       }
 
       this.logger.debug("++++ results and arguments ++++")
       for (i <- 0 until method.instructions.size) {
           val insn = method.instructions.get(i)
-        this.logger.debug(f"args($i): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
+        this.logger.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
       }
 
       this.logger.debug("++++ ssa map ++++")
       for ((key, value) <- ids.ssaMap) {
-        this.logger.debug(s"ssa: $key -> $value")
+        this.logger.debug(f"ssa: ${key} -> ${value}")
       }
 
       this.logger.debug("**** Dominators ****")

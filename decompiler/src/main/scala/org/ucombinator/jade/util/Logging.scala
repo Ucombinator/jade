@@ -41,7 +41,7 @@ object Logging extends Logging {
     // See https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
     // Note: toURI is required in order to handle special characters
     val jar = new java.io.File(classOf[Main].getProtectionDomain.getCodeSource.getLocation.toURI).getPath
-    this.logger.debug(f"jar: $jar")
+    this.logger.debug(f"jar: ${jar}")
 
     for (entry <- new JarFile(jar).entries().asScala) {
       if (entry.getName.endsWith(".class")) {
@@ -51,7 +51,7 @@ object Logging extends Logging {
             replaceAll("/", "."))
         } catch {
           case _: Throwable => /* Ignored */
-            this.logger.debug(s"skipping: ${entry.getName}")
+            this.logger.debug(f"skipping: ${entry.getName}")
         }
       }
     }
@@ -94,7 +94,7 @@ object Logging extends Logging {
       val patternLayout = new PatternLayout()
       patternLayout.getInstanceConverterMap.put("logger", classOf[LoggerConverter].getName)
       patternLayout.getInstanceConverterMap.put("highlight", classOf[HighlightingCompositeConverter].getName)
-      patternLayout.setPattern(f"%%highlight(%%-5level %%logger:) %%message%%n%%caller{$callerDepth}")
+      patternLayout.setPattern(f"%%highlight(%%-5level %%logger:) %%message%%n%%caller{${callerDepth}}")
       patternLayout.setContext(loggerContext)
       patternLayout.start()
 

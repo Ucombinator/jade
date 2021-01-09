@@ -69,7 +69,7 @@ object Insn extends Textifier(Opcodes.ASM7) {
     // Not currently needed but keep it around so we can find it again
     //val opcode = if (i.getOpcode == -1) { "no_opcode" } else Printer.OPCODES(i.getOpcode)
 
-    f"$index:$string ($typeString)"
+    f"${index}:${string} (${typeString})"
   }
 
   val typeToInt: Map[String, Int] =

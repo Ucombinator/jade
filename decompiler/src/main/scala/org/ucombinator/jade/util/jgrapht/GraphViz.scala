@@ -57,13 +57,13 @@ object GraphViz {
       cluster += 1
       // NOTE: subgraph must have a name starting with "cluster" to get GraphViz to draw a box around it
       if (!flatten || !soleChild) {
-        out.write(indent + s"subgraph cluster$cluster {\n")
+        out.write(indent + f"subgraph cluster${cluster} {\n")
         if (alternateBackgroundColor) {
           out.write(indent + f"  bgcolor=${if (backgroundColor) {"\"#eeeeee\""} else {"\"#ffffff\""}};\n")
         }
       }
       val label = "\"" + GraphViz.escape(v.toString) + "\""
-      out.write(indent + f"  ${id(v)} [ label=$label ];\n")
+      out.write(indent + f"  ${id(v)} [ label=${label} ];\n")
       val edges = tree.incomingEdgesOf(v).asScala
       // TODO: edges in trees should always go down
       val sole = edges.toList match {
@@ -86,7 +86,7 @@ object GraphViz {
       val source = graph.getEdgeSource(edge)
       val target = graph.getEdgeTarget(edge)
       val constraint = !Dominator.isDominator(tree, target, source)
-      out.write(f"  ${id(source)} -> ${id(target)} [ constraint=$constraint ];\n")
+      out.write(f"  ${id(source)} -> ${id(target)} [ constraint=${constraint} ];\n")
     }
     out.write("}\n")
   }

@@ -107,7 +107,7 @@ object Signature {
     t match {
       case t: ClassOrInterfaceType => t
       case t: TypeParameter =>
-        assert(t.getTypeBound.isEmpty, f"non-empty type bounds in $t")
+        assert(t.getTypeBound.isEmpty, f"non-empty type bounds in ${t}")
         // TODO: mark this as a type parameter
         new ClassOrInterfaceType(null, t.getName, null)
       case _ => Errors.unmatchedType(t)

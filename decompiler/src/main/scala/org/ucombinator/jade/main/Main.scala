@@ -93,7 +93,7 @@ abstract class Cmd[T] extends Callable[T] {
 class VersionProvider extends CommandLine.IVersionProvider {
   override def getVersion: Array[String] = {
     import org.ucombinator.jade.main.BuildInfo._
-    Array[String](f"$name version $version (https://github.org/ucombinator/jade)")
+    Array[String](f"${name} version ${version} (https://github.org/ucombinator/jade)")
   }
 }
 
@@ -104,7 +104,7 @@ class LevelConverter extends ITypeConverter[(String, Level)] {
       case Array(n, l) => (n, Level.toLevel(l, null))
       case _ => throw new Exception("could not parse log level") // TODO: explain notation
     }
-    if (level == null) throw new Exception(f"invalid level: $level") // TODO: "must be one of ..."
+    if (level == null) throw new Exception(f"invalid level: ${level}") // TODO: "must be one of ..."
     (name, level)
   }
 }
@@ -118,9 +118,9 @@ class LevelConverter extends ITypeConverter[(String, Level)] {
 class BuildInfoCmd extends Cmd[Unit] {
   override def run(): Unit = {
     import org.ucombinator.jade.main.BuildInfo._
-    println(f"Build tools: Scala $scalaVersion, SBT $sbtVersion")
-    println(f"Build time: $builtAtString UTC")
-    println(f"Build user: $username")
+    println(f"Build tools: Scala ${scalaVersion}, SBT ${sbtVersion}")
+    println(f"Build time: ${builtAtString} UTC")
+    println(f"Build user: ${username}")
     println(f"Libraries:")
     for (l <- libraryDependencies.sorted) {
       println("  " + l)

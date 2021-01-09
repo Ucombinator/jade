@@ -8,9 +8,9 @@ import scala.collection.mutable
 object FlagsGen {
   def javaSpec(spec: String, version: Int, chapter: Int): String = {
     if (version < 9) {
-      throw new Exception(f"The specified version must be at least 9, but version is $version.")
+      throw new Exception(f"The specified version must be at least 9, but version is ${version}.")
     }
-    val url = f"https://docs.oracle.com/javase/specs/$spec/se$version/html/$spec-$chapter.html"
+    val url = f"https://docs.oracle.com/javase/specs/${spec}/se${version}/html/${spec}-${chapter}.html"
     val source: scala.io.Source =
       try {
         scala.io.Source.fromURL(url)
@@ -38,7 +38,7 @@ object FlagsGen {
       "NestedClass" -> "Nested class access and property flags",
     )
     for ((kind, tableSummary) <- tables) {
-      val mutable.Buffer(table) = document.select(f"""table[summary="$tableSummary"]""").asScala
+      val mutable.Buffer(table) = document.select(f"""table[summary="${tableSummary}"]""").asScala
       for (row <- table.select("tbody > tr").asScala.toList) {
         val List(accName, value, description) = row.select("td").asScala.toList
         val keywordOption = """(Declared|Marked|Marked or implicitly) <code class="literal">(.*)</code>""".r
@@ -47,7 +47,7 @@ object FlagsGen {
           case Some(regexMatch) => regexMatch.group(2)
           case None => "-"
         }
-        builder.append(f"$kind%-11s ${accName.text}%-16s ${value.text} $keyword%-12s ${description.text}\n")
+        builder.append(f"${kind}%-11s ${accName.text}%-16s ${value.text} ${keyword}%-12s ${description.text}\n")
       }
       builder.append("\n")
     }
@@ -62,7 +62,7 @@ object FlagsGen {
     for ((kind, codeLiteral) <- lists) {
       val mutable.Buffer(list) = document
         .select(
-          f"dd:has(div[class=variablelist] dl) > p:matchesOwn(The value of the) > code[class=literal]:matchesOwn(^$codeLiteral$$)"
+          f"dd:has(div[class=variablelist] dl) > p:matchesOwn(The value of the) > code[class=literal]:matchesOwn(^${codeLiteral}$$)"
         )
         .asScala
       val rows = list.parent.nextElementSibling.child(0).children().asScala.grouped(2)
@@ -73,7 +73,7 @@ object FlagsGen {
         // format: off
         val keyword = if (accName == "ACC_TRANSITIVE") { "transitive" } else { "-" }
         // format: on
-        builder.append(f"$kind%-11s $accName%-16s $value $keyword%-12s ${description.text}\n")
+        builder.append(f"${kind}%-11s ${accName}%-16s ${value} ${keyword}%-12s ${description.text}\n")
       }
       builder.append("\n")
     }
@@ -113,7 +113,7 @@ object FlagsGen {
                      |sealed trait Flag {
                      |  def value: Int
                      |  def keyword: Option[Modifier.Keyword]
-                     |  def valueAsString: String = f"0x$value%04x"
+                     |  def valueAsString: String = f"0x${value}%04x"
                      |  def modifier: Option[Modifier] = keyword.map(new Modifier(_))
                      |}
                      |
@@ -135,7 +135,7 @@ object FlagsGen {
                      |      val maskedInt = int & 0xffff // Ignore ASM specific flags, which occur above bit 16
                      |      val result = mapping.filter(pair => (pair._1 & maskedInt) != 0)
                      |      val intResult = result.map(_._1).fold(0)(_ | _)
-                     |      assert(maskedInt == intResult, f"flag parsing error: want 0x$int%x, got 0x$intResult%x")
+                     |      assert(maskedInt == intResult, f"flag parsing error: want 0x${int}%x, got 0x${intResult}%x")
                      |      result.map(_._2)
                      |    }
                      |  }
@@ -151,7 +151,7 @@ object FlagsGen {
         .mkString(" with ")
       builder.append(f"""  case object ${flagsInfo.accName} extends Flag with ${extensions} {
                         |    override val value = 0x${flagsInfo.value}%04x
-                        |    override val keyword = $keyword
+                        |    override val keyword = ${keyword}
                         |  }
                         |""".stripMargin)
     }
@@ -173,7 +173,7 @@ object FlagsGen {
 
     for ((kind, flagInfosForKind) <- flagInfoGroups) {
       val name = f"${kind.substring(0, 1).toLowerCase()}${kind.substring(1)}Flags"
-      builder.append(f"  val $name: Int => List[${kind}Flag] = fromInt(${kind}Mapping)\n")
+      builder.append(f"  val ${name}: Int => List[${kind}Flag] = fromInt(${kind}Mapping)\n")
     }
     builder.append("}\n")
 

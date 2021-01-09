@@ -105,10 +105,10 @@ object VFS extends Logging {
     }
   }
   def error(name: String, pathPosition: PathPosition): Unit = {
-    this.logger.error(f"$name at ${pathPosition.path}")
+    this.logger.error(f"${name} at ${pathPosition.path}")
   }
   def ignore(name: String, pathPosition: PathPosition): Unit = {
-    this.logger.info(f"Ignoring $name at ${pathPosition.path}")
+    this.logger.info(f"Ignoring ${name} at ${pathPosition.path}")
   }
   def add(path: List[String], fileTree: FileTree, bytes: Array[Byte]): FileTree = {
     path match {

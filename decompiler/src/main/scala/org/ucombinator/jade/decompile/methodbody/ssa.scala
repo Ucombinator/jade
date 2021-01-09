@@ -139,7 +139,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
     } else if (value1 == value2) {
       value1
     } else {
-      throw new Exception(f"unexpected merge: value1: $value1 value2: $value2")
+      throw new Exception(f"unexpected merge: value1: ${value1} value2: ${value2}")
     }
   }
 }

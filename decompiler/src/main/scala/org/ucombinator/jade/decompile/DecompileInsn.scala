@@ -63,8 +63,8 @@ object DecompileInsn extends Logging {
       case ReturnVar(_) => new NameExpr("returnVar")
       case ExceptionVar(_, insn: Insn) => new NameExpr(f"exceptionVar${insn.index}")
       case InstructionVar(_, insn: Insn) => new NameExpr(f"instructionVar${insn.index}")
-      case CopyVar(_, insn: Insn, version: Int) => new NameExpr(f"copyVar${insn.index}_$version")
-      case PhiVar(_, insn: Insn, index: Int, _/*TODO?*/) => new NameExpr(f"phiVar${insn.index}_$index")
+      case CopyVar(_, insn: Insn, version: Int) => new NameExpr(f"copyVar${insn.index}_${version}")
+      case PhiVar(_, insn: Insn, index: Int, _/*TODO?*/) => new NameExpr(f"phiVar${insn.index}_${index}")
       case EmptyVar => ??? // TODO
     }
   }
@@ -86,12 +86,12 @@ object DecompileInsn extends Logging {
       case DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) =>
         comment(f"Switch ${labels} ${default}")
       case DecompiledNew(descriptor: ClassOrInterfaceType) =>
-        comment(f"new $descriptor")
+        comment(f"new ${descriptor}")
       //case DecompiledCheckCast(/*TODO*/) => ???
       case DecompiledMonitorEnter(expression) =>
-        comment(f"Monitor Enter: $expression")
+        comment(f"Monitor Enter: ${expression}")
       case DecompiledMonitorExit(expression) =>
-        comment(f"Monitor Exit: $expression")
+        comment(f"Monitor Exit: ${expression}")
       case DecompiledLabel(node: LabelNode) =>
         comment(f"Label ${node}") // TODO: use instruction number?
       case DecompiledFrame(node: FrameNode) =>
@@ -99,7 +99,7 @@ object DecompileInsn extends Logging {
       case DecompiledLineNumber(node: LineNumberNode) =>
         comment(f"Line number: ${node.line}")
       case DecompiledUnsupported(insn: AbstractInsnNode) =>
-        comment(f"Unsupported $insn")
+        comment(f"Unsupported ${insn}")
     }
   }
   def decompileInsn(node: AbstractInsnNode, ssa: SSA): (Var, DecompiledInsn) = {
@@ -354,7 +354,7 @@ object DecompileInsn extends Logging {
           case node: LabelNode => DecompiledLabel(node)
           case node: FrameNode => DecompiledFrame(node)
           case node: LineNumberNode => DecompiledLineNumber(node)
-          case _ => throw new Exception(f"unknown instruction type: $node")
+          case _ => throw new Exception(f"unknown instruction type: ${node}")
         }
     })
   }

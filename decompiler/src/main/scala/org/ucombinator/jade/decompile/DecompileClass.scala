@@ -25,14 +25,14 @@ object DecompileClass extends Logging {
       case node: java.lang.Double => new DoubleLiteralExpr(node.toString + "D")
       case node: java.lang.String => new StringLiteralExpr(node.toString)
       case node: org.objectweb.asm.Type => new ClassExpr(Descriptor.fieldDescriptor(node.getDescriptor))
-      case _ => throw new Exception(f"unimplemented literal '$node'")
+      case _ => throw new Exception(f"unimplemented literal '${node}'")
     }
   }
 
   private def typeToName(t: Type): Name = t match {
     case null => null
     case t: ClassOrInterfaceType => new Name(typeToName(t.getScope.orElse(null)), t.getName.getIdentifier)
-    case _ => throw new Exception(f"failed to convert type $t to a name")
+    case _ => throw new Exception(f"failed to convert type ${t} to a name")
   }
 
   private def decompileAnnotation(node: AnnotationNode): AnnotationExpr = {
@@ -108,7 +108,7 @@ object DecompileClass extends Logging {
       case (_, ss, List()) =>
         ss
       case _ =>
-        throw new Exception(f"failed to construct parameter types: $desc, $sig, $params")
+        throw new Exception(f"failed to construct parameter types: ${desc}, ${sig}, ${params}")
     }
   }
 
