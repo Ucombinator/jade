@@ -64,6 +64,8 @@ lazy val root = (project in file(".")).
 
 // Flags to `scalac`.  Try to get as much error and warning detection as possible.
 scalacOptions ++= Seq(
+  // "-help",
+  // "-Wconf:help",
   "-opt:l:inline", // Generates faster bytecode by applying optimisations to the program
   "-Xlint:_",      // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
 )
@@ -207,7 +209,17 @@ flagsTable := {
 
 // TODO: sbt.Tracked.{ inputChanged, outputChanged } etc
 sourceGenerators in Compile += Def.task {
+  import org.scalafmt.sbt.ScalafmtSbtReporter
+
+  val streamsValue = streams.value
   val sourceFile = flagsSourceFile.value
-  IO.write(sourceFile, Flags.code(IO.read(flagsTableFile.value)))
+  val flagsCode = Flags.code(IO.read(flagsTableFile.value))
+  val scalafmt = org.scalafmt.interfaces.Scalafmt
+    .create(this.getClass.getClassLoader)
+    .withReporter(new ScalafmtSbtReporter(streamsValue.log, new java.io.OutputStreamWriter(streamsValue.binary())));
+  if (flagsCode != scalafmt.format(scalafmtConfig.value.toPath(), sourceFile.toPath(), flagsCode)) {
+    streamsValue.log.warn(f"\nGenerated file isn't formatted properly: ${sourceFile}\n\n")
+  }
+  IO.write(sourceFile, flagsCode)
   Seq(sourceFile)
 }.taskValue

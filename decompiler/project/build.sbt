@@ -1,6 +1,7 @@
 scalaVersion := "2.12.12" // Most of our plugins do not support Scala 2.13 so we use Scala 2.12
 
 // format: off
+
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.15.0") // Adds `sbt assembly`
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0") // Creates `org.ucombinator.jade.main.BuildInfo`
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.5.1") // Adds `sbt dependencyUpdates`.
@@ -13,10 +14,24 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2") // Adds `sbt
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2") // Adds `sbt scalafmtSbt` and `sbt scalafmtAll`
   // Also adds `sbt 'scalafmtOnly <file>'`
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1") // Adds `sbt clean coverage test coverageReport`
-// format: on
 
+// format: on
 // scalafmt: { trailingCommas = preserve }
+
 libraryDependencies ++= Seq(
   // HTML parsing (for `Flags.table()`)
   "org.jsoup" % "jsoup" % "1.13.1",
 )
+
+// Flags to `scalac`.  Try to get as much error and warning detection as possible.
+scalacOptions ++= Seq(
+  //"-Xlint:_",      // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
+  // Currently disabled due to unused-import warnings
+)
+// Flags to `scalac` that are turned on by `sbt-tpolecat` but that we want off
+scalacOptions --= Seq(
+  "-Xfatal-warnings", // Fail the compilation if there are any warnings.
+  "-Ywarn-unused:imports", // Warn if an import selector is not referenced.
+)
+
+// scalafmt: { trailingCommas = never }
