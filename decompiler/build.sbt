@@ -7,6 +7,7 @@ scalaVersion := "2.13.4"
 // TODO: improve compilation time
 
 // NOTE: these are sorted alphabetically
+// scalafmt: { trailingCommas = preserve, newlines.source = keep }
 libraryDependencies ++= Seq(
   // Logging implementation
   "ch.qos.logback" % "logback-classic" % "1.2.3",
