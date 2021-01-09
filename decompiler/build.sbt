@@ -156,7 +156,7 @@ val javaSpec = inputKey[File](
     |            javaSpec jvms-12-4 jvms-4.html""".stripMargin)
 javaSpec := {
   val (((spec, version), chapter), file) = javaSpecParser.parsed
-  IO.write(file, Flags.javaSpec(spec, version, chapter))
+  IO.write(file, FlagsGen.javaSpec(spec, version, chapter))
   file
 }
 
@@ -199,9 +199,9 @@ flagsTable := {
   val (src, dst) = flagsTableParser.parsed
   val html = src match {
     case Left(file) => IO.read(file)
-    case Right(version) => Flags.javaSpec("jvms", version, 4)
+    case Right(version) => FlagsGen.javaSpec("jvms", version, 4)
   }
-  val tableString = Flags.table(html)
+  val tableString = FlagsGen.table(html)
   val tableFile = dst.getOrElse(flagsTableFile.value)
   IO.write(tableFile, tableString)
   tableFile
@@ -213,7 +213,7 @@ sourceGenerators in Compile += Def.task {
 
   val streamsValue = streams.value
   val sourceFile = flagsSourceFile.value
-  val flagsCode = Flags.code(IO.read(flagsTableFile.value))
+  val flagsCode = FlagsGen.code(IO.read(flagsTableFile.value))
   val scalafmt = org.scalafmt.interfaces.Scalafmt
     .create(this.getClass.getClassLoader)
     .withReporter(new ScalafmtSbtReporter(streamsValue.log, new java.io.OutputStreamWriter(streamsValue.binary())));

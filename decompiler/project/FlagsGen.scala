@@ -5,7 +5,7 @@ import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 // Code for generating `Flags.txt` and `Flags.scala`
-object Flags {
+object FlagsGen {
   def javaSpec(spec: String, version: Int, chapter: Int): String = {
     if (version < 9) {
       throw new Exception(f"The specified version must be at least 9, but version is $version.")
