@@ -75,14 +75,14 @@ object Insn extends Textifier(Opcodes.ASM7) {
   val typeToInt: Map[String, Int] =
     (for (field <- classOf[AbstractInsnNode].getDeclaredFields) yield {
       // As of ASM 7.1, all final public static int members of AbstractInsNode are ones we want. Updates beware.
-      if (field.getType == classOf[Int] && field.getModifiers == (Modifier.FINAL |  Modifier.PUBLIC | Modifier.STATIC)) {
+      if (field.getType == classOf[Int] && field.getModifiers == (Modifier.FINAL | Modifier.PUBLIC | Modifier.STATIC)) {
         Some(field.getName -> field.get(null).asInstanceOf[Integer].intValue())
       } else {
         None
       }
     }).toList.flatten.toMap
 
-  val intToType: Map[Int, String] = typeToInt map {_.swap}
+  val intToType: Map[Int, String] = typeToInt map { _.swap }
 
   // NOTE: valid only for Insn for the same method
   implicit val ordering = new Ordering[Insn] {

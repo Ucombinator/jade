@@ -10,9 +10,10 @@ import org.ucombinator.jade.asm.Insn
 import scala.jdk.CollectionConverters._
 
 case class ControlFlowGraph(
-  method: MethodNode,
-  graph: DirectedPseudograph[Insn, ControlFlowGraph.Edge],
-  frames: Array[Frame[BasicValue]]) {
+    method: MethodNode,
+    graph: DirectedPseudograph[Insn, ControlFlowGraph.Edge],
+    frames: Array[Frame[BasicValue]]
+) {
   val entry = Insn(method, method.instructions.getFirst)
   val graphWithExceptions: Graph[Insn, Edge] = {
     val g = new DirectedPseudograph[Insn, Edge](classOf[Edge])
@@ -40,10 +41,8 @@ case object ControlFlowGraph {
 
   final case class Edge(source: Insn, target: Insn)
 
-  class ControlFlowGraphAnalyzer(
-    method: MethodNode,
-    graph: DirectedPseudograph[Insn, Edge])
-    extends Analyzer[BasicValue](new BasicInterpreter) {
+  class ControlFlowGraphAnalyzer(method: MethodNode, graph: DirectedPseudograph[Insn, Edge])
+      extends Analyzer[BasicValue](new BasicInterpreter) {
 
     override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
       val source = Insn(method, this.method.instructions.get(insn))

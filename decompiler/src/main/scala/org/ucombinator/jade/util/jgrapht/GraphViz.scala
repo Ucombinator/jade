@@ -26,7 +26,9 @@ object GraphViz {
 
   def print[N, E](writer: Writer, graph: Graph[N, E]): Unit = {
     val dotExporter = new DOTExporter[N, E]()
-    dotExporter.setVertexAttributeProvider((v: N) => Map("label" -> DefaultAttribute.createAttribute(v.toString)).asJava)
+    dotExporter.setVertexAttributeProvider((v: N) =>
+      Map("label" -> DefaultAttribute.createAttribute(v.toString)).asJava
+    )
     dotExporter.exportGraph(graph, writer)
   }
 
@@ -38,20 +40,29 @@ object GraphViz {
 
   def print[E](writer: Writer, graph: ControlFlowGraph): Unit = {
     val dotExporter = new DOTExporter[Insn, ControlFlowGraph.Edge]()
-    dotExporter.setVertexAttributeProvider((v: Insn) => Map("label" -> DefaultAttribute.createAttribute(v.longString)).asJava)
+    dotExporter.setVertexAttributeProvider((v: Insn) =>
+      Map("label" -> DefaultAttribute.createAttribute(v.longString)).asJava
+    )
     dotExporter.exportGraph(graph.graph, writer)
   }
 
-  def nestingTree[V,GE,TE](graph: Graph[V,GE], tree: Graph[V,TE], root: V): String = {
+  def nestingTree[V, GE, TE](graph: Graph[V, GE], tree: Graph[V, TE], root: V): String = {
     val writer = new StringWriter()
     nestingTree(writer, graph, tree, root)
     writer.toString
   }
 
-  def nestingTree[V,GE,TE](out: Writer, graph: Graph[V,GE], tree: Graph[V,TE], root: V, alternateBackgroundColor: Boolean = true, flatten: Boolean = true): Unit = {
+  def nestingTree[V, GE, TE](
+      out: Writer,
+      graph: Graph[V, GE],
+      tree: Graph[V, TE],
+      root: V,
+      alternateBackgroundColor: Boolean = true,
+      flatten: Boolean = true
+  ): Unit = {
     out.write("digraph {\n")
     var cluster = 0
-    val ids = mutable.Map[V,String]()
+    val ids = mutable.Map[V, String]()
     def id(v: V): String = { ids.getOrElseUpdate(v, "n" + ids.size) }
     def go(indent: String, v: V, backgroundColor: Boolean, soleChild: Boolean): Unit = {
       cluster += 1
@@ -59,7 +70,9 @@ object GraphViz {
       if (!flatten || !soleChild) {
         out.write(indent + f"subgraph cluster${cluster} {\n")
         if (alternateBackgroundColor) {
-          out.write(indent + f"  bgcolor=${if (backgroundColor) {"\"#eeeeee\""} else {"\"#ffffff\""}};\n")
+          // format: off
+          out.write(indent + f"  bgcolor=${if (backgroundColor) { "\"#eeeeee\"" } else { "\"#ffffff\"" }};\n")
+          // format: on
         }
       }
       val label = "\"" + GraphViz.escape(v.toString) + "\""
@@ -75,7 +88,10 @@ object GraphViz {
           false
       }
       for (child <- edges.map(tree.getEdgeSource)) {
-        go(indent + (if (!flatten || !sole) { "  " } else { "" }), child, (flatten && sole) == backgroundColor, sole)
+        //format: off
+        val newIndent = indent + (if (!flatten || !sole) { "  " } else { "" })
+        // format: on
+        go(newIndent, child, (flatten && sole) == backgroundColor, sole)
       }
       if (!flatten || !soleChild) {
         out.write(indent + "}\n")

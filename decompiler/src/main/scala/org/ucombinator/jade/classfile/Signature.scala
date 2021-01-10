@@ -63,10 +63,11 @@ object Signature {
     val name :: names = t.getName.split('.').toList.reverse: @scala.annotation.nowarn("msg=match may not be exhaustive")
     // TODO: ignored: simpleClassTypeSignature.getDollar
     new ClassOrInterfaceType(
-      names.foldRight(scope){ (name, scope) => new ClassOrInterfaceType(scope, name) },
+      names.foldRight(scope) { (name, scope) => new ClassOrInterfaceType(scope, name) },
       new SimpleName(name),
       if (t.getTypeArguments.isEmpty) { null }
-      else { new NodeList(t.getTypeArguments.map(translate):_*) })
+      else { new NodeList(t.getTypeArguments.map(translate): _*) }
+    )
   }
   private def translate(t: TypeArgument): Type = {
     t match {
@@ -117,7 +118,8 @@ object Signature {
     new TypeParameter(
       t.getName,
       // TODO: distinguish between class and interface bounds?
-      new NodeList(t.getBounds.map(translate).map(referenceTypeToClassOrInterfaceType):_*))
+      new NodeList(t.getBounds.map(translate).map(referenceTypeToClassOrInterfaceType): _*)
+    )
   }
 
   // Used by methodSignature

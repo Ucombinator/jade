@@ -22,7 +22,7 @@ import scala.collection.immutable.SortedMap
 // TODO: gzip, tar, bzip2
 
 sealed trait ReadResult
-case class RDirectory(children: /*Sorted*/List[PathPosition]) extends ReadResult // TODO: sort
+case class RDirectory(children: /*Sorted*/ List[PathPosition]) extends ReadResult // TODO: sort
 case class RFile(bytes: Array[Byte]) extends ReadResult
 case object ROther extends ReadResult
 case object RNotExist extends ReadResult
@@ -31,7 +31,12 @@ sealed trait FileTree
 case class FileTreeFile(bytes: Array[Byte]) extends FileTree
 case class FileTreeDirectory(children: SortedMap[String, FileTree]) extends FileTree
 
-class PathPosition(basePath: Path, abovePath: List[String], belowPath: /*Reversed*/List[String], fileTree: Option[FileTree]) {
+class PathPosition(
+    basePath: Path,
+    abovePath: List[String],
+    belowPath: /*Reversed*/ List[String],
+    fileTree: Option[FileTree]
+) {
   assert(abovePath.isEmpty || belowPath.isEmpty)
   def apply[A](above: => A, same: => A, below: => A): A = {
     if (abovePath.nonEmpty) { above }
@@ -41,16 +46,18 @@ class PathPosition(basePath: Path, abovePath: List[String], belowPath: /*Reverse
   def read: ReadResult = {
     fileTree match {
       case None =>
-        val attributes = try {
-          Files.readAttributes(path, classOf[BasicFileAttributes])
-        } catch {
-          case _: IOException => return RNotExist
-        }
+        val attributes =
+          try {
+            Files.readAttributes(path, classOf[BasicFileAttributes])
+          } catch {
+            case _: IOException => return RNotExist
+          }
         if (attributes.isDirectory) {
           if (abovePath.nonEmpty) {
             RDirectory(List())
           } else {
-            val children: List[Path] = Files.list(path).collect(Collectors.toList[Path]).asScala.toList.sortBy(_.toString)
+            val children: List[Path] =
+              Files.list(path).collect(Collectors.toList[Path]).asScala.toList.sortBy(_.toString)
             RDirectory(children.map(c => new PathPosition(basePath, List(), c.getFileName.toString :: belowPath, None)))
           }
         } else if (attributes.isRegularFile) {
@@ -64,21 +71,30 @@ class PathPosition(basePath: Path, abovePath: List[String], belowPath: /*Reverse
           case FileTreeDirectory(children) =>
             abovePath match {
               case p :: ps =>
-                RDirectory(children.toList.filter(_._1 == p).map(ft => new PathPosition(basePath.resolve(ft._1), ps, belowPath, Some(ft._2))))
+                RDirectory(
+                  children.toList
+                    .filter(_._1 == p)
+                    .map(ft => new PathPosition(basePath.resolve(ft._1), ps, belowPath, Some(ft._2)))
+                )
               case List() =>
-                RDirectory(children.toList.map(ft => new PathPosition(basePath, List(), ft._1 :: belowPath, Some(ft._2))))
+                RDirectory(
+                  children.toList.map(ft => new PathPosition(basePath, List(), ft._1 :: belowPath, Some(ft._2)))
+                )
             }
         }
     }
   }
-  def path: Path = { belowPath.foldRight(basePath)((s,p) => p.resolve(s) ) }
+  def path: Path = { belowPath.foldRight(basePath)((s, p) => p.resolve(s)) }
   def parent: Option[PathPosition] = {
     fileTree match {
       case None =>
         assert(belowPath.isEmpty)
         val parent = path.getParent
-        if (parent == null) { None }
-        else { Some(new PathPosition(parent, path.getFileName.toString :: abovePath, belowPath, None))}
+        if (parent == null) {
+          None
+        } else {
+          Some(new PathPosition(parent, path.getFileName.toString :: abovePath, belowPath, None))
+        }
       case Some(_) => None
     }
   }
@@ -89,16 +105,16 @@ class PathPosition(basePath: Path, abovePath: List[String], belowPath: /*Reverse
 
 object VFS extends Logging {
   private val ZIP_SIGNATURE = Array(0x50, 0x4b, 0x03, 0x04).map(_.toByte)
-  private val CLASS_SIGNATURE = Array(0xCA, 0xFE, 0xBA, 0xBE).map(_.toByte)
+  private val CLASS_SIGNATURE = Array(0xca, 0xfe, 0xba, 0xbe).map(_.toByte)
   private val JMOD_SIGNATURE = Array(0x4a, 0x4d, 0x01, 0x00, 0x50, 0x4b, 0x03, 0x04).map(_.toByte)
   private val JMOD_OFFSET = 4
-  def option[A,B](o: Option[A], f: A => B, d: => B): B = {
+  def option[A, B](o: Option[A], f: A => B, d: => B): B = {
     o match {
       case None => d
       case Some(a) => f(a)
     }
   }
-  def one[A,B](xs: List[A], one: A => B, other: => B): B = {
+  def one[A, B](xs: List[A], one: A => B, other: => B): B = {
     xs match {
       case List(x) => one(x)
       case _ => other
@@ -134,11 +150,11 @@ object VFS extends Logging {
     var fileTree: FileTree = FileTreeDirectory(SortedMap())
     val array = new Array[Byte](4 * 1024)
     var entry: ZipEntry = null
-    while ({entry = zipInputStream.getNextEntry; entry != null}) {
+    while ({ entry = zipInputStream.getNextEntry; entry != null }) {
       if (!entry.isDirectory) {
         val builder = new ByteArrayOutputStream()
         var len = -1
-        while ({len = zipInputStream.read(array); len != -1}) {
+        while ({ len = zipInputStream.read(array); len != -1 }) {
           builder.write(array, 0, len)
         }
         // NOTE: officially the separator is "/", but some compression software uses "\"
@@ -160,10 +176,7 @@ object VFS extends Logging {
     path.read match {
       case RFile(bytes) =>
         if (bytes.startsWith(CLASS_SIGNATURE)) {
-          path(
-            error("Found class file as parent", path),
-            load(path, bytes),
-            load(path, bytes))
+          path(error("Found class file as parent", path), load(path, bytes), load(path, bytes))
         } else if (bytes.startsWith(ZIP_SIGNATURE)) {
           get(path.withFileTree(readZip(bytes)))
         } else if (bytes.startsWith(JMOD_SIGNATURE)) {
@@ -172,24 +185,24 @@ object VFS extends Logging {
           path(
             error("File with unknown format", path),
             error("File with unknown format", path),
-            ignore("file with unknown format", path))
+            ignore("file with unknown format", path)
+          )
         }
       case RDirectory(children) =>
         // Note: one if zip, zero if fs or zip and not found or zip and directory is empty
-        path(
-          one(children,get,error("Child does not exist", path)),
-          children.foreach(get),
-          children.foreach(get))
+        path(one(children, get, error("Child does not exist", path)), children.foreach(get), children.foreach(get))
       case ROther =>
         path(
           error("Non-directory and non-file", path),
           error("Non-directory and non-file", path),
-          ignore("non-directory and non-file", path))
+          ignore("non-directory and non-file", path)
+        )
       case RNotExist =>
         path(
-          option(path.parent,get,error("Could not find file or parent", path)),
-          option(path.parent,get,error("Could not find file or parent", path)),
-          error("Missing file", path))
+          option(path.parent, get, error("Could not find file or parent", path)),
+          option(path.parent, get, error("Could not find file or parent", path)),
+          error("Missing file", path)
+        )
     }
   }
   def get0(path: Path): Unit = {

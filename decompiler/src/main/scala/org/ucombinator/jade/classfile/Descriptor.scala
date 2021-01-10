@@ -17,12 +17,14 @@ object Descriptor {
   }
   // TODO: move to ClassName?
   def className(string: String): Name = {
-    string.split('/').foldLeft(null: Name){ (qualifier, identifier) => new Name(qualifier, identifier) }
+    string.split('/').foldLeft(null: Name) { (qualifier, identifier) => new Name(qualifier, identifier) }
   }
   def classNameExpr(string: String): Expression = {
-    string.split('/').foldLeft(null: Expression){
+    string.split('/').foldLeft(null: Expression) {
       case (null, identifier) => new NameExpr(new SimpleName(identifier))
-      case (qualifier, identifier) => new FieldAccessExpr(qualifier, /*TODO*/new NodeList(), new SimpleName(identifier)) }
+      case (qualifier, identifier) =>
+        new FieldAccessExpr(qualifier, /*TODO*/ new NodeList(), new SimpleName(identifier))
+    }
   }
   def classNameType(string: String): ClassOrInterfaceType = {
     classNameType(className(string))

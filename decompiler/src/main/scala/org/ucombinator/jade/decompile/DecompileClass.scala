@@ -43,11 +43,10 @@ object DecompileClass extends Logging {
       case vs =>
         new NormalAnnotationExpr(
           name,
-          new NodeList[MemberValuePair](
-            (for (List(k, v) <- vs.grouped(2)) yield {
-              new MemberValuePair(
-                k.asInstanceOf[String],
-                decompileLiteral(v.asInstanceOf[Object]))}).toList.asJava) )
+          new NodeList[MemberValuePair]((for (List(k, v) <- vs.grouped(2)) yield {
+            new MemberValuePair(k.asInstanceOf[String], decompileLiteral(v.asInstanceOf[Object]))
+          }).toList.asJava)
+        )
     }
   }
 
@@ -66,23 +65,25 @@ object DecompileClass extends Logging {
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
-      node.invisibleTypeAnnotations)
+      node.invisibleTypeAnnotations
+    )
     val variables = new NodeList[VariableDeclarator]({
       val `type`: Type =
         if (node.signature == null) { Descriptor.fieldDescriptor(node.desc) }
         else { Signature.typeSignature(node.signature) }
       val name = new SimpleName(node.name)
       val initializer: Expression = decompileLiteral(node.value)
-      new VariableDeclarator(`type`, name, initializer)})
+      new VariableDeclarator(`type`, name, initializer)
+    })
 
     new FieldDeclaration(modifiers, annotations, variables)
   }
 
   private def decompileParameter(
-    method: MethodNode,
-    paramCount: Int,
-    parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])):
-    Parameter = {
+      method: MethodNode,
+      paramCount: Int,
+      parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])
+  ): Parameter = {
     val ((((typ, index), node), a1), a2) = parameter
     val flags = if (node == null) { List() } else { Flags.parameterFlags(node.access) }
     val modifiers = Flags.toModifiers(flags)
@@ -90,8 +91,8 @@ object DecompileClass extends Logging {
     val `type`: Type = typ
     val isVarArgs: Boolean =
       Flags.methodFlags(method.access).contains(Flags.ACC_VARARGS) &&
-      index == paramCount - 1
-    val varArgsAnnotations= new NodeList[AnnotationExpr]() // TODO?
+        index == paramCount - 1
+    val varArgsAnnotations = new NodeList[AnnotationExpr]() // TODO?
     val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
@@ -99,9 +100,9 @@ object DecompileClass extends Logging {
   def parameterTypes(desc: List[Type], sig: List[Type], params: List[ParameterNode]): List[Type] = {
     (desc, sig, params) match {
       case (d :: ds, ss, p :: ps)
-        if Flags.parameterFlags(p.access).contains(Flags.ACC_SYNTHETIC)
-        || Flags.parameterFlags(p.access).contains(Flags.ACC_MANDATED) =>
-      // TODO: Flags.checkParameter(access, Modifier)
+          if Flags.parameterFlags(p.access).contains(Flags.ACC_SYNTHETIC)
+            || Flags.parameterFlags(p.access).contains(Flags.ACC_MANDATED) =>
+        // TODO: Flags.checkParameter(access, Modifier)
         d :: parameterTypes(ds, ss, ps)
       case (_ :: ds, s :: ss, _ :: ps) =>
         s :: parameterTypes(ds, ss, ps)
@@ -128,7 +129,8 @@ object DecompileClass extends Logging {
       node.visibleAnnotations,
       node.invisibleAnnotations,
       node.visibleTypeAnnotations,
-      node.invisibleTypeAnnotations)
+      node.invisibleTypeAnnotations
+    )
     val descriptor: (Array[Type], Type) = Descriptor.methodDescriptor(node.desc)
     val sig: (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
       if (node.signature != null) { Signature.methodSignature(node.signature) }
@@ -140,17 +142,16 @@ object DecompileClass extends Logging {
     if (node.parameters != null && sig._2.length != node.parameters.size()) {
       // TODO: check if always in an enum
     }
-    val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1:_*)
+    val typeParameters: NodeList[TypeParameter] = new NodeList(sig._1: _*)
     val parameters: NodeList[Parameter] = {
-      val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes.toList)
-        .zipWithIndex
+      val ps = parameterTypes(descriptor._1.toList, sig._2.toList, parameterNodes.toList).zipWithIndex
         .zipAll(parameterNodes, null, null)
         .zipAll(nullToSeq(node.visibleParameterAnnotations), null, null)
         .zipAll(nullToSeq(node.invisibleParameterAnnotations), null, null)
-      new NodeList(ps.map(decompileParameter(node, sig._2.length, _)):_*)
+      new NodeList(ps.map(decompileParameter(node, sig._2.length, _)): _*)
     }
     val `type`: Type = sig._3
-    val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4:_*)
+    val thrownExceptions: NodeList[ReferenceType] = new NodeList(sig._4: _*)
     val name: SimpleName = new SimpleName(node.name)
     val body: BlockStmt = DecompileMethodBody.decompileBodyStub(node)
     val receiverParameter: ReceiverParameter = null // TODO
@@ -158,20 +159,41 @@ object DecompileClass extends Logging {
       case "<clinit>" =>
         new InitializerDeclaration(true, body)
       case "<init>" =>
-        new ConstructorDeclaration(modifiers, annotations, typeParameters, new SimpleName(Descriptor.className(classNode.name).getIdentifier)/*TODO*/, parameters, thrownExceptions, body, receiverParameter)
+        new ConstructorDeclaration(
+          modifiers,
+          annotations,
+          typeParameters,
+          new SimpleName(Descriptor.className(classNode.name).getIdentifier) /*TODO*/,
+          parameters,
+          thrownExceptions,
+          body,
+          receiverParameter
+        )
       case _ =>
-        new MethodDeclaration(modifiers, annotations, typeParameters, `type`, name, parameters, thrownExceptions, body, receiverParameter)
+        new MethodDeclaration(
+          modifiers,
+          annotations,
+          typeParameters,
+          `type`,
+          name,
+          parameters,
+          thrownExceptions,
+          body,
+          receiverParameter
+        )
     }
     Decompile.methods += bodyDeclaration -> ((classNode, node))
     bodyDeclaration
   }
 
   def decompileClass(node: ClassNode): CompilationUnit = {
-    val comment = new BlockComment("\n" +
-      f"* Source File: ${node.sourceFile}\n" +
-      f"* Class-file Format Version: ${node.version}\n" +
-      f"* Source Debug Extension: ${node.sourceDebug}\n" // See JSR-45 https://www.jcp.org/en/jsr/detail?id=045
-      )
+    val comment = new BlockComment(
+      f"""
+         |* Source File: ${node.sourceFile}
+         |* Class-file Format Version: ${node.version}
+         |* Source Debug Extension: ${node.sourceDebug} // See JSR-45 https://www.jcp.org/en/jsr/detail?id=045
+         |""".stripMargin
+    )
     // outerClass
     // outerMethod
     // outerMethodDesc
@@ -182,8 +204,8 @@ object DecompileClass extends Logging {
 
     val fullClassName: Name = Descriptor.className(node.name)
 
-    val packageDeclaration = new PackageDeclaration(
-      new NodeList[AnnotationExpr]() /*TODO*/, fullClassName.getQualifier.orElse(new Name()))
+    val packageDeclaration =
+      new PackageDeclaration(new NodeList[AnnotationExpr]() /*TODO*/, fullClassName.getQualifier.orElse(new Name()))
     val imports = new NodeList[ImportDeclaration]() // TODO
 
     val classOrInterfaceDeclaration = {
@@ -193,16 +215,20 @@ object DecompileClass extends Logging {
         node.visibleAnnotations,
         node.invisibleAnnotations,
         node.visibleTypeAnnotations,
-        node.invisibleTypeAnnotations)
+        node.invisibleTypeAnnotations
+      )
       val isInterface: Boolean = (node.access & Opcodes.ACC_INTERFACE) != 0
       val simpleName = new SimpleName(fullClassName.getIdentifier)
       // `extendedTypes` may be multiple if on an interface
       // TODO: test if should be Descriptor.className
-      val (typeParameters, extendedTypes, implementedTypes):
-        (NodeList[TypeParameter], NodeList[ClassOrInterfaceType], NodeList[ClassOrInterfaceType]) = {
+      val (typeParameters, extendedTypes, implementedTypes): (
+          NodeList[TypeParameter],
+          NodeList[ClassOrInterfaceType],
+          NodeList[ClassOrInterfaceType]
+      ) = {
         if (node.signature != null) {
           val s = Signature.classSignature(node.signature)
-          (new NodeList(s._1:_*), new NodeList(s._2), new NodeList(s._3:_*))
+          (new NodeList(s._1: _*), new NodeList(s._2), new NodeList(s._3: _*))
         } else {
           (new NodeList(),
            if (node.superName == null) { new NodeList() }

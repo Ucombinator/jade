@@ -25,16 +25,18 @@ trait Logging {
       .replace('$', '.')
       .replace("..", ".")
       .replaceAll(".$", "")
-    ScalaLogger (LoggerFactory.getLogger(name))
+    ScalaLogger(LoggerFactory.getLogger(name))
   }
-  def childLogger(name: String): ScalaLogger  = {
+  def childLogger(name: String): ScalaLogger = {
     ScalaLogger(LoggerFactory.getLogger(logger.underlying.getName + "." + name))
   }
 }
 
 object Logging extends Logging {
   def getLogger(name: String): LogbackLogger = {
+    // format: off
     val modifiedName = if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME } else { name }
+    // format: on
     LoggerFactory.getLogger(modifiedName).asInstanceOf[LogbackLogger]
   }
 
@@ -47,9 +49,7 @@ object Logging extends Logging {
     for (entry <- new JarFile(jar).entries().asScala) {
       if (entry.getName.endsWith(".class")) {
         try {
-          Class.forName(entry.getName.
-            replaceAll("\\.class$", "").
-            replaceAll("/", "."))
+          Class.forName(entry.getName.replaceAll("\\.class$", "").replaceAll("/", "."))
         } catch {
           case _: Throwable => /* Ignored */
             this.logger.debug(f"skipping: ${entry.getName}")
@@ -57,7 +57,14 @@ object Logging extends Logging {
       }
     }
 
-    for (l <- LoggerFactory.getLogger(Slf4jLogger.ROOT_LOGGER_NAME).asInstanceOf[LogbackLogger].getLoggerContext.getLoggerList.asScala) {
+    for (
+      l <- LoggerFactory
+        .getLogger(Slf4jLogger.ROOT_LOGGER_NAME)
+        .asInstanceOf[LogbackLogger]
+        .getLoggerContext
+        .getLoggerList
+        .asScala
+    ) {
       println(l.getName)
     }
   }
@@ -69,8 +76,9 @@ object Logging extends Logging {
   class LoggerConverter extends NamedConverter {
     override protected def getFullyQualifiedName(event: ILoggingEvent): String = {
       val name = event.getLoggerName
-      if (name.startsWith(prefix)) { name.stripPrefix(prefix) }
-      else { "." + name}
+      // format: off
+      if (name.startsWith(prefix)) { name.stripPrefix(prefix) } else { "." + name }
+      // format: on
     }
   }
 
@@ -90,7 +98,7 @@ object Logging extends Logging {
     }
   }
 
-  class Config extends BasicConfigurator  {
+  class Config extends BasicConfigurator {
     override def configure(loggerContext: LoggerContext): Unit = {
       val patternLayout = new PatternLayout()
       patternLayout.getInstanceConverterMap.put("logger", classOf[LoggerConverter].getName)
