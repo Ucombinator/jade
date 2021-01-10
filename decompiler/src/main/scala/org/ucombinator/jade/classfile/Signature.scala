@@ -56,8 +56,9 @@ object Signature {
   }
   private def translate(t: ClassTypeSignature): ClassOrInterfaceType = {
     t.getPath.asScala
-      .foldLeft(null: ClassOrInterfaceType)
-      { (scope, simpleClassTypeSignature) => translate(scope, simpleClassTypeSignature) }
+      .foldLeft(null: ClassOrInterfaceType) { (scope, simpleClassTypeSignature) =>
+        translate(scope, simpleClassTypeSignature)
+      }
   }
   private def translate(scope: ClassOrInterfaceType, t: SimpleClassTypeSignature): ClassOrInterfaceType = {
     val name :: names = t.getName.split('.').toList.reverse: @scala.annotation.nowarn("msg=match may not be exhaustive")
@@ -99,10 +100,10 @@ object Signature {
   }
 
   // Used by `classSignature`
-  private def translate(t: ClassSignature): (Array[TypeParameter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
-    (t.getFormalTypeParameters.map(translate),
-     translate(t.getSuperclass),
-     t.getSuperInterfaces.map(translate))
+  private def translate(
+      t: ClassSignature
+  ): (Array[TypeParameter], ClassOrInterfaceType, Array[ClassOrInterfaceType]) = {
+    (t.getFormalTypeParameters.map(translate), translate(t.getSuperclass), t.getSuperInterfaces.map(translate))
   }
   private def referenceTypeToClassOrInterfaceType(t: ReferenceType): ClassOrInterfaceType = {
     t match {
@@ -124,10 +125,12 @@ object Signature {
 
   // Used by methodSignature
   private def translate(t: MethodTypeSignature): (Array[TypeParameter], Array[Type], Type, Array[ReferenceType]) = {
-    (t.getFormalTypeParameters.map(translate),
-     t.getParameterTypes.map(translate),
-     translate(t.getReturnType),
-     t.getExceptionTypes.map(translate))
+    (
+      t.getFormalTypeParameters.map(translate),
+      t.getParameterTypes.map(translate),
+      translate(t.getReturnType),
+      t.getExceptionTypes.map(translate)
+    )
   }
   private def translate(t: ReturnType): Type = {
     t match {
