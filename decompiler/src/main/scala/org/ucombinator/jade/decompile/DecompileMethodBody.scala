@@ -81,9 +81,19 @@ object DecompileMethodBody extends Logging {
       case declaration => Errors.unmatchedType(declaration)
     }
   }
-  def decompileBody(owner: String, classNode: ClassNode, i: Int, method: MethodNode, j: Int, methods: Int, declaration: BodyDeclaration[_ <: BodyDeclaration[_]]): Unit = {
+  def decompileBody(
+      owner: String,
+      classNode: ClassNode,
+      i: Int,
+      method: MethodNode,
+      j: Int,
+      methods: Int,
+      declaration: BodyDeclaration[_ <: BodyDeclaration[_]]
+  ): Unit = {
     this.logger.debug("!!!!!!!!!!!!")
-    this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of ${methods}] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})")
+    this.logger.info(
+      f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of ${methods}] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})"
+    )
 
     if (method.instructions.size == 0) {
       // The method has no body as even methods with empty bodies have a `return` instruction
@@ -167,7 +177,9 @@ object DecompileMethodBody extends Logging {
 
       this.logger.debug("++++ dominator tree ++++\n" + GraphViz.toString(doms))
 
-      this.logger.debug("++++ dominator nesting ++++\n" + GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry))
+      this.logger.debug(
+        "++++ dominator nesting ++++\n" + GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry)
+      )
 
       this.logger.debug("**** Loops ****")
 
