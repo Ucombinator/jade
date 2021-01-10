@@ -196,8 +196,13 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
     assert(cfg.method eq method)
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
-      if (cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > (if (insnIndex == 0) { 0 } else { 1 })
-        || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)) {
+      // format: off
+      val minimumInEdges = if (insnIndex == 0) { 0 } else { 1 }
+      // format: on
+      if (
+        cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > minimumInEdges
+        || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)
+      ) {
         // We are at a join point
         val cfgFrame = cfg.frames(insnIndex)
         val frame = this.getFrames()(insnIndex) match {
