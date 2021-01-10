@@ -29,7 +29,7 @@ object Main {
   commandLine.setAbbreviatedSubcommandsAllowed(true)
   commandLine.setOverwrittenOptionsAllowed(true)
   def main(args: Array[String]): Unit = {
-    System.exit(commandLine.execute(args:_*))
+    System.exit(commandLine.execute(args: _*))
   }
 }
 
@@ -44,7 +44,8 @@ object Main {
     classOf[Loggers],
     classOf[ManPageGenerator],
     classOf[GenerateCompletion],
-    ))
+  )
+)
 class Main() extends Cmd[Unit] {
   override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -60,22 +61,35 @@ class Main() extends Cmd[Unit] {
   showAtFileInUsageHelp = true,
   showDefaultValues = true,
   showEndOfOptionsDelimiterInUsageHelp = true,
-  versionProvider = classOf[VersionProvider])
+  versionProvider = classOf[VersionProvider],
+)
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
-  @Option(names = Array("--log"),
+  @Option(
+    names = Array("--log"),
     paramLabel = "LEVEL",
-    description = Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."),
-    split=",",
+    description =
+      Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."),
+    split = ",",
     //converter = Array(classOf[LevelConverter]),
-    ) // TODO: check --help // TODO: explain "LOGGER=LEVEL"
-  var log: java.util.Map[String,Level] = new java.util.HashMap[String,Level]()
+  )
+  // TODO: check --help
+  // TODO: explain "LOGGER=LEVEL"
+  var log: java.util.Map[String, Level] = new java.util.HashMap[String, Level]()
 
-  @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print after log messages"))
+  @Option(
+    names = Array("--log-caller-depth"),
+    paramLabel = "DEPTH",
+    description = Array("Number of callers to print after log messages"),
+  )
   var logCallerDepth = 0
 
-  @Option(names = Array("--wait"), negatable = true, description = Array("Wait for input from user before running (useful when attaching to the process)"))
+  @Option(
+    names = Array("--wait"),
+    negatable = true,
+    description = Array("Wait for input from user before running (useful when attaching to the process)"),
+  )
   var waitForUser = false
 
   // TODO: exit code list
@@ -126,25 +140,21 @@ class LevelConverter extends ITypeConverter[(String, Level)] {
 ////////////////
 // Sub-commands
 
-@Command(
-  name = "build-info",
-  description = Array("Display information about how `jade` was built"))
+@Command(name = "build-info", description = Array("Display information about how `jade` was built"))
 class BuildInfoCmd extends Cmd[Unit] {
   override def run(): Unit = {
     import org.ucombinator.jade.main.BuildInfo._
-    println(f"Build tools: Scala ${scalaVersion}, SBT ${sbtVersion}")
-    println(f"Build time: ${builtAtString} UTC")
-    println(f"Build user: ${username}")
-    println(f"Libraries:")
+    println(f"""Build tools: Scala ${scalaVersion}, SBT ${sbtVersion}
+               |Build time: ${builtAtString} UTC
+               |Build user: ${username}
+               |Libraries:""".stripMargin)
     for (l <- libraryDependencies.sorted) {
       println("  " + l)
     }
   }
 }
 
-@Command(
-  name = "decompile",
-  description = Array("Decompile class, jar, or jmod files"))
+@Command(name = "decompile", description = Array("Decompile class, jar, or jmod files"))
 class DecompileCmd extends Cmd[Unit] {
   // --include-file --exclude-file --include-class --exclude-class
   // --include-cxt-file --include-cxt-class
@@ -157,9 +167,7 @@ class DecompileCmd extends Cmd[Unit] {
   }
 }
 
-@Command(
-  name = "compile",
-  description = Array("Compile a java file"))
+@Command(name = "compile", description = Array("Compile a java file"))
 class CompileCmd extends Cmd[Unit] {
   override def run(): Unit = {
     // TODO: Use a JavaAgent of a nested compiler to test whether the code compiles
@@ -169,18 +177,14 @@ class CompileCmd extends Cmd[Unit] {
   }
 }
 
-@Command(
-  name = "diff",
-  description = Array("Compare class files"))
+@Command(name = "diff", description = Array("Compare class files"))
 class DiffCmd extends Cmd[Unit] { // TODO: exit codes
   override def run(): Unit = {
     ??? // TODO: implement diff
   }
 }
 
-@Command(
-  name = "loggers",
-  description = Array("Lists available loggers"))
+@Command(name = "loggers", description = Array("Lists available loggers"))
 class Loggers extends Cmd[Unit] {
   override def run(): Unit = { Logging.listLoggers() }
 }
