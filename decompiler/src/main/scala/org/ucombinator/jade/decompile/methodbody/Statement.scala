@@ -30,7 +30,7 @@ Non-Linear Stmt Types
 Non-linear expressions
   Boolean(&&/||/!/==/!=/</>/<=/>=)
   Trinary Operator/Switch Expression
-*/
+ */
 
 // TODO: rename to Statement
 object Statement {
@@ -40,12 +40,14 @@ object Statement {
 
   use stack (recursion) of zero-in-degree vertices to group loops
   is it a loop head, which loop head is this part of
-  */
+   */
 
   def run(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): Statement = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
-    val jumpTargets = cfg.graph.vertexSet().asScala
+    val jumpTargets = cfg.graph
+      .vertexSet()
+      .asScala
       .map(_.insn)
       .flatMap({
         case e: JumpInsnNode => Set(e.label: AbstractInsnNode)
@@ -53,9 +55,11 @@ object Statement {
       })
 
     // TODO: remove back edges
-    val graph = new AsSubgraph(new MaskSubgraph(cfg.graph, (_: Insn) => true, (e: ControlFlowGraph.Edge) => !structure.backEdges(e)))
+    val graph = new AsSubgraph(
+      new MaskSubgraph(cfg.graph, (_: Insn) => true, (e: ControlFlowGraph.Edge) => !structure.backEdges(e))
+    )
 
-    def structuredBlock(head: Insn): (Statement, Set[Insn]/* pendingOutside */) = {
+    def structuredBlock(head: Insn): (Statement, Set[Insn] /* pendingOutside */ ) = {
       // do statements in instruction order if possible
       // constraints (loops *must* be together):
       // 1. Respect edges
@@ -101,10 +105,10 @@ object Statement {
           val (block, newPending) = structuredBlock(insn)
           addPending(newPending)
           return new LabeledStmt("LOOP" + insn.index, new WhileStmt(new BooleanLiteralExpr(true), block))
-        // } else if (tryCatchFinally) {
-        //   // TODO
-        // } else if (synchronized) {
-        //   // TODO
+          // } else if (tryCatchFinally) {
+          //   // TODO
+          // } else if (synchronized) {
+          //   // TODO
         } else {
           return simpleStmt(insn)
         }
