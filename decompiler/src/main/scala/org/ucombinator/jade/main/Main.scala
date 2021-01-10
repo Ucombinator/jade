@@ -6,6 +6,8 @@ import java.util.concurrent.Callable
 import ch.qos.logback.classic.Level
 import org.ucombinator.jade.decompile.Decompile
 import org.ucombinator.jade.util.Logging
+import picocli.AutoComplete.GenerateCompletion
+import picocli.codegen.docgen.manpage.ManPageGenerator
 import picocli.CommandLine
 import picocli.CommandLine.{Command, HelpCommand, ITypeConverter, Option, ParameterException, Parameters, ParentCommand}
 
@@ -23,6 +25,8 @@ import scala.jdk.CollectionConverters._
 // TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 object Main {
   val commandLine: CommandLine = new CommandLine(new Main())
+  commandLine.setAbbreviatedOptionsAllowed(true)
+  commandLine.setAbbreviatedSubcommandsAllowed(true)
   commandLine.setOverwrittenOptionsAllowed(true)
   def main(args: Array[String]): Unit = {
     System.exit(commandLine.execute(args:_*))
@@ -33,11 +37,14 @@ object Main {
   name = "jade",
   subcommands = Array(
     classOf[HelpCommand],
-    classOf[BuildInfoCmd],
     classOf[DecompileCmd],
     classOf[CompileCmd],
     classOf[DiffCmd],
-    classOf[Loggers]))
+    classOf[BuildInfoCmd],
+    classOf[Loggers],
+    classOf[ManPageGenerator],
+    classOf[GenerateCompletion],
+    ))
 class Main() extends Cmd[Unit] {
   override def run(): Unit = {
     throw new ParameterException(Main.commandLine, "Missing required parameter: [COMMAND]")
@@ -50,7 +57,9 @@ class Main() extends Cmd[Unit] {
 @Command(
   mixinStandardHelpOptions = true,
   requiredOptionMarker = '*', // TODO: put in documentation string
+  showAtFileInUsageHelp = true,
   showDefaultValues = true,
+  showEndOfOptionsDelimiterInUsageHelp = true,
   versionProvider = classOf[VersionProvider])
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
