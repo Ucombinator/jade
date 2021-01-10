@@ -15,20 +15,24 @@ class DescriptorTest extends AnyFreeSpec {
         PrimitiveType.Primitive.INT -> "I",
         PrimitiveType.Primitive.LONG -> "J",
         PrimitiveType.Primitive.FLOAT -> "F",
-        PrimitiveType.Primitive.DOUBLE -> "D")
+        PrimitiveType.Primitive.DOUBLE -> "D"
+      )
       for ((p, s) <- types) {
         assertResult(p) { Descriptor.fieldDescriptor(s).asPrimitiveType.getType }
       }
     }
     "ObjectType" in {
       assertResult("java.lang.Object") {
-        Descriptor.fieldDescriptor("Ljava/lang/Object;").asClassOrInterfaceType().toString }
+        Descriptor.fieldDescriptor("Ljava/lang/Object;").asClassOrInterfaceType().toString
+      }
     }
     "ArrayType" in {
       assertResult("boolean[][]") {
-        Descriptor.fieldDescriptor("[[Z").asArrayType().toString }
+        Descriptor.fieldDescriptor("[[Z").asArrayType().toString
+      }
       assertResult("java.lang.Object[][]") {
-        Descriptor.fieldDescriptor("[[Ljava/lang/Object;").asArrayType().toString }
+        Descriptor.fieldDescriptor("[[Ljava/lang/Object;").asArrayType().toString
+      }
     }
   }
   "methodDescriptor" - {

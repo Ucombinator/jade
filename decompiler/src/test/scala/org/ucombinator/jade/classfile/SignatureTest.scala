@@ -1,6 +1,6 @@
 package org.ucombinator.jade.classfile
 
-import org.scalatest.freespec.AnyFreeSpec 
+import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class SignatureTest extends AnyFreeSpec with TableDrivenPropertyChecks {
@@ -15,6 +15,8 @@ class SignatureTest extends AnyFreeSpec with TableDrivenPropertyChecks {
   // Tests harvested from jdk12
   val tests = Table(
     ("signature type", "signature", "expected result"),
+    // format: off
+
     // jdk12/test/jdk/tools/jlink/plugins/SignatureParserTest.java
     (TypeSignature, "[Ljava/lang/String;", "java.lang.String[]"),
     (TypeSignature, "[[[[[[[[[[Ljava/lang/String;", "java.lang.String[][][][][][][][][][]"),
@@ -320,6 +322,8 @@ class SignatureTest extends AnyFreeSpec with TableDrivenPropertyChecks {
     (MethodSignature, "<T:Ljava/lang/Object;>(TT;)F", "T extends java.lang.Object;T;float;"),
     (MethodSignature, "<T:Ljava/lang/Object;>(TT;)D", "T extends java.lang.Object;T;double;"),
     (MethodSignature, "<T:Ljava/lang/Object;>(TT;)Ljava/lang/Object;", "T extends java.lang.Object;T;java.lang.Object;"),
+
+    // format: on
   )
 
   "typeSignature/classSignature/methodSignature" - {
@@ -334,7 +338,12 @@ class SignatureTest extends AnyFreeSpec with TableDrivenPropertyChecks {
               s._1.map(_.asString).mkString(",") + ";" + s._2.asString + ";" + s._3.map(_.asString).mkString(",")
             case MethodSignature =>
               val s = Signature.methodSignature(signature)
-              s._1.map(_.asString).mkString(",") + ";" + s._2.map(_.asString).mkString(",") + ";" + s._3.asString + ";" + s._4.map(_.asString).mkString(",")
+              List(
+                s._1.map(_.asString).mkString(","),
+                s._2.map(_.asString).mkString(","),
+                s._3.asString,
+                s._4.map(_.asString).mkString(","),
+              ).mkString(";")
           }
         }
       }
