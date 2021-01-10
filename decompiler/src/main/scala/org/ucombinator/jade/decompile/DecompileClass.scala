@@ -21,7 +21,7 @@ object DecompileClass extends Logging {
       case null => null
       case node: java.lang.Integer => new IntegerLiteralExpr(node.toString)
       case node: java.lang.Long => new LongLiteralExpr(node.toString)
-      case node: java.lang.Float => new DoubleLiteralExpr(node.toString + "F") // Note that `JavaParser` uses Double for Floats
+      case node: java.lang.Float => new DoubleLiteralExpr(node.toString + "F") // `JavaParser` uses Doubles for Floats
       case node: java.lang.Double => new DoubleLiteralExpr(node.toString + "D")
       case node: java.lang.String => new StringLiteralExpr(node.toString)
       case node: org.objectweb.asm.Type => new ClassExpr(Descriptor.fieldDescriptor(node.getDescriptor))
@@ -85,7 +85,9 @@ object DecompileClass extends Logging {
       parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])
   ): Parameter = {
     val ((((typ, index), node), a1), a2) = parameter
+    // format: off
     val flags = if (node == null) { List() } else { Flags.parameterFlags(node.access) }
+    // format: on
     val modifiers = Flags.toModifiers(flags)
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(a1, a2, null, null)
     val `type`: Type = typ
@@ -93,7 +95,9 @@ object DecompileClass extends Logging {
       Flags.methodFlags(method.access).contains(Flags.ACC_VARARGS) &&
         index == paramCount - 1
     val varArgsAnnotations = new NodeList[AnnotationExpr]() // TODO?
+    // format: off
     val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
+    // format: on
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
 
@@ -113,8 +117,10 @@ object DecompileClass extends Logging {
     }
   }
 
+  // format: off
   def nullToSeq[A](x: java.util.List[A]): Seq[A] = { if (x eq null) { Seq() } else { Seq.from(x.asScala) } }
   def nullToSeq[A](x: Array[A]): Seq[A] = { if (x eq null) { Seq() } else { x.toSeq } }
+  // format: on
 
   def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
@@ -230,10 +236,13 @@ object DecompileClass extends Logging {
           val s = Signature.classSignature(node.signature)
           (new NodeList(s._1: _*), new NodeList(s._2), new NodeList(s._3: _*))
         } else {
-          (new NodeList(),
-           if (node.superName == null) { new NodeList() }
-           else { new NodeList(Descriptor.classNameType(node.superName)) },
-           new NodeList(node.interfaces.asScala.map(x => Descriptor.classNameType(x)).asJava))
+          (
+            new NodeList(),
+            // format: off
+            if (node.superName == null) { new NodeList() } else { new NodeList(Descriptor.classNameType(node.superName)) },
+            // format: on
+            new NodeList(node.interfaces.asScala.map(x => Descriptor.classNameType(x)).asJava)
+          )
         }
       }
       val members: NodeList[BodyDeclaration[_ <: BodyDeclaration[_]]] = {
@@ -245,7 +254,16 @@ object DecompileClass extends Logging {
       }
 
       new ClassOrInterfaceDeclaration(
-        modifiers, annotations, isInterface, simpleName, typeParameters, extendedTypes, implementedTypes, members) }
+        modifiers,
+        annotations,
+        isInterface,
+        simpleName,
+        typeParameters,
+        extendedTypes,
+        implementedTypes,
+        members
+      )
+    }
 
     if (classOrInterfaceDeclaration.isInterface) {
       classOrInterfaceDeclaration.setExtendedTypes(classOrInterfaceDeclaration.getImplementedTypes)
