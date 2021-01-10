@@ -64,8 +64,13 @@ class Main() extends Cmd[Unit] {
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
-  @Option(names = Array("--log"), paramLabel = "LEVEL", description = Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."), split=",", converter = Array(classOf[LevelConverter])) // TODO: check --help // TODO: explain "LOGGER=LEVEL"
-  var log = new java.util.LinkedList[(String,Level)]()
+  @Option(names = Array("--log"),
+    paramLabel = "LEVEL",
+    description = Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."),
+    split=",",
+    //converter = Array(classOf[LevelConverter]),
+    ) // TODO: check --help // TODO: explain "LOGGER=LEVEL"
+  var log: java.util.Map[String,Level] = new java.util.HashMap[String,Level]()
 
   @Option(names = Array("--log-caller-depth"), paramLabel = "DEPTH", description = Array("Number of callers to print after log messages"))
   var logCallerDepth = 0

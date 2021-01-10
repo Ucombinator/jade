@@ -23,8 +23,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
 
   // Command-line argument parsing
-  "info.picocli" % "picocli" % "4.5.2",
-  "info.picocli" % "picocli-codegen" % "4.5.2",
+  "info.picocli" % "picocli" % "4.6.1",
+  "info.picocli" % "picocli-codegen" % "4.6.1",
 
   // Vertex and edge graphs
   "org.jgrapht" % "jgrapht-core" % "1.5.0",
