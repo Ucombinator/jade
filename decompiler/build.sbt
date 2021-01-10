@@ -7,6 +7,8 @@ scalaVersion := "2.13.4"
 // TODO: improve compilation time
 
 libraryDependencies ++= Seq(
+  // format: off
+
   // NOTE: these are sorted alphabetically
 
   // Logging implementation
@@ -43,6 +45,8 @@ libraryDependencies ++= Seq(
 
   // Testing framework for `src/test/`
   "org.scalatest" %% "scalatest" % "3.2.3" % Test,
+
+  // format: on
 )
 
 filterScalaLibrary := false // include scala library in output of sbt-dependency-graph
