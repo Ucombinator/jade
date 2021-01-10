@@ -19,7 +19,8 @@ import scala.jdk.CollectionConverters._
 // TODO: Ensure Logging can extends only objects?
 // TODO: lowercase/case insensitive logger names
 trait Logging {
-  protected val logger: ScalaLogger = {
+  // Lazy to avoid an initialization loop between the Logging object and Logging.Config
+  protected lazy val logger: ScalaLogger = {
     val name = getClass.getName
       .replace('$', '.')
       .replace("..", ".")
