@@ -31,6 +31,10 @@ object Main {
   def main(args: Array[String]): Unit = {
     System.exit(commandLine.execute(args: _*))
   }
+  def versionString: String = {
+    import org.ucombinator.jade.main.BuildInfo._
+    f"${name} version ${version} (https://github.org/ucombinator/jade)"
+  }
 }
 
 @Command(
@@ -119,10 +123,7 @@ abstract class Cmd[T] extends Callable[T] {
 }
 
 class VersionProvider extends CommandLine.IVersionProvider {
-  override def getVersion: Array[String] = {
-    import org.ucombinator.jade.main.BuildInfo._
-    Array[String](f"${name} version ${version} (https://github.org/ucombinator/jade)")
-  }
+  override def getVersion: Array[String] = { Array[String](Main.versionString) }
 }
 
 class LevelConverter extends ITypeConverter[(String, Level)] {
@@ -144,9 +145,9 @@ class LevelConverter extends ITypeConverter[(String, Level)] {
 class BuildInfoCmd extends Cmd[Unit] {
   override def run(): Unit = {
     import org.ucombinator.jade.main.BuildInfo._
-    println(f"""Build tools: Scala ${scalaVersion}, SBT ${sbtVersion}
-               |Build time: ${builtAtString} UTC
-               |Build user: ${username}
+    println(f"""${Main.versionString}
+               |Build tools: Scala ${scalaVersion}, SBT ${sbtVersion}
+               |Build time: ${builtAtString} ${builtAtMillis}ms
                |Libraries:""".stripMargin)
     for (l <- libraryDependencies.sorted) {
       println("  " + l)
