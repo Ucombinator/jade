@@ -16,7 +16,6 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2") // Adds `sbt scalafmtSb
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1") // Adds `sbt clean coverage test coverageReport`
 
 // format: on
-// scalafmt: { trailingCommas = preserve }
 
 libraryDependencies ++= Seq(
   // HTML parsing (for `Flags.table()`)
@@ -33,5 +32,3 @@ scalacOptions --= Seq(
   "-Xfatal-warnings", // Fail the compilation if there are any warnings.
   "-Ywarn-unused:imports", // Warn if an import selector is not referenced.
 )
-
-// scalafmt: { trailingCommas = never }
