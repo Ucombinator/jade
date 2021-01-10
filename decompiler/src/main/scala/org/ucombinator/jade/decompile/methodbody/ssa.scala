@@ -15,6 +15,7 @@ sealed trait Var extends Value {
   override def getSize: Int = basicValue.getSize
 }
 
+// format: off
 case class ParameterVar  (basicValue: BasicValue,             local: Int  ) extends Var
 case class ReturnVar     (basicValue: BasicValue                          ) extends Var // TODO: used only for "expected" return type
 case class ExceptionVar  (basicValue: BasicValue, insn: Insn              ) extends Var
@@ -24,6 +25,7 @@ case object EmptyVar                                                        exte
   override val basicValue: BasicValue = BasicValue.UNINITIALIZED_VALUE
 }
 case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , var changed: Boolean = false) extends Var {
+// format: on
   // TODO: use private constructor to hide `changed`
   // Note that `changed` has to be in the parameters so that the analysis sees that the value has changed
   private var changedPhiVar: PhiVar = _
@@ -61,8 +63,10 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
   override def newReturnTypeValue(`type`: Type): Var = {
     // ASM requires that we return null when `type` is Type.VOID_TYPE
     this.returnTypeValue =
+      // format: off
       if (`type` == Type.VOID_TYPE) { null }
       else { ReturnVar(SSA.basicInterpreter.newReturnTypeValue(`type`)) }
+      // format: on
     this.returnTypeValue
   }
 
@@ -70,9 +74,16 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
     EmptyVar
   }
 
-  override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[Var], exceptionType: Type): Var = {
-    ExceptionVar(SSA.basicInterpreter.newExceptionValue(
-            tryCatchBlockNode, handlerFrame.asInstanceOf[Frame[BasicValue]], exceptionType), Insn(method, tryCatchBlockNode.handler))
+  override def newExceptionValue(
+      tryCatchBlockNode: TryCatchBlockNode,
+      handlerFrame: Frame[Var],
+      exceptionType: Type
+  ): Var = {
+    ExceptionVar(
+      SSA.basicInterpreter
+        .newExceptionValue(tryCatchBlockNode, handlerFrame.asInstanceOf[Frame[BasicValue]], exceptionType),
+      Insn(method, tryCatchBlockNode.handler)
+    )
   }
 
   def record(insn: AbstractInsnNode, args: List[Var], ret: Var): Var = {
@@ -86,37 +97,63 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
     record(insn, List(), InstructionVar(SSA.basicInterpreter.newOperation(insn), Insn(method, insn)))
   }
 
-
   @throws[AnalyzerException]
   override def copyOperation(insn: AbstractInsnNode, value: Var): Var = {
     this.copyOperationPosition += 1
-    record(insn, List(value), CopyVar(SSA.basicInterpreter.copyOperation(insn, value.basicValue), Insn(method, insn), this.copyOperationPosition))
+    record(
+      insn,
+      List(value),
+      CopyVar(
+        SSA.basicInterpreter.copyOperation(insn, value.basicValue),
+        Insn(method, insn),
+        this.copyOperationPosition
+      )
+    )
   }
 
   @throws[AnalyzerException]
   override def unaryOperation(insn: AbstractInsnNode, value: Var): Var = {
-    record(insn, List(value), InstructionVar(SSA.basicInterpreter.unaryOperation(insn, value.basicValue), Insn(method, insn)))
+    record(
+      insn,
+      List(value),
+      InstructionVar(SSA.basicInterpreter.unaryOperation(insn, value.basicValue), Insn(method, insn))
+    )
   }
 
   @throws[AnalyzerException]
   override def binaryOperation(insn: AbstractInsnNode, value1: Var, value2: Var): Var = {
-    record(insn, List(value1, value2),
-      InstructionVar(SSA.basicInterpreter.binaryOperation(
-                insn, value1.basicValue, value2.basicValue), Insn(method, insn)))
+    record(
+      insn,
+      List(value1, value2),
+      InstructionVar(
+        SSA.basicInterpreter.binaryOperation(insn, value1.basicValue, value2.basicValue),
+        Insn(method, insn)
+      )
+    )
   }
 
   @throws[AnalyzerException]
   override def ternaryOperation(insn: AbstractInsnNode, value1: Var, value2: Var, value3: Var): Var = {
-    record(insn, List(value1, value2, value3),
-      InstructionVar(SSA.basicInterpreter.ternaryOperation(
-                insn, value1.basicValue, value2.basicValue, value3.basicValue), Insn(method, insn)))
+    record(
+      insn,
+      List(value1, value2, value3),
+      InstructionVar(
+        SSA.basicInterpreter.ternaryOperation(insn, value1.basicValue, value2.basicValue, value3.basicValue),
+        Insn(method, insn)
+      )
+    )
   }
 
   @throws[AnalyzerException]
   override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: Var]): Var = {
-    record(insn, values.asScala.toList,
-      InstructionVar(SSA.basicInterpreter.naryOperation(
-                insn, values.asScala.map(_.basicValue).asJava), Insn(method, insn)))
+    record(
+      insn,
+      values.asScala.toList,
+      InstructionVar(
+        SSA.basicInterpreter.naryOperation(insn, values.asScala.map(_.basicValue).asJava),
+        Insn(method, insn)
+      )
+    )
   }
 
   @throws[AnalyzerException]
@@ -144,8 +181,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
   }
 }
 
-class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter)
-  extends Analyzer[Var](interpreter) {
+class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends Analyzer[Var](interpreter) {
 
   override def init(owner: String, method: MethodNode): Unit = {
     // We override this method because it runs near the start of `Analyzer.analyze`
@@ -198,10 +234,11 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter)
 }
 
 case class SSA(
-  method: MethodNode,
-  frames: Array[Frame[Var]],
-  instructionArguments: Map[AbstractInsnNode, (Var, List[Var])],
-  ssaMap: Map[Var, Set[(AbstractInsnNode, Var)]])
+    method: MethodNode,
+    frames: Array[Frame[Var]],
+    instructionArguments: Map[AbstractInsnNode, (Var, List[Var])],
+    ssaMap: Map[Var, Set[(AbstractInsnNode, Var)]]
+)
 
 case object SSA {
   val basicInterpreter = new BasicInterpreter
