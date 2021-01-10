@@ -49,15 +49,48 @@ libraryDependencies ++= Seq(
   // format: on
 )
 
+// Flags to `scalac`.  Try to get as much error and warning detection as possible.
+scalacOptions ++= Seq(
+  // "-help", // Show scalac help
+  // "-Wconf:help", // Show scalac help for warning options
+  "-opt:l:inline", // Generates faster bytecode by applying optimisations to the program
+  "-Xlint:_", // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
+)
+
+// Flags to `scalac` that are turned on by `sbt-tpolecat` but that we want off
+scalacOptions --= Seq(
+  "-Xfatal-warnings", // Fail the compilation if there are any warnings
+)
+
+// Flags to `javac`
+javacOptions in compile ++= Seq(
+  "-Xlint", // Turn on all warnings
+)
+
+/* ----- Plugin Setup ----- */
+
+// Setup sbt-dependency-graph
 filterScalaLibrary := false // include scala library in output of sbt-dependency-graph
 dependencyAllowPreRelease := true // include pre-releases in dependency updates
 
-// Setup `GitVersioning`
+// Setup sbt-scalafmt
+// Run `scalafmtCheckAll` and `scalafmtSbtCheck` when compiling
+(compile in Compile) := (
+  (compile in Compile)
+    .dependsOn(
+      scalafmtCheckAll.result, // .result ensures these are only warnings
+      (Compile / scalafmtSbtCheck).result, // .result ensures these are only warnings
+    )
+  )
+  .value
+
+// Setup sbt-git
 useJGit // make GitVersioning work even if `git` is not installed
 enablePlugins(GitVersioning)
 git.useGitDescribe := true
 git.uncommittedSignifier := Some("dirty")
 
+// Setup sbt-buildinfo
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(
@@ -72,23 +105,6 @@ lazy val root = (project in file("."))
     buildInfoPackage := "org.ucombinator.jade.main",
     buildInfoOptions += BuildInfoOption.BuildTime,
   )
-
-// Flags to `scalac`.  Try to get as much error and warning detection as possible.
-scalacOptions ++= Seq(
-  // "-help", // Show scalac help
-  // "-Wconf:help", // Show scalac help for warning options
-  "-opt:l:inline", // Generates faster bytecode by applying optimisations to the program
-  "-Xlint:_", // Turn on all lint messages (`sbt-tpolecat` doesn't get all of them)
-)
-// Flags to `scalac` that are turned on by `sbt-tpolecat` but that we want off
-scalacOptions --= Seq(
-  "-Xfatal-warnings", // Fail the compilation if there are any warnings
-)
-
-// Flags to `javac`
-javacOptions in compile ++= Seq(
-  "-Xlint", // Turn on all warnings
-)
 
 // Setup `sbt-assembly`
 assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
@@ -126,6 +142,8 @@ assemblyMergeStrategy in assembly := {
 
   case _ => MergeStrategy.deduplicate
 }
+
+/* ----- Custom SBT Code ----- */
 
 // Code generation
 import complete.DefaultParsers._
