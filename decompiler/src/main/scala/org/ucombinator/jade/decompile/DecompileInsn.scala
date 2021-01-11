@@ -49,19 +49,19 @@ Generators
  */
 
 sealed trait DecompiledInsn { def usesNextInsn = true /* TODO */ }
-case class DecompiledStatement(statement: Statement, override val usesNextInsn: Boolean = true )   extends DecompiledInsn
-case class DecompiledExpression(expression: Expression)                      extends DecompiledInsn
-case object DecompiledMove /*(TODO)*/                                        extends DecompiledInsn
-case class DecompiledIf(labelNode: LabelNode, condition: Expression)         extends DecompiledInsn
-case class DecompiledGoto(labelNode: LabelNode)                              extends DecompiledInsn { override def usesNextInsn = false }
-case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) extends DecompiledInsn { override def usesNextInsn = false }
-case class DecompiledNew(descriptor: ClassOrInterfaceType)                   extends DecompiledInsn
-case class DecompiledMonitorEnter(expression: Expression)                    extends DecompiledInsn
-case class DecompiledMonitorExit(expression: Expression)                     extends DecompiledInsn
-case class DecompiledLabel(node: LabelNode)                                  extends DecompiledInsn
-case class DecompiledFrame(node: FrameNode)                                  extends DecompiledInsn
-case class DecompiledLineNumber(node: LineNumberNode)                        extends DecompiledInsn
-case class DecompiledUnsupported(insn: AbstractInsnNode)                     extends DecompiledInsn
+case class DecompiledStatement(statement: Statement, override val usesNextInsn: Boolean = true) extends DecompiledInsn
+case class DecompiledExpression(expression: Expression)                                         extends DecompiledInsn
+case object DecompiledMove /*(TODO)*/                                                           extends DecompiledInsn
+case class DecompiledIf(labelNode: LabelNode, condition: Expression)                            extends DecompiledInsn
+case class DecompiledGoto(labelNode: LabelNode)                                                 extends DecompiledInsn { override def usesNextInsn = false }
+case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode)                    extends DecompiledInsn { override def usesNextInsn = false }
+case class DecompiledNew(descriptor: ClassOrInterfaceType)                                      extends DecompiledInsn
+case class DecompiledMonitorEnter(expression: Expression)                                       extends DecompiledInsn
+case class DecompiledMonitorExit(expression: Expression)                                        extends DecompiledInsn
+case class DecompiledLabel(node: LabelNode)                                                     extends DecompiledInsn
+case class DecompiledFrame(node: FrameNode)                                                     extends DecompiledInsn
+case class DecompiledLineNumber(node: LineNumberNode)                                           extends DecompiledInsn
+case class DecompiledUnsupported(insn: AbstractInsnNode)                                        extends DecompiledInsn
 
 // TODO: typo in Opcodes.java: visiTableSwitchInsn -> visitTableSwitchInsn
 // TODO: typo in javaparser BlockComment: can has -> can have

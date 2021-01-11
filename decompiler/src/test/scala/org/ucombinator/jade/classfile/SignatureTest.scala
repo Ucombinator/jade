@@ -331,8 +331,7 @@ class SignatureTest extends AnyFreeSpec with TableDrivenPropertyChecks {
       forAll(tests) { (signatureType, signature, expectedResult) =>
         assertResult(expectedResult) {
           signatureType match {
-            case TypeSignature =>
-              Signature.typeSignature(signature).asString
+            case TypeSignature => Signature.typeSignature(signature).asString
             case ClassSignature =>
               val s = Signature.classSignature(signature)
               s._1.map(_.asString).mkString(",") + ";" + s._2.asString + ";" + s._3.map(_.asString).mkString(",")

@@ -7,7 +7,7 @@ import scala.jdk.CollectionConverters._
 case class Structure(nesting: Map[Insn, Structure.Nesting], backEdges: Set[ControlFlowGraph.Edge])
 
 // TODO: rename to CodeStructure or CodeNesting or BlockNesting
-object Structure { 
+object Structure {
   // TODO: name to NestingPath or StructurePath or BlockPath
   type Nesting = MyersList[Block]
 

@@ -47,10 +47,13 @@ object MethodBody extends Logging {
     val jumpTargets = cfg.graph // TODO: rename to insnOfLabel
       .vertexSet()
       .asScala
-      .flatMap({ insn => insn.insn match {
-        case e: LabelNode => Set(e.getLabel -> insn)
-        case _ => Set()
-      }}).toMap
+      .flatMap({ insn =>
+        insn.insn match {
+          case e: LabelNode => Set(e.getLabel -> insn)
+          case _ => Set()
+        }
+      })
+      .toMap
 
     // TODO: remove back edges
     val graph = new AsSubgraph(
@@ -172,7 +175,10 @@ object MethodBody extends Logging {
 
       while ({ currentInsn = getNextInsn(); currentInsn != null }) {
         pendingInside -= currentInsn
-        currentStmt = new LabeledStmt(insnLabelString(currentInsn), new BlockStmt(new NodeList[Statement](currentStmt, structuredStmt(currentInsn))))
+        currentStmt = new LabeledStmt(
+          insnLabelString(currentInsn),
+          new BlockStmt(new NodeList[Statement](currentStmt, structuredStmt(currentInsn)))
+        )
       }
 
       return (currentStmt, pendingOutside)
