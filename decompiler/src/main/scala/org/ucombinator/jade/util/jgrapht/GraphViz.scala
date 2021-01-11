@@ -70,9 +70,10 @@ object GraphViz {
       if (!flatten || !soleChild) {
         out.write(indent + f"subgraph cluster${cluster} {\n")
         if (alternateBackgroundColor) {
-          // format: off
-          out.write(indent + f"  bgcolor=${if (backgroundColor) { "\"#eeeeee\"" } else { "\"#ffffff\"" }};\n")
-          // format: on
+          val bgcolor =
+            if (backgroundColor) { "\"#eeeeee\"" }
+            else { "\"#ffffff\"" }
+          out.write(indent + f"  bgcolor=${bgcolor};\n")
         }
       }
       val label = "\"" + GraphViz.escape(v.toString) + "\""
@@ -87,9 +88,9 @@ object GraphViz {
         case _ => false
       }
       for (child <- edges.map(tree.getEdgeSource)) {
-        //format: off
-        val newIndent = indent + (if (!flatten || !sole) { "  " } else { "" })
-        // format: on
+        val newIndent =
+          if (!flatten || !sole) { indent + "  " }
+          else { indent }
         go(newIndent, child, (flatten && sole) == backgroundColor, sole)
       }
       if (!flatten || !soleChild) {

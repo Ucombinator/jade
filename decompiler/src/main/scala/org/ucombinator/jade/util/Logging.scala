@@ -34,9 +34,9 @@ trait Logging {
 
 object Logging extends Logging {
   def getLogger(name: String): LogbackLogger = {
-    // format: off
-    val modifiedName = if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME } else { name }
-    // format: on
+    val modifiedName =
+      if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME }
+      else { name }
     LoggerFactory.getLogger(modifiedName).asInstanceOf[LogbackLogger]
   }
 
@@ -75,9 +75,8 @@ object Logging extends Logging {
   class LoggerConverter extends NamedConverter {
     override protected def getFullyQualifiedName(event: ILoggingEvent): String = {
       val name = event.getLoggerName
-      // format: off
-      if (name.startsWith(prefix)) { name.stripPrefix(prefix) } else { "." + name }
-      // format: on
+      if (name.startsWith(prefix)) { name.stripPrefix(prefix) }
+      else { "." + name }
     }
   }
 

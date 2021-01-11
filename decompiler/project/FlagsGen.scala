@@ -70,9 +70,9 @@ object FlagsGen {
         val regexMatch = """(0x[0-9]*) \(([A-Z_]*)\)""".r.findPrefixMatchOf(row.text).get
         val value = regexMatch.group(1)
         val accName = regexMatch.group(2)
-        // format: off
-        val keyword = if (accName == "ACC_TRANSITIVE") { "transitive" } else { "-" }
-        // format: on
+        val keyword =
+          if (accName == "ACC_TRANSITIVE") { "transitive" }
+          else { "-" }
         builder.append(f"${kind}%-11s ${accName}%-16s ${value} ${keyword}%-12s ${description.text}\n")
       }
       builder.append("\n")
@@ -87,9 +87,9 @@ object FlagsGen {
     val flagInfos =
       (for (line <- table.lines.iterator.asScala if !line.matches("\\s*#.*") && !line.matches("\\s*")) yield {
         val Array(kind, accName, value, keyword, description) = line.split(" +", 5)
-        // format: off
-        val k = if (keyword == "-") { None } else { Some(keyword) }
-        // format: on
+        val k =
+          if (keyword == "-") { None }
+          else { Some(keyword) }
         val intValue = java.lang.Integer.parseInt(value.substring(2), 16)
         FlagInfo(kind, accName, intValue, k, description)
       }).toList

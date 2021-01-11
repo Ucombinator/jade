@@ -63,10 +63,8 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) 
   override def newReturnTypeValue(`type`: Type): Var = {
     // ASM requires that we return null when `type` is Type.VOID_TYPE
     this.returnTypeValue =
-      // format: off
       if (`type` == Type.VOID_TYPE) { null }
       else { ReturnVar(SSA.basicInterpreter.newReturnTypeValue(`type`)) }
-      // format: on
     this.returnTypeValue
   }
 
@@ -196,9 +194,9 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
     assert(cfg.method eq method)
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
-      // format: off
-      val minimumInEdges = if (insnIndex == 0) { 0 } else { 1 }
-      // format: on
+      val minimumInEdges =
+        if (insnIndex == 0) { 0 }
+        else { 1 }
       if (
         cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > minimumInEdges
         || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)

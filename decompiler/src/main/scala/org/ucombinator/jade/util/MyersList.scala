@@ -33,9 +33,8 @@ object MyersList {
   def partialOrdering[A]: PartialOrdering[MyersList[A]] = new PartialOrdering[MyersList[A]] {
     override def tryCompare(x: MyersList[A], y: MyersList[A]): Option[Int] = {
       def test(result: Int, a: MyersList[A], b: MyersList[A]): Option[Int] = {
-        // format: off
-        if (a eq b) { Some(result) } else { None }
-        // format: on
+        if (a eq b) { Some(result) }
+        else { None }
       }
       if (x.length == y.length) { test(0, x, y) }
       else if (x.length > y.length) { test(1, x(y.length), y) }

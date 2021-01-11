@@ -87,9 +87,9 @@ object DecompileClass extends Logging {
       parameter: ((((Type, Int), ParameterNode), java.util.List[AnnotationNode]), java.util.List[AnnotationNode])
   ): Parameter = {
     val ((((typ, index), node), a1), a2) = parameter
-    // format: off
-    val flags = if (node == null) { List() } else { Flags.parameterFlags(node.access) }
-    // format: on
+    val flags =
+      if (node == null) { List() }
+      else { Flags.parameterFlags(node.access) }
     val modifiers = Flags.toModifiers(flags)
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(a1, a2, null, null)
     val `type`: Type = typ
@@ -97,9 +97,11 @@ object DecompileClass extends Logging {
       Flags.methodFlags(method.access).contains(Flags.ACC_VARARGS) &&
         index == paramCount - 1
     val varArgsAnnotations = new NodeList[AnnotationExpr]() // TODO?
-    // format: off
-    val name: SimpleName = new SimpleName(if (node == null) { f"parameter${index + 1}" } else { node.name })
-    // format: on
+    val name: SimpleName =
+      new SimpleName(
+        if (node == null) { f"parameter${index + 1}" }
+        else { node.name }
+      )
     new Parameter(modifiers, annotations, `type`, isVarArgs, varArgsAnnotations, name)
   }
 
@@ -119,10 +121,14 @@ object DecompileClass extends Logging {
     }
   }
 
-  // format: off
-  def nullToSeq[A](x: java.util.List[A]): Seq[A] = { if (x eq null) { Seq() } else { Seq.from(x.asScala) } }
-  def nullToSeq[A](x: Array[A]): Seq[A] = { if (x eq null) { Seq() } else { x.toSeq } }
-  // format: on
+  def nullToSeq[A](x: java.util.List[A]): Seq[A] = {
+    if (x eq null) { Seq() }
+    else { Seq.from(x.asScala) }
+  }
+  def nullToSeq[A](x: Array[A]): Seq[A] = {
+    if (x eq null) { Seq() }
+    else { x.toSeq }
+  }
 
   def decompileMethod(classNode: ClassNode, node: MethodNode): BodyDeclaration[_ <: BodyDeclaration[_]] = {
     // attr (ignore?)
@@ -240,9 +246,11 @@ object DecompileClass extends Logging {
         } else {
           (
             new NodeList(),
-            // format: off
-            if (node.superName == null) { new NodeList() } else { new NodeList(Descriptor.classNameType(node.superName)) },
-            // format: on
+            if (node.superName == null) {
+              new NodeList()
+            } else {
+              new NodeList(Descriptor.classNameType(node.superName))
+            },
             new NodeList(node.interfaces.asScala.map(x => Descriptor.classNameType(x)).asJava)
           )
         }
