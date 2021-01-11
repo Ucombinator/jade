@@ -74,15 +74,18 @@ abstract class Cmd[T] extends Callable[T] {
     names = Array("--log"),
     paramLabel = "LEVEL",
     description = Array(
-      "Set the logging level",
-      "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."
+      "Set the logging level where LEVEL is LVL or NAME=LVL.",
+      "",
+      "LVL is one of (case insensitive):",
+      "  off info warning error debug trace all",
+      "NAME is a qualified package or class name and is relative to `org.ucombinator.jade` unless prefixed with `.`."
     ),
     split = ",",
-    //converter = Array(classOf[LevelConverter]),
+    showDefaultValue = CommandLine.Help.Visibility.NEVER,
+    converter = Array(classOf[LevelConverter]),
   )
   // TODO: check --help
-  // TODO: explain "LOGGER=LEVEL"
-  var log: java.util.Map[String, Level] = new java.util.HashMap[String, Level]()
+  var log = new java.util.ArrayList[LogSetting]()
 
   @Option(
     names = Array("--log-caller-depth"),
@@ -105,13 +108,14 @@ abstract class Cmd[T] extends Callable[T] {
   final override def call(): T = {
     Logging.callerDepth = logCallerDepth
 
-    for ((k, v) <- log.asScala) {
+    for (LogSetting(name, lvl) <- log.asScala) {
       // TODO: warn if logger exists
-      val name =
-        if (k.startsWith(".")) { k.substring(1) }
-        else if (k == "") { "" }
-        else { Logging.prefix + k }
-      Logging.getLogger(name).setLevel(v)
+      // TODO: warn if no such class or package (and suggest qualifications)
+      val parsedName =
+        if (name.startsWith(".")) { name.substring(1) }
+        else if (name == "") { "" }
+        else { Logging.prefix + lvl }
+      Logging.getLogger(parsedName).setLevel(lvl)
     }
 
     if (waitForUser) {
@@ -128,15 +132,16 @@ class VersionProvider extends CommandLine.IVersionProvider {
   override def getVersion: Array[String] = { Array[String](Main.versionString) }
 }
 
-class LevelConverter extends ITypeConverter[(String, Level)] {
-  override def convert(value: String): (String, Level) = {
+case class LogSetting(name: String, lvl: Level)
+class LevelConverter extends ITypeConverter[LogSetting] {
+  override def convert(value: String): LogSetting = {
     val (name, level) = value.split("=") match {
       case Array(l) => ("", Level.toLevel(l, null))
       case Array(n, l) => (n, Level.toLevel(l, null))
       case _ => throw new Exception("could not parse log level") // TODO: explain notation
     }
     if (level == null) throw new Exception(f"invalid level: ${level}") // TODO: "must be one of ..."
-    (name, level)
+    LogSetting(name, level)
   }
 }
 
