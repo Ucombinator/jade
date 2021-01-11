@@ -49,12 +49,12 @@ Generators
  */
 
 sealed trait DecompiledInsn { def usesNextInsn = true /* TODO */ }
-case class DecompiledStatement(statement: Statement)                         extends DecompiledInsn
+case class DecompiledStatement(statement: Statement, override val usesNextInsn: Boolean = true )   extends DecompiledInsn
 case class DecompiledExpression(expression: Expression)                      extends DecompiledInsn
 case object DecompiledMove /*(TODO)*/                                        extends DecompiledInsn
 case class DecompiledIf(labelNode: LabelNode, condition: Expression)         extends DecompiledInsn
-case class DecompiledGoto(labelNode: LabelNode)                              extends DecompiledInsn
-case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) extends DecompiledInsn
+case class DecompiledGoto(labelNode: LabelNode)                              extends DecompiledInsn { override def usesNextInsn = false }
+case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) extends DecompiledInsn { override def usesNextInsn = false }
 case class DecompiledNew(descriptor: ClassOrInterfaceType)                   extends DecompiledInsn
 case class DecompiledMonitorEnter(expression: Expression)                    extends DecompiledInsn
 case class DecompiledMonitorExit(expression: Expression)                     extends DecompiledInsn
@@ -87,7 +87,7 @@ object DecompileInsn extends Logging {
   def decompileInsn(retVar: Var, insn: DecompiledInsn): Statement = {
     def comment(string: String): Statement = { JavaParser.setComment(new EmptyStmt(), new BlockComment(string)) }
     insn match {
-      case DecompiledStatement(statement)                                    => statement
+      case DecompiledStatement(statement, _)                                 => statement
       case DecompiledExpression(expression)                                  => new ExpressionStmt(new AssignExpr(decompileVar(retVar), expression, AssignExpr.Operator.ASSIGN))
       case DecompiledMove /*(TODO)*/                                         => comment(f"TODO: move insn")
       case DecompiledIf(labelNode: LabelNode, condition: Expression)         => new IfStmt(condition, new BreakStmt(labelNode.toString), null)
@@ -275,12 +275,12 @@ object DecompileInsn extends Logging {
           assert(insn.labels.size == insn.keys.size)
           DecompiledSwitch(insn.labels.asScala.zip(insn.keys.asScala).map({ case (l, i) => i.intValue() -> l }).toMap, insn.dflt)
         // InsnNode
-        case Opcodes.IRETURN => DecompiledStatement(new ReturnStmt(args(0)))
-        case Opcodes.LRETURN => DecompiledStatement(new ReturnStmt(args(0)))
-        case Opcodes.FRETURN => DecompiledStatement(new ReturnStmt(args(0)))
-        case Opcodes.DRETURN => DecompiledStatement(new ReturnStmt(args(0)))
-        case Opcodes.ARETURN => DecompiledStatement(new ReturnStmt(args(0)))
-        case Opcodes.RETURN  => DecompiledStatement(new ReturnStmt( /*Nothing*/ ))
+        case Opcodes.IRETURN => DecompiledStatement(new ReturnStmt(args(0)), usesNextInsn = false)
+        case Opcodes.LRETURN => DecompiledStatement(new ReturnStmt(args(0)), usesNextInsn = false)
+        case Opcodes.FRETURN => DecompiledStatement(new ReturnStmt(args(0)), usesNextInsn = false)
+        case Opcodes.DRETURN => DecompiledStatement(new ReturnStmt(args(0)), usesNextInsn = false)
+        case Opcodes.ARETURN => DecompiledStatement(new ReturnStmt(args(0)), usesNextInsn = false)
+        case Opcodes.RETURN  => DecompiledStatement(new ReturnStmt( /*Nothing*/ ), usesNextInsn = false)
         // FieldInsnNode
         case Opcodes.GETSTATIC => val insn = node.asInstanceOf[FieldInsnNode]; DecompiledExpression(new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/ new NodeList(), new SimpleName(insn.name)))
         case Opcodes.PUTSTATIC => val insn = node.asInstanceOf[FieldInsnNode]; DecompiledExpression(new AssignExpr(new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/ new NodeList(), new SimpleName(insn.name)), args(0), AssignExpr.Operator.ASSIGN))
@@ -314,7 +314,7 @@ object DecompileInsn extends Logging {
           DecompiledExpression(new ArrayCreationExpr(typ, new NodeList(new ArrayCreationLevel(args(0), new NodeList())), null))
         // InsnNode
         case Opcodes.ARRAYLENGTH => DecompiledExpression(new FieldAccessExpr(args(0), new NodeList(), new SimpleName("length")))
-        case Opcodes.ATHROW      => DecompiledStatement(new ThrowStmt(args(0)))
+        case Opcodes.ATHROW      => DecompiledStatement(new ThrowStmt(args(0)), usesNextInsn = false)
         // TypeInsnNode
         case Opcodes.CHECKCAST  => DecompiledExpression(new CastExpr(Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc), args(0))) // TODO: check if works
         case Opcodes.INSTANCEOF => DecompiledExpression(new InstanceOfExpr(args(0), Descriptor.classNameType(node.asInstanceOf[TypeInsnNode].desc)))

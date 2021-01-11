@@ -16,7 +16,7 @@ import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.decompile.methodbody.{ControlFlowGraph, MethodBody, Structure}
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
 import org.ucombinator.jade.util.{Errors, JavaParser, Logging, VFS}
@@ -154,21 +154,21 @@ object DecompileMethodBody extends Logging {
       }
 
       this.logger.debug("**** SSA ****")
-      val ids = SSA(owner, method, cfg)
+      val ssa = SSA(owner, method, cfg)
 
-      this.logger.debug(f"++++ frames: ${ids.frames.length} ++++")
+      this.logger.debug(f"++++ frames: ${ssa.frames.length} ++++")
       for (i <- 0 until method.instructions.size) {
-        this.logger.debug(f"frame(${i}): ${ids.frames(i)}")
+        this.logger.debug(f"frame(${i}): ${ssa.frames(i)}")
       }
 
       this.logger.debug("++++ results and arguments ++++")
       for (i <- 0 until method.instructions.size) {
         val insn = method.instructions.get(i)
-        this.logger.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ids.instructionArguments.get(insn)}")
+        this.logger.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ssa.instructionArguments.get(insn)}")
       }
 
       this.logger.debug("++++ ssa map ++++")
-      for ((key, value) <- ids.ssaMap) {
+      for ((key, value) <- ssa.ssaMap) {
         this.logger.debug(f"ssa: ${key} -> ${value}")
       }
 
@@ -181,20 +181,23 @@ object DecompileMethodBody extends Logging {
         "++++ dominator nesting ++++\n" + GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry)
       )
 
-      this.logger.debug("**** Loops ****")
+      this.logger.debug("**** Structure ****")
+      val structure = Structure(cfg)
 
-      this.logger.debug("++++ loop heads ++++\n")
-      // JEP 334: JVM Constants API: https://openjdk.java.net/jeps/334
+      // TODO: JEP 334: JVM Constants API: https://openjdk.java.net/jeps/334
 
-      this.logger.debug("++++ loop heads ++++\n")
+      this.logger.debug("**** Statement ****")
+      val statement = MethodBody(cfg, ssa, structure)
+      this.logger.debug(statement.toString)
+      setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statement)))
 
-      var statements = List[Statement]()
-      for (insn <- method.instructions.toArray) {
-        val (retVal, decompiled) = DecompileInsn.decompileInsn(insn, ids)
-        statements = statements :+ DecompileInsn.decompileInsn(retVal, decompiled)
-      }
-      this.logger.debug("++++ statements ++++\n" + statements.mkString("\n"))
-      setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statements.asJava)))
+      // var statements = List[Statement]()
+      // for (insn <- method.instructions.toArray) {
+      //   val (retVal, decompiled) = DecompileInsn.decompileInsn(insn, ssa)
+      //   statements = statements :+ DecompileInsn.decompileInsn(retVal, decompiled)
+      // }
+      // this.logger.debug("++++ statements ++++\n" + statements.mkString("\n"))
+      // setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statements.asJava)))
     }
   }
 }

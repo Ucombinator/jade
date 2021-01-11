@@ -2,21 +2,20 @@ package org.ucombinator.jade.decompile.methodbody
 
 import scala.collection.immutable._
 import scala.jdk.CollectionConverters._
+
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
-
 import org.jgrapht.graph._
-
+import org.objectweb.asm.tree.LabelNode
 import org.ucombinator.jade.asm.Insn
-import org.objectweb.asm.tree.JumpInsnNode
-import org.ucombinator.jade.decompile.DecompileInsn
-import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.asm.Insn.ordering
-import org.ucombinator.jade.util.MyersList
-import org.ucombinator.jade.util.Errors
-import org.objectweb.asm.tree.AbstractInsnNode
+import org.ucombinator.jade.decompile._
 import org.ucombinator.jade.decompile.methodbody.Structure
+import org.ucombinator.jade.decompile.methodbody.ssa.SSA
+import org.ucombinator.jade.util.Errors
+import org.ucombinator.jade.util.Logging
+import org.ucombinator.jade.util.MyersList
 
 /*
 Non-Linear Stmt Types
@@ -33,7 +32,7 @@ Non-linear expressions
  */
 
 // TODO: rename to Statement
-object Statement {
+object MethodBody extends Logging {
   /*
   As long as one is jumping forwards, we can always encode as a sequence of breaks
   Use topo-sort with a sort order that groups loop heads with their body
@@ -42,22 +41,24 @@ object Statement {
   is it a loop head, which loop head is this part of
    */
 
-  def run(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): Statement = {
+  def apply(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): Statement = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
-    val jumpTargets = cfg.graph
+    val jumpTargets = cfg.graph // TODO: rename to insnOfLabel
       .vertexSet()
       .asScala
-      .map(_.insn)
-      .flatMap({
-        case e: JumpInsnNode => Set(e.label: AbstractInsnNode)
+      .flatMap({ insn => insn.insn match {
+        case e: LabelNode => Set(e.getLabel -> insn)
         case _ => Set()
-      })
+      }}).toMap
 
     // TODO: remove back edges
     val graph = new AsSubgraph(
-      new MaskSubgraph(cfg.graph, (_: Insn) => true, (e: ControlFlowGraph.Edge) => !structure.backEdges(e))
+      new MaskSubgraph(cfg.graph, (_: Insn) => false, (e: ControlFlowGraph.Edge) => structure.backEdges(e))
     )
+
+    def labelString(label: LabelNode): String = { "JADE_" + jumpTargets(label.getLabel()).index }
+    def insnLabelString(insn: Insn): String = { "JADE_" + insn.index } // TODO: overload with labelString
 
     def structuredBlock(head: Insn): (Statement, Set[Insn] /* pendingOutside */ ) = {
       // do statements in instruction order if possible
@@ -100,15 +101,18 @@ object Statement {
 
       // ASSUMPTION: structured statements have a single entry point
       def structuredStmt(insn: Insn): Statement = {
-        if (structure.nesting(insn).head eq insn) { // insn is the head of a structured statement
+        val block = structure.nesting(insn).head
+        if (block.headInsn eq insn) { // insn is the head of a structured statement
           // TODO: multiple nested structures starting at same place (for now assume everything is a loop)
-          val (block, newPending) = structuredBlock(insn)
+          val (stmt, newPending) = structuredBlock(insn)
           addPending(newPending)
-          return new LabeledStmt("LOOP" + insn.index, new WhileStmt(new BooleanLiteralExpr(true), block))
-          // } else if (tryCatchFinally) {
-          //   // TODO
-          // } else if (synchronized) {
-          //   // TODO
+          block.kind match {
+            case Structure.Loop() =>
+              val label = labelString(insn.insn.asInstanceOf[LabelNode]) // TODO: do better
+              new LabeledStmt(label, new WhileStmt(new BooleanLiteralExpr(true), stmt))
+            case Structure.Exception() => ???
+            case Structure.Synchronized() => ???
+          }
         } else {
           return simpleStmt(insn)
         }
@@ -117,9 +121,16 @@ object Statement {
       def simpleStmt(insn: Insn): Statement = {
         // ASSUMPTION: we ignore allocs but implement the constructors
         val (retVal, decompiled) = DecompileInsn.decompileInsn(insn.insn, ssa)
+        decompiled match {
+          case DecompiledIf(labelNode, condition) =>
+            this.logger.debug("IF: " + labelNode + "///" + labelNode.getLabel)
+            new IfStmt(condition, new BreakStmt(labelString(labelNode)), null)
+          case DecompiledGoto(labelNode: LabelNode) =>
+            new BreakStmt(labelString(labelNode)) // TODO: use instruction number?
+          case _ => return DecompileInsn.decompileInsn(retVal, decompiled)
+        }
         // TODO: break vs continue
         // TODO: labels in break or continue
-        return DecompileInsn.decompileInsn(retVal, decompiled)
       }
       // TODO: explicitly labeled instructions
 
@@ -147,25 +158,21 @@ object Statement {
               // Use the next instruction
               Some(next)
             } else {
-              currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, new BreakStmt("L" + next.index)))
+              // NOTE [Branch Targets]:
+              // We can't go to the sequencially next instruction (probably due to a CFG dependency)
+              // so we insert a `break` and pick the next instruction that we can go to.
+              // This line is why every statement is a potential break target.
+              currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, new BreakStmt(insnLabelString(next))))
               // Use the smallest available instruction
               pendingInside.minOption
             }
           }
-        nextInsn match {
-          case Some(insn) => insn
-          case None => null
-        }
+        nextInsn.orNull
       }
 
       while ({ currentInsn = getNextInsn(); currentInsn != null }) {
         pendingInside -= currentInsn
-
-        currentStmt = new BlockStmt(new NodeList[Statement](currentStmt, structuredStmt(currentInsn)))
-
-        if (jumpTargets(currentInsn.insn)) {
-          currentStmt = new LabeledStmt("L" + currentInsn.index, currentStmt)
-        }
+        currentStmt = new LabeledStmt(insnLabelString(currentInsn), new BlockStmt(new NodeList[Statement](currentStmt, structuredStmt(currentInsn))))
       }
 
       return (currentStmt, pendingOutside)
