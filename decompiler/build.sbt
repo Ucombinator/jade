@@ -140,7 +140,8 @@ assemblyMergeStrategy in assembly := {
       ).contains(file) =>
     MergeStrategy.rename
 
-  case _ => MergeStrategy.deduplicate
+  case _ =>
+    MergeStrategy.deduplicate
 }
 
 /* ----- Custom SBT Code ----- */

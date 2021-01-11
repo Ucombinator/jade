@@ -84,8 +84,7 @@ object GraphViz {
           val y = tree.getEdgeSource(x)
           graph.outgoingEdgesOf(v).asScala.map(graph.getEdgeTarget) == Set(y) &&
           graph.incomingEdgesOf(y).asScala.map(graph.getEdgeSource) == Set(v)
-        case _ =>
-          false
+        case _ => false
       }
       for (child <- edges.map(tree.getEdgeSource)) {
         //format: off

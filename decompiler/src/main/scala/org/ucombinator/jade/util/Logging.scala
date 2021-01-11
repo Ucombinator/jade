@@ -51,8 +51,7 @@ object Logging extends Logging {
         try {
           Class.forName(entry.getName.replaceAll("\\.class$", "").replaceAll("/", "."))
         } catch {
-          case _: Throwable => /* Ignored */
-            this.logger.debug(f"skipping: ${entry.getName}")
+          case _: Throwable => this.logger.debug(f"skipping: ${entry.getName}") // TODO: show exception in message
         }
       }
     }
@@ -86,14 +85,10 @@ object Logging extends Logging {
     override protected def getForegroundColorCode(event: ILoggingEvent): String = {
       val level = event.getLevel
       level.toInt match {
-        case Level.ERROR_INT =>
-          BOLD + RED_FG
-        case Level.WARN_INT =>
-          RED_FG
-        case Level.INFO_INT =>
-          DEFAULT_FG // Was `BLUE_FG`, but that is hard to read on a black background
-        case _ =>
-          DEFAULT_FG
+        case Level.ERROR_INT => BOLD + RED_FG
+        case Level.WARN_INT => RED_FG
+        case Level.INFO_INT => DEFAULT_FG // Was `BLUE_FG`, but that is hard to read on a black background
+        case _ => DEFAULT_FG
       }
     }
   }

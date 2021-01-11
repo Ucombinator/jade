@@ -73,8 +73,10 @@ abstract class Cmd[T] extends Callable[T] {
   @Option(
     names = Array("--log"),
     paramLabel = "LEVEL",
-    description =
-      Array("Set the logging level", "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."),
+    description = Array(
+      "Set the logging level",
+      "Logger names are relative to `org.ucombinator.jade` unless prefixed with `.`."
+    ),
     split = ",",
     //converter = Array(classOf[LevelConverter]),
   )

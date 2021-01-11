@@ -95,11 +95,12 @@ object Dominator {
 
       // Find the semidominator of v
       for (v <- predecessors(n)) {
-        val sPrime = if (dfnum(v) <= dfnum(n)) { // Determine if pred is an ancestor in DFS tree.
-          v
-        } else {
-          semi(ancestorWithLowestSemi(v))
-        }
+        val sPrime =
+          if (dfnum(v) <= dfnum(n)) { // Determine if pred is an ancestor in DFS tree.
+            v
+          } else {
+            semi(ancestorWithLowestSemi(v))
+          }
         if (dfnum(sPrime) < dfnum(s)) { // Pick lowest
           s = sPrime
         }

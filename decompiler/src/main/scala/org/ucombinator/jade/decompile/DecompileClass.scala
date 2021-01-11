@@ -43,9 +43,11 @@ object DecompileClass extends Logging {
       case vs =>
         new NormalAnnotationExpr(
           name,
-          new NodeList[MemberValuePair]((for (List(k, v) <- vs.grouped(2)) yield {
-            new MemberValuePair(k.asInstanceOf[String], decompileLiteral(v.asInstanceOf[Object]))
-          }).toList.asJava)
+          new NodeList[MemberValuePair](
+            (for (List(k, v) <- vs.grouped(2)) yield {
+              new MemberValuePair(k.asInstanceOf[String], decompileLiteral(v.asInstanceOf[Object]))
+            }).toList.asJava
+          )
         )
     }
   }
