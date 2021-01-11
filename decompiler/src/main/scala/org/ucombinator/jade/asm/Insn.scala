@@ -88,7 +88,7 @@ object Insn extends Textifier(Opcodes.ASM7) {
   implicit val ordering = new Ordering[Insn] {
     override def compare(x: Insn, y: Insn): Int = {
       assert(x.method eq y.method) // TODO: assert message or log message
-      if (x eq y) { 0 }
+      if ((x eq y) || (x.insn eq y.insn)) { 0 }
       else if (x.index < y.index) { -1 }
       else if (x.index > y.index) { 1 }
       else { Errors.fatal(f"Incomparable Insn ${x.longString} and ${y.longString}") }
