@@ -2,11 +2,16 @@ package org.ucombinator.jade.decompile.methodbody
 
 import org.ucombinator.jade.util.MyersList
 import org.ucombinator.jade.asm.Insn
+import scala.jdk.CollectionConverters._
 
 case class Structure(nesting: Map[Insn, Structure.Nesting], backEdges: Set[ControlFlowGraph.Edge])
 
-object Structure {
-  type Nesting = MyersList[{ val kind: Kind; val headInsn: Insn }]
+// TODO: rename to CodeStructure or CodeNesting or BlockNesting
+object Structure { 
+  // TODO: name to NestingPath or StructurePath or BlockPath
+  type Nesting = MyersList[Block]
+
+  case class Block(kind: Kind, headInsn: Insn)
 
   sealed trait Kind // TODO: structural type
   case class Loop() extends Kind
@@ -14,15 +19,17 @@ object Structure {
   case class Synchronized() extends Kind
 
   def apply(cfg: ControlFlowGraph): Structure = {
+    // This dummy works only on code with no loops, try/catches, or synchronized blocks
+    val backEdges = Set[ControlFlowGraph.Edge]()
+    // TODO: note that head block is present so we can always safely call .head, but its headInsn is null so it doesn't match the first instruction of the method
+    val nestingRoot: Nesting = MyersList.Cons(Block(kind = null, headInsn = null), MyersList.Nil)
+    val nestingMap = cfg.graph.vertexSet().asScala.map(_ -> nestingRoot).toMap
+    return Structure(nestingMap, backEdges)
     /*
         Loop heads dominate a predicesor
         Loop tree based on Dominator tree?
-
-
-
         Whole loop = all vertecies backwards from predicestor until loop head
      */
-    ???
   }
 }
 
