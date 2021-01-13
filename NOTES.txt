@@ -48,6 +48,9 @@ http://central.maven.org/maven2/commons-codec/commons-codec/1.12/commons-codec-1
 
 *** Decompilation ***
 
+Emscripten: An LLVM-to-JavaScript Compiler
+  https://raw.githubusercontent.com/kripken/emscripten/master/docs/paper.pdf
+  Include loop algorithm
 Helping Johnny to Analyze Malware: A Usability-Optimized Decompiler and Malware Analysis User Study
   https://www.semanticscholar.org/paper/Helping-Johnny-to-Analyze-Malware%3A-A-Decompiler-and-Yakdan-Dechand/12945913b496ff349f65565d8b65208147ed3794
 Native x86 Decompilation Using Semantics-Preserving Structural Analysis and Iterative Control-Flow Structuring
