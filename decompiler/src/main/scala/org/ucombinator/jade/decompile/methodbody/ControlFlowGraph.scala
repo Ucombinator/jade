@@ -1,14 +1,17 @@
 package org.ucombinator.jade.decompile.methodbody
 
+import scala.jdk.CollectionConverters._
+
 import org.jgrapht.Graph
-import org.jgrapht.graph.{AsGraphUnion, DirectedPseudograph}
+import org.jgrapht.graph.AsGraphUnion
+import org.jgrapht.graph.DirectedPseudograph
 import org.objectweb.asm.tree.MethodNode
-import org.objectweb.asm.tree.analysis.{Analyzer, BasicValue, Frame}
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph.Edge
+import org.objectweb.asm.tree.analysis.Analyzer
+import org.objectweb.asm.tree.analysis.BasicValue
+import org.objectweb.asm.tree.analysis.Frame
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.TypedBasicInterpreter
-
-import scala.jdk.CollectionConverters._
+import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph.Edge
 
 case class ControlFlowGraph(
     method: MethodNode,

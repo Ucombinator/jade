@@ -1,15 +1,19 @@
 package org.ucombinator.jade.util
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{Files, Path}
 import java.util.stream.Collectors
-import java.util.zip.{ZipEntry, ZipInputStream}
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+
+import scala.collection.immutable.SortedMap
+import scala.jdk.CollectionConverters._
 
 import org.objectweb.asm.ClassReader
-
-import scala.jdk.CollectionConverters._
-import scala.collection.immutable.SortedMap
 
 // This code is more complicated than one would think due to a few things.
 // The first is supporting treating compressed files as directories.

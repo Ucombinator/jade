@@ -1,17 +1,26 @@
 package org.ucombinator.jade.decompile
 
-import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, ReferenceType, Type, TypeParameter}
+import scala.jdk.CollectionConverters._
+
+import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.ImportDeclaration
+import com.github.javaparser.ast.NodeList
+import com.github.javaparser.ast.PackageDeclaration
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
+import com.github.javaparser.ast.`type`.ReferenceType
+import com.github.javaparser.ast.`type`.Type
+import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.body._
 import com.github.javaparser.ast.comments.BlockComment
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt.BlockStmt
-import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, PackageDeclaration}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.ucombinator.jade.classfile.{Descriptor, Flags, Signature}
-import org.ucombinator.jade.util.{JavaParser, Log}
-
-import scala.jdk.CollectionConverters._
+import org.ucombinator.jade.classfile.Descriptor
+import org.ucombinator.jade.classfile.Flags
+import org.ucombinator.jade.classfile.Signature
+import org.ucombinator.jade.util.JavaParser
+import org.ucombinator.jade.util.Log
 
 object DecompileClass extends Log {
 

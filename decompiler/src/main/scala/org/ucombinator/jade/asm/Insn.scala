@@ -1,14 +1,15 @@
 package org.ucombinator.jade.asm
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.lang.reflect.Modifier
-
-import org.objectweb.asm.Opcodes
-import org.objectweb.asm.tree._
-import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
 
 import scala.jdk.CollectionConverters._
 
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree._
+import org.objectweb.asm.util.Textifier
+import org.objectweb.asm.util.TraceMethodVisitor
 import org.ucombinator.jade.util.Errors
 
 case class Insn(method: MethodNode, insn: AbstractInsnNode) {

@@ -1,27 +1,38 @@
 package org.ucombinator.jade.decompile
 
-import java.io.{PrintWriter, StringWriter}
-
-import com.github.javaparser.ast.body.{
-  BodyDeclaration,
-  ConstructorDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration
-}
-import com.github.javaparser.ast.comments.BlockComment
-import com.github.javaparser.ast.expr.{ObjectCreationExpr, StringLiteralExpr}
-import com.github.javaparser.ast.stmt.{BlockStmt, EmptyStmt, Statement, ThrowStmt}
-import com.github.javaparser.ast.{Modifier, NodeList}
-import org.objectweb.asm.tree.{ClassNode, MethodNode}
-import org.objectweb.asm.util.{Textifier, TraceMethodVisitor}
-import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.decompile.methodbody.{ControlFlowGraph, MethodBody, Structure}
-import org.ucombinator.jade.decompile.methodbody.ssa.SSA
-import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
-import org.ucombinator.jade.util.{Errors, JavaParser, Log}
+import java.io.PrintWriter
+import java.io.StringWriter
 
 import scala.jdk.CollectionConverters._
+
+import com.github.javaparser.ast.Modifier
+import com.github.javaparser.ast.NodeList
+import com.github.javaparser.ast.body.BodyDeclaration
+import com.github.javaparser.ast.body.ConstructorDeclaration
+import com.github.javaparser.ast.body.InitializerDeclaration
+import com.github.javaparser.ast.body.MethodDeclaration
+import com.github.javaparser.ast.comments.BlockComment
+import com.github.javaparser.ast.expr.ObjectCreationExpr
+import com.github.javaparser.ast.expr.StringLiteralExpr
+import com.github.javaparser.ast.stmt.BlockStmt
+import com.github.javaparser.ast.stmt.EmptyStmt
+import com.github.javaparser.ast.stmt.Statement
+import com.github.javaparser.ast.stmt.ThrowStmt
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.util.Textifier
+import org.objectweb.asm.util.TraceMethodVisitor
+import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.classfile.Descriptor
+import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.decompile.methodbody.MethodBody
+import org.ucombinator.jade.decompile.methodbody.Structure
+import org.ucombinator.jade.decompile.methodbody.ssa.SSA
+import org.ucombinator.jade.util.Errors
+import org.ucombinator.jade.util.JavaParser
+import org.ucombinator.jade.util.Log
+import org.ucombinator.jade.util.jgrapht.Dominator
+import org.ucombinator.jade.util.jgrapht.GraphViz
 
 object DecompileMethodBody extends Log {
   private def stubBody(message: String, comment: BlockComment): BlockStmt = {

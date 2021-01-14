@@ -1,8 +1,8 @@
+import scala.collection.mutable
+import scala.jdk.CollectionConverters._
+
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-
-import scala.jdk.CollectionConverters._
-import scala.collection.mutable
 
 // Code for generating `Flags.txt` and `Flags.scala`
 object FlagsGen {

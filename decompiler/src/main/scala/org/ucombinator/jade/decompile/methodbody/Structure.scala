@@ -1,8 +1,9 @@
 package org.ucombinator.jade.decompile.methodbody
 
-import org.ucombinator.jade.util.MyersList
-import org.ucombinator.jade.asm.Insn
 import scala.jdk.CollectionConverters._
+
+import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.util.MyersList
 
 case class Structure(nesting: Map[Insn, Structure.Nesting], backEdges: Set[ControlFlowGraph.Edge])
 

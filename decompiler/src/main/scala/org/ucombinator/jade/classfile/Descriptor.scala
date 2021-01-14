@@ -1,8 +1,13 @@
 package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type}
-import com.github.javaparser.ast.expr.{Expression, FieldAccessExpr, Name, NameExpr, SimpleName}
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
+import com.github.javaparser.ast.`type`.Type
+import com.github.javaparser.ast.expr.Expression
+import com.github.javaparser.ast.expr.FieldAccessExpr
+import com.github.javaparser.ast.expr.Name
+import com.github.javaparser.ast.expr.NameExpr
+import com.github.javaparser.ast.expr.SimpleName
 
 // NOTE: The structure of this class follows that of the Java Virtual Machine Specification section 4.3 "Descriptors"
 object Descriptor {

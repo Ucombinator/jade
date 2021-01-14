@@ -3,15 +3,21 @@ package org.ucombinator.jade.main
 import java.nio.file.Path
 import java.util.concurrent.Callable
 
+import scala.jdk.CollectionConverters._
+
 import ch.qos.logback.classic.Level
 import org.ucombinator.jade.decompile.Decompile
 import org.ucombinator.jade.util.Log
 import picocli.AutoComplete.GenerateCompletion
-import picocli.codegen.docgen.manpage.ManPageGenerator
 import picocli.CommandLine
-import picocli.CommandLine.{Command, HelpCommand, ITypeConverter, Option, ParameterException, Parameters, ParentCommand}
-
-import scala.jdk.CollectionConverters._
+import picocli.CommandLine.Command
+import picocli.CommandLine.HelpCommand
+import picocli.CommandLine.ITypeConverter
+import picocli.CommandLine.Option
+import picocli.CommandLine.ParameterException
+import picocli.CommandLine.Parameters
+import picocli.CommandLine.ParentCommand
+import picocli.codegen.docgen.manpage.ManPageGenerator
 
 //  TODO: analysis to ensure using only the canonical constructor (helps with detecting forward version changes) (as a compiler plugin?)
 

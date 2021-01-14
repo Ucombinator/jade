@@ -1,20 +1,24 @@
 package org.ucombinator.jade.decompile
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.nio.file.Path
+
+import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.body.BodyDeclaration
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree.{ClassNode, MethodNode}
-import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
-import org.ucombinator.jade.util.{Log, VFS}
-
-import scala.jdk.CollectionConverters._
-import scala.collection.mutable
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.AnalyzerAdapter
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.util.Textifier
+import org.objectweb.asm.util.TraceClassVisitor
+import org.ucombinator.jade.util.Log
+import org.ucombinator.jade.util.VFS
 
 // TODO: nested class?
 // TODO: error message

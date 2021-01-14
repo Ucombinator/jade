@@ -2,18 +2,25 @@ package org.ucombinator.jade.util
 
 import java.util.jar.JarFile
 
+import scala.jdk.CollectionConverters._
+
+import ch.qos.logback.classic.BasicConfigurator
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.PatternLayout
 import ch.qos.logback.classic.pattern.NamedConverter
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{BasicConfigurator, Level, LoggerContext, PatternLayout, Logger => LogbackLogger}
+import ch.qos.logback.classic.{Logger => LogbackLogger}
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder
-import ch.qos.logback.core.pattern.color.ANSIConstants.{BOLD, DEFAULT_FG, RED_FG}
+import ch.qos.logback.core.pattern.color.ANSIConstants.BOLD
+import ch.qos.logback.core.pattern.color.ANSIConstants.DEFAULT_FG
+import ch.qos.logback.core.pattern.color.ANSIConstants.RED_FG
 import ch.qos.logback.core.pattern.color.ForegroundCompositeConverterBase
 import com.typesafe.scalalogging.{Logger => ScalaLogger}
-import org.slf4j.{LoggerFactory, Logger => Slf4jLogger}
+import org.slf4j.LoggerFactory
+import org.slf4j.{Logger => Slf4jLogger}
 import org.ucombinator.jade.main.Main
-
-import scala.jdk.CollectionConverters._
 
 // TODO: slf4j.detectLoggerNameMismatch
 // TODO: Ensure Logging can extends only objects?

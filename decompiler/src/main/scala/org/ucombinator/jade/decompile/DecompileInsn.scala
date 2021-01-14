@@ -2,30 +2,33 @@ package org.ucombinator.jade.decompile
 
 //import java.lang.invoke.LambdaMetafactory
 
-import com.github.javaparser.ast.`type`.{ArrayType, ClassOrInterfaceType, PrimitiveType, Type}
+import scala.annotation.tailrec
+import scala.jdk.CollectionConverters._
+
+import com.github.javaparser.ast.ArrayCreationLevel
+import com.github.javaparser.ast.NodeList
+import com.github.javaparser.ast.`type`.ArrayType
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
+import com.github.javaparser.ast.`type`.PrimitiveType
+import com.github.javaparser.ast.`type`.Type
 import com.github.javaparser.ast.comments.BlockComment
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
-import com.github.javaparser.ast.{ArrayCreationLevel, NodeList}
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.decompile.methodbody.ssa.{
-  CopyVar,
-  EmptyVar,
-  ExceptionVar,
-  InstructionVar,
-  ParameterVar,
-  PhiVar,
-  ReturnVar,
-  SSA,
-  Var
-}
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.util.{JavaParser, Log}
-
-import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import org.ucombinator.jade.decompile.methodbody.ssa.CopyVar
+import org.ucombinator.jade.decompile.methodbody.ssa.EmptyVar
+import org.ucombinator.jade.decompile.methodbody.ssa.ExceptionVar
+import org.ucombinator.jade.decompile.methodbody.ssa.InstructionVar
+import org.ucombinator.jade.decompile.methodbody.ssa.ParameterVar
+import org.ucombinator.jade.decompile.methodbody.ssa.PhiVar
+import org.ucombinator.jade.decompile.methodbody.ssa.ReturnVar
+import org.ucombinator.jade.decompile.methodbody.ssa.SSA
+import org.ucombinator.jade.decompile.methodbody.ssa.Var
+import org.ucombinator.jade.util.JavaParser
+import org.ucombinator.jade.util.Log
 
 /*
 Nestings

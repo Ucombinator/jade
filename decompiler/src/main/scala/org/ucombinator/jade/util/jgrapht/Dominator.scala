@@ -1,12 +1,11 @@
 package org.ucombinator.jade.util.jgrapht
 
-import org.jgrapht.Graph
-import org.jgrapht.graph.SimpleDirectedGraph
-
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
+import org.jgrapht.Graph
+import org.jgrapht.graph.SimpleDirectedGraph
 import org.ucombinator.jade.util.Errors
 object Dominator {
   final case class Edge[V](source: V, target: V)

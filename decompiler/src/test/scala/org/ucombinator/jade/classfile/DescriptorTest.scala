@@ -1,7 +1,6 @@
 package org.ucombinator.jade.classfile
 
 import com.github.javaparser.ast.`type`.PrimitiveType
-
 import org.scalatest.freespec.AnyFreeSpec
 
 class DescriptorTest extends AnyFreeSpec {

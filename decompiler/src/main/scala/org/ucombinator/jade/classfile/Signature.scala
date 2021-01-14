@@ -1,14 +1,14 @@
 package org.ucombinator.jade.classfile
 
-import org.ucombinator.jade.util.Errors
+import scala.jdk.CollectionConverters._
 
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.`type`._
-import com.github.javaparser.ast.expr.{AnnotationExpr, SimpleName}
+import com.github.javaparser.ast.expr.AnnotationExpr
+import com.github.javaparser.ast.expr.SimpleName
+import org.ucombinator.jade.util.Errors
 import sun.reflect.generics.parser.SignatureParser
 import sun.reflect.generics.tree._
-
-import scala.jdk.CollectionConverters._
 
 // NOTE: The structure of this class follows that of the Java Virtual Machine Specification section 4.7.9.1 "Signatures"
 object Signature {

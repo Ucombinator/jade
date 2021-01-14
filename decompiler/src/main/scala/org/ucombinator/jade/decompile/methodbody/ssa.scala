@@ -1,14 +1,15 @@
 package org.ucombinator.jade.decompile.methodbody.ssa
 
+import scala.jdk.CollectionConverters._
+
 import org.objectweb.asm._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
-import org.ucombinator.jade.util.Log
-import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.asm.TypedBasicInterpreter
-import scala.jdk.CollectionConverters._
+import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.util.Errors
+import org.ucombinator.jade.util.Log
 
 sealed trait Var extends Value {
   def basicValue: BasicValue
