@@ -11,8 +11,8 @@ libraryDependencies ++= Seq(
 
   // NOTE: these are sorted alphabetically
 
-  // Logging implementation
-  "ch.qos.logback" % "logback-classic" % "1.2.3",
+  // Logging (see also com.typesafe.scalalogging)
+  "ch.qos.logback" % "logback-classic" % "1.2.3", // Basic logging framework
 
   // Abstract Syntax Trees for the Java language
   "com.github.javaparser" % "javaparser-core" % "3.18.0", // Main library
@@ -21,8 +21,8 @@ libraryDependencies ++= Seq(
   // Omitting the JavaParser "parent" package as it is just metadata
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
-  // Logging
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+  // Logging (see also ch.qos.logback)
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2", // Logging via macros so they run only when needed
 
   // Command-line argument parsing
   "info.picocli" % "picocli" % "4.6.1",
