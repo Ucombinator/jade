@@ -57,14 +57,14 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
   override def newValue(`type`: Type): Var = Errors.fatal(f"Impossible call of newValue on ${`type`}")
 
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, `type`: Type): Var = {
-    ParameterVar(SSA.basicInterpreter.newValue(`type`), local)
+    ParameterVar(TypedBasicInterpreter.newValue(`type`), local)
   }
 
   override def newReturnTypeValue(`type`: Type): Var = {
     // ASM requires that we return null when `type` is Type.VOID_TYPE
     this.returnTypeValue =
       if (`type` == Type.VOID_TYPE) { null }
-      else { ReturnVar(SSA.basicInterpreter.newReturnTypeValue(`type`)) }
+      else { ReturnVar(TypedBasicInterpreter.newReturnTypeValue(`type`)) }
     this.returnTypeValue
   }
 
@@ -78,7 +78,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
       exceptionType: Type
   ): Var = {
     ExceptionVar(
-      SSA.basicInterpreter
+      TypedBasicInterpreter
         .newExceptionValue(tryCatchBlockNode, handlerFrame.asInstanceOf[Frame[BasicValue]], exceptionType),
       Insn(method, tryCatchBlockNode.handler)
     )
@@ -92,7 +92,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
 
   @throws[AnalyzerException]
   override def newOperation(insn: AbstractInsnNode): Var = {
-    record(insn, List(), InstructionVar(SSA.basicInterpreter.newOperation(insn), Insn(method, insn)))
+    record(insn, List(), InstructionVar(TypedBasicInterpreter.newOperation(insn), Insn(method, insn)))
   }
 
   @throws[AnalyzerException]
@@ -102,7 +102,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
       insn,
       List(value),
       CopyVar(
-        SSA.basicInterpreter.copyOperation(insn, value.basicValue),
+        TypedBasicInterpreter.copyOperation(insn, value.basicValue),
         Insn(method, insn),
         this.copyOperationPosition
       )
@@ -114,7 +114,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
     record(
       insn,
       List(value),
-      InstructionVar(SSA.basicInterpreter.unaryOperation(insn, value.basicValue), Insn(method, insn))
+      InstructionVar(TypedBasicInterpreter.unaryOperation(insn, value.basicValue), Insn(method, insn))
     )
   }
 
@@ -124,7 +124,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
       insn,
       List(value1, value2),
       InstructionVar(
-        SSA.basicInterpreter.binaryOperation(insn, value1.basicValue, value2.basicValue),
+        TypedBasicInterpreter.binaryOperation(insn, value1.basicValue, value2.basicValue),
         Insn(method, insn)
       )
     )
@@ -136,7 +136,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
       insn,
       List(value1, value2, value3),
       InstructionVar(
-        SSA.basicInterpreter.ternaryOperation(insn, value1.basicValue, value2.basicValue, value3.basicValue),
+        TypedBasicInterpreter.ternaryOperation(insn, value1.basicValue, value2.basicValue, value3.basicValue),
         Insn(method, insn)
       )
     )
@@ -148,7 +148,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
       insn,
       values.asScala.toList,
       InstructionVar(
-        SSA.basicInterpreter.naryOperation(insn, values.asScala.map(_.basicValue).asJava),
+        TypedBasicInterpreter.naryOperation(insn, values.asScala.map(_.basicValue).asJava),
         Insn(method, insn)
       )
     )
@@ -157,7 +157,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
   @throws[AnalyzerException]
   override def returnOperation(insn: AbstractInsnNode, value: Var, expected: Var): Unit = {
     // Note that `unaryOperation` is also called whenever `returnOperation` is called
-    SSA.basicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
+    TypedBasicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
     record(insn, List(value), null)
     ()
   }
@@ -244,7 +244,6 @@ case class SSA(
 )
 
 case object SSA {
-  val basicInterpreter = TypedBasicInterpreter // TODO: replace references to basicInterpreter with TypedBasicInterpreter
   def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): SSA = {
     val interpreter = new SSAInterpreter(method)
 
