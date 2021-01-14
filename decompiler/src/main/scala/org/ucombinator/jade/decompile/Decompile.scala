@@ -37,7 +37,7 @@ case object Decompile extends Log {
         for (typ <- compilationUnit.getTypes.iterator().asScala) {
           val members = typ.getMembers.iterator().asScala.flatMap(x => Decompile.methods.get(x).map((_, x))).toList
           for ((((classNode, methodNode), bodyDeclaration), j) <- members.zipWithIndex) {
-            DecompileMethodBody.decompileBody(path.toString, classNode, i, methodNode, j, members.size, bodyDeclaration)
+            DecompileMethodBody.decompileBody(classNode, i, methodNode, j, members.size, bodyDeclaration)
           }
         }
 

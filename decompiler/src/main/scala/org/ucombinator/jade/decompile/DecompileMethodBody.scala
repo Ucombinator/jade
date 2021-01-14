@@ -82,7 +82,6 @@ object DecompileMethodBody extends Log {
     }
   }
   def decompileBody(
-      owner: String,
       classNode: ClassNode,
       i: Int,
       method: MethodNode,
@@ -146,7 +145,7 @@ object DecompileMethodBody extends Log {
       // catch via dominators
       // synchronized: via CFG (problem: try{sync{try}}?)
 
-      val cfg = ControlFlowGraph(owner, method)
+      val cfg = ControlFlowGraph(classNode.name, method)
 
       this.log.debug("++++ cfg ++++\n" + GraphViz.toString(cfg))
       for (v <- cfg.graph.vertexSet().asScala) {
@@ -154,7 +153,7 @@ object DecompileMethodBody extends Log {
       }
 
       this.log.debug("**** SSA ****")
-      val ssa = SSA(owner, method, cfg)
+      val ssa = SSA(classNode.name, method, cfg)
 
       this.log.debug(f"++++ frames: ${ssa.frames.length} ++++")
       for (i <- 0 until method.instructions.size) {
