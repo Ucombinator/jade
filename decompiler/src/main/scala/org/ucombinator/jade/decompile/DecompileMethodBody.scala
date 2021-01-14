@@ -19,7 +19,7 @@ import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.decompile.methodbody.{ControlFlowGraph, MethodBody, Structure}
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
-import org.ucombinator.jade.util.{Errors, JavaParser, Log, VFS}
+import org.ucombinator.jade.util.{Errors, JavaParser, Log}
 
 import scala.jdk.CollectionConverters._
 
@@ -83,17 +83,9 @@ object DecompileMethodBody extends Log {
   }
   def decompileBody(
       classNode: ClassNode,
-      i: Int,
       method: MethodNode,
-      j: Int,
-      methods: Int,
       declaration: BodyDeclaration[_ <: BodyDeclaration[_]]
   ): Unit = {
-    this.log.debug("!!!!!!!!!!!!")
-    this.log.info(
-      f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of ${methods}] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})"
-    )
-
     if (method.instructions.size == 0) {
       // The method has no body as even methods with empty bodies have a `return` instruction
       this.log.debug("**** Method is has no body ****")

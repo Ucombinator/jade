@@ -28,16 +28,20 @@ case object Decompile extends Log {
     for (path <- paths) {
       VFS.get0(path)
     }
-    for (((name, readers), i) <- VFS.classes.zipWithIndex) {
+    for (((name, readers), classIndex) <- VFS.classes.zipWithIndex) {
       for ((path, classReader) <- readers) { // TODO: pick "best" classReader
         // Decompile class structure
-        val compilationUnit = decompileClassFile(name, path.toString, classReader, i)
+        val compilationUnit = decompileClassFile(name, path.toString, classReader, classIndex)
 
         // Decompile method bodies
         for (typ <- compilationUnit.getTypes.iterator().asScala) {
           val members = typ.getMembers.iterator().asScala.flatMap(x => Decompile.methods.get(x).map((_, x))).toList
-          for ((((classNode, methodNode), bodyDeclaration), j) <- members.zipWithIndex) {
-            DecompileMethodBody.decompileBody(classNode, i, methodNode, j, members.size, bodyDeclaration)
+          for ((((classNode, methodNode), bodyDeclaration), methodIndex) <- members.zipWithIndex) {
+            this.log.debug("!!!!!!!!!!!!")
+            this.log.info(
+              f"Decompiling [${classIndex + 1} of ${VFS.classes.size}] ${classNode.name} [${methodIndex + 1} of ${members.size}] ${methodNode.name} (signature = ${methodNode.signature}, descriptor = ${methodNode.desc})"
+            )
+            DecompileMethodBody.decompileBody(classNode, methodNode, bodyDeclaration)
           }
         }
 
