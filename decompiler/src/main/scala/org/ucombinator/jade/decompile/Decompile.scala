@@ -12,6 +12,9 @@ import org.ucombinator.jade.util.{Log, VFS}
 
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.commons.AnalyzerAdapter
 
 // TODO: nested class?
 // TODO: error message
@@ -53,8 +56,37 @@ case object Decompile extends Log {
   def decompileClassFile(name: String, owner: String, cr: ClassReader, i: Int): CompilationUnit = {
     // TODO: name use "." instead of "/" and "$"
     this.log.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${name} from ${owner}")
-    val classNode = new ClassNode
-    cr.accept(classNode, 0) // TODO: ClassReader.EXPAND_FRAMES
+    val log = this.log
+    val classNode = new ClassNode(Opcodes.ASM9) {
+      override def visitMethod(
+          access: Int,
+          name: String,
+          descriptor: String,
+          signature: String,
+          exceptions: Array[String]
+      ): MethodVisitor = {
+        if (true) {
+          super.visitMethod(access, name, descriptor, signature, exceptions)
+        } else {
+          var aa: AnalyzerAdapter = null
+          aa = new AnalyzerAdapter(
+            owner,
+            access,
+            name,
+            descriptor,
+            new MethodVisitor(Opcodes.ASM9, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+              override def visitInsn(opcode: Int): Unit = {
+                log.info("AA LOCALS: " + aa.locals)
+                log.info("AA STACK: " + aa.stack)
+                super.visitInsn(opcode)
+              }
+            }
+          )
+          aa
+        }
+      }
+    }
+    cr.accept(classNode, ClassReader.EXPAND_FRAMES) // TODO: Do we actually need ClassReader.EXPAND_FRAMES?
 
     if (classNode.name == null) { return null } // TODO
     this.log.debug("class name: " + classNode.name)
