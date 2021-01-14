@@ -3,9 +3,10 @@ package org.ucombinator.jade.decompile.methodbody
 import org.jgrapht.Graph
 import org.jgrapht.graph.{AsGraphUnion, DirectedPseudograph}
 import org.objectweb.asm.tree.MethodNode
-import org.objectweb.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue, Frame}
+import org.objectweb.asm.tree.analysis.{Analyzer, BasicValue, Frame}
 import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph.Edge
 import org.ucombinator.jade.asm.Insn
+import org.ucombinator.jade.asm.TypedBasicInterpreter
 
 import scala.jdk.CollectionConverters._
 
@@ -42,7 +43,7 @@ case object ControlFlowGraph {
   final case class Edge(source: Insn, target: Insn)
 
   class ControlFlowGraphAnalyzer(method: MethodNode, graph: DirectedPseudograph[Insn, Edge])
-      extends Analyzer[BasicValue](new BasicInterpreter) {
+      extends Analyzer[BasicValue](TypedBasicInterpreter) {
 
     override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
       val source = Insn(method, this.method.instructions.get(insn))

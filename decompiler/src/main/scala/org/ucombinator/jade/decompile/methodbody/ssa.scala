@@ -7,7 +7,7 @@ import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
 import org.ucombinator.jade.util.Log
 import org.ucombinator.jade.util.Errors
-
+import org.ucombinator.jade.asm.TypedBasicInterpreter
 import scala.jdk.CollectionConverters._
 
 sealed trait Var extends Value {
@@ -244,7 +244,7 @@ case class SSA(
 )
 
 case object SSA {
-  val basicInterpreter = new BasicInterpreter
+  val basicInterpreter = TypedBasicInterpreter // TODO: replace references to basicInterpreter with TypedBasicInterpreter
   def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): SSA = {
     val interpreter = new SSAInterpreter(method)
 
