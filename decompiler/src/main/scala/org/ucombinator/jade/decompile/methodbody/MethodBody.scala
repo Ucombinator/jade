@@ -14,7 +14,7 @@ import org.ucombinator.jade.decompile._
 import org.ucombinator.jade.decompile.methodbody.Structure
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.util.Errors
-import org.ucombinator.jade.util.Logging
+import org.ucombinator.jade.util.Log
 import org.ucombinator.jade.util.MyersList
 
 /*
@@ -32,7 +32,7 @@ Non-linear expressions
  */
 
 // TODO: rename to Statement
-object MethodBody extends Logging {
+object MethodBody extends Log {
   /*
   As long as one is jumping forwards, we can always encode as a sequence of breaks
   Use topo-sort with a sort order that groups loop heads with their body
@@ -126,7 +126,7 @@ object MethodBody extends Logging {
         val (retVal, decompiled) = DecompileInsn.decompileInsn(insn.insn, ssa)
         decompiled match {
           case DecompiledIf(labelNode, condition) =>
-            this.logger.debug("IF: " + labelNode + "///" + labelNode.getLabel)
+            this.log.debug("IF: " + labelNode + "///" + labelNode.getLabel)
             new IfStmt(condition, new BreakStmt(labelString(labelNode)), null)
           case DecompiledGoto(labelNode: LabelNode) =>
             new BreakStmt(labelString(labelNode)) // TODO: use instruction number?

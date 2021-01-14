@@ -9,11 +9,11 @@ import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, NodeList, 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.{Descriptor, Flags, Signature}
-import org.ucombinator.jade.util.{JavaParser, Logging}
+import org.ucombinator.jade.util.{JavaParser, Log}
 
 import scala.jdk.CollectionConverters._
 
-object DecompileClass extends Logging {
+object DecompileClass extends Log {
 
   def decompileLiteral(node: Object): Expression = {
     node match {
@@ -293,7 +293,7 @@ object DecompileClass extends Logging {
     val compilationUnit = new CompilationUnit(packageDeclaration, imports, types, module)
     JavaParser.setComment(compilationUnit, comment)
     Decompile.classes += compilationUnit -> node
-    this.logger.debug("++++ decompile class ++++\n" + compilationUnit.toString)
+    this.log.debug("++++ decompile class ++++\n" + compilationUnit.toString)
     compilationUnit
   }
 }

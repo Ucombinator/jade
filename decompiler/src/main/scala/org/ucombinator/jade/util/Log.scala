@@ -18,40 +18,40 @@ import scala.jdk.CollectionConverters._
 // TODO: slf4j.detectLoggerNameMismatch
 // TODO: Ensure Logging can extends only objects?
 // TODO: lowercase/case insensitive logger names
-trait Logging {
+trait Log {
   // Lazy to avoid an initialization loop between the Logging object and Logging.Config
-  protected lazy val logger: ScalaLogger = {
+  protected lazy val log: ScalaLogger = {
     val name = getClass.getName
       .replace('$', '.')
       .replace("..", ".")
       .replaceAll(".$", "")
     ScalaLogger(LoggerFactory.getLogger(name))
   }
-  def childLogger(name: String): ScalaLogger = {
-    ScalaLogger(LoggerFactory.getLogger(logger.underlying.getName + "." + name))
+  def childLog(name: String): ScalaLogger = {
+    ScalaLogger(LoggerFactory.getLogger(log.underlying.getName + "." + name))
   }
 }
 
-object Logging extends Logging {
-  def getLogger(name: String): LogbackLogger = {
+object Log extends Log {
+  def getLog(name: String): LogbackLogger = {
     val modifiedName =
       if (name.isEmpty) { Slf4jLogger.ROOT_LOGGER_NAME }
       else { name }
     LoggerFactory.getLogger(modifiedName).asInstanceOf[LogbackLogger]
   }
 
-  def listLoggers(): Unit = {
+  def listLogs(): Unit = {
     // See https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
     // Note: toURI is required in order to handle special characters
     val jar = new java.io.File(classOf[Main].getProtectionDomain.getCodeSource.getLocation.toURI).getPath
-    this.logger.debug(f"jar: ${jar}")
+    this.log.debug(f"jar: ${jar}")
 
     for (entry <- new JarFile(jar).entries().asScala) {
       if (entry.getName.endsWith(".class")) {
         try {
           Class.forName(entry.getName.replaceAll("\\.class$", "").replaceAll("/", "."))
         } catch {
-          case _: Throwable => this.logger.debug(f"skipping: ${entry.getName}") // TODO: show exception in message
+          case _: Throwable => this.log.debug(f"skipping: ${entry.getName}") // TODO: show exception in message
         }
       }
     }
@@ -72,7 +72,7 @@ object Logging extends Logging {
 
   val prefix = "org.ucombinator.jade." // TODO: derive automatically
 
-  class LoggerConverter extends NamedConverter {
+  class LogNameConverter extends NamedConverter {
     override protected def getFullyQualifiedName(event: ILoggingEvent): String = {
       val name = event.getLoggerName
       if (name.startsWith(prefix)) { name.stripPrefix(prefix) }
@@ -95,7 +95,7 @@ object Logging extends Logging {
   class Config extends BasicConfigurator {
     override def configure(loggerContext: LoggerContext): Unit = {
       val patternLayout = new PatternLayout()
-      patternLayout.getInstanceConverterMap.put("logger", classOf[LoggerConverter].getName)
+      patternLayout.getInstanceConverterMap.put("logger", classOf[LogNameConverter].getName)
       patternLayout.getInstanceConverterMap.put("highlight", classOf[HighlightingCompositeConverter].getName)
       patternLayout.setPattern(f"%%highlight(%%-5level %%logger:) %%message%%n%%caller{${callerDepth}}")
       patternLayout.setContext(loggerContext)

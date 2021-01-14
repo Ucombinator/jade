@@ -103,7 +103,7 @@ class PathPosition(
   }
 }
 
-object VFS extends Logging {
+object VFS extends Log {
   private val ZIP_SIGNATURE = Array(0x50, 0x4b, 0x03, 0x04).map(_.toByte)
   private val CLASS_SIGNATURE = Array(0xca, 0xfe, 0xba, 0xbe).map(_.toByte)
   private val JMOD_SIGNATURE = Array(0x4a, 0x4d, 0x01, 0x00, 0x50, 0x4b, 0x03, 0x04).map(_.toByte)
@@ -121,10 +121,10 @@ object VFS extends Logging {
     }
   }
   def error(name: String, pathPosition: PathPosition): Unit = {
-    this.logger.error(f"${name} at ${pathPosition.path}")
+    this.log.error(f"${name} at ${pathPosition.path}")
   }
   def ignore(name: String, pathPosition: PathPosition): Unit = {
-    this.logger.info(f"Ignoring ${name} at ${pathPosition.path}")
+    this.log.info(f"Ignoring ${name} at ${pathPosition.path}")
   }
   def add(path: List[String], fileTree: FileTree, bytes: Array[Byte]): FileTree = {
     path match {

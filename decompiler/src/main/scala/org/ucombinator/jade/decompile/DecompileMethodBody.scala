@@ -19,11 +19,11 @@ import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.decompile.methodbody.{ControlFlowGraph, MethodBody, Structure}
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.util.jgrapht.{Dominator, GraphViz}
-import org.ucombinator.jade.util.{Errors, JavaParser, Logging, VFS}
+import org.ucombinator.jade.util.{Errors, JavaParser, Log, VFS}
 
 import scala.jdk.CollectionConverters._
 
-object DecompileMethodBody extends Logging {
+object DecompileMethodBody extends Log {
   private def stubBody(message: String, comment: BlockComment): BlockStmt = {
     val statements = new NodeList[Statement](
       JavaParser.setComment(
@@ -90,21 +90,21 @@ object DecompileMethodBody extends Logging {
       methods: Int,
       declaration: BodyDeclaration[_ <: BodyDeclaration[_]]
   ): Unit = {
-    this.logger.debug("!!!!!!!!!!!!")
-    this.logger.info(
+    this.log.debug("!!!!!!!!!!!!")
+    this.log.info(
       f"Decompiling [${i + 1} of ${VFS.classes.size}] ${classNode.name} [${j + 1} of ${methods}] ${method.name} (signature = ${method.signature}, descriptor = ${method.desc})"
     )
 
     if (method.instructions.size == 0) {
       // The method has no body as even methods with empty bodies have a `return` instruction
-      this.logger.debug("**** Method is has no body ****")
+      this.log.debug("**** Method is has no body ****")
 
       def warningBody(warning: String): BlockStmt = {
         if (false) { // TODO: option for fatal error vs uncompilable body vs compilable body
-          this.logger.error(warning)
+          this.log.error(warning)
           throw new Exception(warning) // TODO
         } else {
-          this.logger.warn(warning)
+          this.log.warn(warning)
           stubBody(warning, null)
         }
       }
@@ -137,8 +137,8 @@ object DecompileMethodBody extends Logging {
         case declaration => Errors.unmatchedType(declaration)
       }
     } else {
-      this.logger.debug(f"**** Method has a body with ${method.instructions.size} instructions ****")
-      this.logger.debug("**** ControlFlowGraph ****")
+      this.log.debug(f"**** Method has a body with ${method.instructions.size} instructions ****")
+      this.log.debug("**** ControlFlowGraph ****")
 
       // loop via dominators (exit vs return is unclear)
       // if
@@ -148,47 +148,47 @@ object DecompileMethodBody extends Logging {
 
       val cfg = ControlFlowGraph(owner, method)
 
-      this.logger.debug("++++ cfg ++++\n" + GraphViz.toString(cfg))
+      this.log.debug("++++ cfg ++++\n" + GraphViz.toString(cfg))
       for (v <- cfg.graph.vertexSet().asScala) {
-        this.logger.debug(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: ${v}")
+        this.log.debug(f"v: ${cfg.graph.incomingEdgesOf(v).size()}: ${v}")
       }
 
-      this.logger.debug("**** SSA ****")
+      this.log.debug("**** SSA ****")
       val ssa = SSA(owner, method, cfg)
 
-      this.logger.debug(f"++++ frames: ${ssa.frames.length} ++++")
+      this.log.debug(f"++++ frames: ${ssa.frames.length} ++++")
       for (i <- 0 until method.instructions.size) {
-        this.logger.debug(f"frame(${i}): ${ssa.frames(i)}")
+        this.log.debug(f"frame(${i}): ${ssa.frames(i)}")
       }
 
-      this.logger.debug("++++ results and arguments ++++")
+      this.log.debug("++++ results and arguments ++++")
       for (i <- 0 until method.instructions.size) {
         val insn = method.instructions.get(i)
-        this.logger.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ssa.instructionArguments.get(insn)}")
+        this.log.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ssa.instructionArguments.get(insn)}")
       }
 
-      this.logger.debug("++++ ssa map ++++")
+      this.log.debug("++++ ssa map ++++")
       for ((key, value) <- ssa.ssaMap) {
-        this.logger.debug(f"ssa: ${key} -> ${value}")
+        this.log.debug(f"ssa: ${key} -> ${value}")
       }
 
-      this.logger.debug("**** Dominators ****")
+      this.log.debug("**** Dominators ****")
       val doms = Dominator.dominatorTree(cfg.graphWithExceptions, cfg.entry)
 
-      this.logger.debug("++++ dominator tree ++++\n" + GraphViz.toString(doms))
+      this.log.debug("++++ dominator tree ++++\n" + GraphViz.toString(doms))
 
-      this.logger.debug(
+      this.log.debug(
         "++++ dominator nesting ++++\n" + GraphViz.nestingTree(cfg.graphWithExceptions, doms, cfg.entry)
       )
 
-      this.logger.debug("**** Structure ****")
+      this.log.debug("**** Structure ****")
       val structure = Structure(cfg)
 
       // TODO: JEP 334: JVM Constants API: https://openjdk.java.net/jeps/334
 
-      this.logger.debug("**** Statement ****")
+      this.log.debug("**** Statement ****")
       val statement = MethodBody(cfg, ssa, structure)
-      this.logger.debug(statement.toString)
+      this.log.debug(statement.toString)
       setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statement)))
 
       // var statements = List[Statement]()
@@ -196,7 +196,7 @@ object DecompileMethodBody extends Logging {
       //   val (retVal, decompiled) = DecompileInsn.decompileInsn(insn, ssa)
       //   statements = statements :+ DecompileInsn.decompileInsn(retVal, decompiled)
       // }
-      // this.logger.debug("++++ statements ++++\n" + statements.mkString("\n"))
+      // this.log.debug("++++ statements ++++\n" + statements.mkString("\n"))
       // setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statements.asJava)))
     }
   }

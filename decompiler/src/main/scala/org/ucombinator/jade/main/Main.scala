@@ -5,7 +5,7 @@ import java.util.concurrent.Callable
 
 import ch.qos.logback.classic.Level
 import org.ucombinator.jade.decompile.Decompile
-import org.ucombinator.jade.util.Logging
+import org.ucombinator.jade.util.Log
 import picocli.AutoComplete.GenerateCompletion
 import picocli.codegen.docgen.manpage.ManPageGenerator
 import picocli.CommandLine
@@ -45,7 +45,7 @@ object Main {
     classOf[CompileCmd],
     classOf[DiffCmd],
     classOf[BuildInfoCmd],
-    classOf[Loggers],
+    classOf[Logs],
     classOf[ManPageGenerator],
     classOf[GenerateCompletion],
   )
@@ -106,16 +106,16 @@ abstract class Cmd[T] extends Callable[T] {
   def run(): T
 
   final override def call(): T = {
-    Logging.callerDepth = logCallerDepth
+    Log.callerDepth = logCallerDepth
 
     for (LogSetting(name, lvl) <- log.asScala) {
-      // TODO: warn if logger exists
+      // TODO: warn if log exists
       // TODO: warn if no such class or package (and suggest qualifications)
       val parsedName =
         if (name.startsWith(".")) { name.substring(1) }
         else if (name == "") { "" }
-        else { Logging.prefix + lvl }
-      Logging.getLogger(parsedName).setLevel(lvl)
+        else { Log.prefix + lvl }
+      Log.getLog(parsedName).setLevel(lvl)
     }
 
     if (waitForUser) {
@@ -192,7 +192,7 @@ class DiffCmd extends Cmd[Unit] { // TODO: exit codes
   }
 }
 
-@Command(name = "loggers", description = Array("Lists available loggers"))
-class Loggers extends Cmd[Unit] {
-  override def run(): Unit = { Logging.listLoggers() }
+@Command(name = "logs", description = Array("Lists available logs"))
+class Logs extends Cmd[Unit] {
+  override def run(): Unit = { Log.listLogs() }
 }

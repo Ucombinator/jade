@@ -5,7 +5,7 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
-import org.ucombinator.jade.util.Logging
+import org.ucombinator.jade.util.Log
 import org.ucombinator.jade.util.Errors
 
 import scala.jdk.CollectionConverters._
@@ -39,7 +39,7 @@ case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , var 
   }
 }
 
-class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) with Logging {
+class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) with Log {
   var copyOperationPosition: Int = 0 // For `copyOperation()`
   var originInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]

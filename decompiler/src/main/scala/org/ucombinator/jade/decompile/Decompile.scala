@@ -8,7 +8,7 @@ import com.github.javaparser.ast.body.BodyDeclaration
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.util.{Textifier, TraceClassVisitor}
-import org.ucombinator.jade.util.{Logging, VFS}
+import org.ucombinator.jade.util.{Log, VFS}
 
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
@@ -18,8 +18,8 @@ import scala.collection.mutable
 // TODO: load flag
 // TODO: support stdin for files to decompile
 // TODO: skip over ct.jar as it is just signatures.  Maybe don't skip second load if it is better.
-case object Decompile extends Logging {
-  private val asmLogger = childLogger("asm")
+case object Decompile extends Log {
+  private val asmLog = childLog("asm")
 
   val classes = mutable.Map[CompilationUnit, ClassNode]()
   val methods = mutable.Map[BodyDeclaration[_ <: BodyDeclaration[_]], (ClassNode, MethodNode)]()
@@ -41,24 +41,24 @@ case object Decompile extends Logging {
           }
         }
 
-        this.logger.debug(f"compilationUnit\n${compilationUnit}")
+        this.log.debug(f"compilationUnit\n${compilationUnit}")
       }
     }
   }
 
   def decompileClassFile(name: String, owner: String, cr: ClassReader, i: Int): CompilationUnit = {
     // TODO: name use "." instead of "/" and "$"
-    this.logger.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${name} from ${owner}")
+    this.log.info(f"Decompiling [${i + 1} of ${VFS.classes.size}] ${name} from ${owner}")
     val classNode = new ClassNode
     cr.accept(classNode, 0) // TODO: ClassReader.EXPAND_FRAMES
 
     if (classNode.name == null) { return null } // TODO
-    this.logger.debug("class name: " + classNode.name)
+    this.log.debug("class name: " + classNode.name)
 
-    this.asmLogger.whenDebugEnabled({
+    this.asmLog.whenDebugEnabled({
       val stringWriter = new StringWriter()
       classNode.accept(new TraceClassVisitor(null, new Textifier(), new PrintWriter(stringWriter)))
-      this.asmLogger.debug("++++ asm ++++\n" + stringWriter.toString)
+      this.asmLog.debug("++++ asm ++++\n" + stringWriter.toString)
     })
 
     DecompileClass.decompileClass(classNode)

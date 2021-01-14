@@ -22,7 +22,7 @@ import org.ucombinator.jade.decompile.methodbody.ssa.{
   Var
 }
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.util.{JavaParser, Logging}
+import org.ucombinator.jade.util.{JavaParser, Log}
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
@@ -70,7 +70,7 @@ case class DecompiledUnsupported(insn: AbstractInsnNode)                        
 // TODO: literals: float vs double
 // TODO: use `|` patterns
 // TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT: 0: iload_1; 1: iconst_m1; 2: ixor
-object DecompileInsn extends Logging {
+object DecompileInsn extends Log {
   def decompileVar(variable: Var): NameExpr = {
     // TODO: improve variable names (also use debug info for variable names)
     variable match {
