@@ -39,7 +39,7 @@ case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , var 
   }
 }
 
-class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM7) with Log {
+class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) with Log {
   var copyOperationPosition: Int = 0 // For `copyOperation()`
   var originInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]

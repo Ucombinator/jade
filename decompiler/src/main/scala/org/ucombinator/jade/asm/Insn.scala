@@ -19,7 +19,7 @@ case class Insn(method: MethodNode, insn: AbstractInsnNode) {
   override def toString: String = Insn.longString(method, insn)
 }
 
-object Insn extends Textifier(Opcodes.ASM7) {
+object Insn extends Textifier(Opcodes.ASM9) {
   private val stringWriter = new StringWriter()
   private val stringBuffer = stringWriter.getBuffer
   private val printWriter = new PrintWriter(stringWriter)
