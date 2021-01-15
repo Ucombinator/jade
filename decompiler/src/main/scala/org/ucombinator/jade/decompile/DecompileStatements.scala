@@ -11,7 +11,7 @@ import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.Insn.ordering
 import org.ucombinator.jade.decompile._
 import org.ucombinator.jade.analysis.Structure
-import org.ucombinator.jade.analysis.ssa.SSA
+import org.ucombinator.jade.analysis.SSA
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.Log
 import org.ucombinator.jade.util.MyersList
@@ -20,7 +20,7 @@ import com.github.javaparser.ast.`type`.PrimitiveType
 import com.github.javaparser.ast.`type`.{Type => JavaParserType}
 import org.objectweb.asm.{Type => AsmType}
 import org.objectweb.asm.tree.LabelNode
-import org.ucombinator.jade.analysis.ssa.Var
+import org.ucombinator.jade.analysis.Var
 import org.ucombinator.jade.analysis.ControlFlowGraph
 
 /*

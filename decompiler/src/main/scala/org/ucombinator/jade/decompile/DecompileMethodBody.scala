@@ -27,7 +27,7 @@ import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.analysis.ControlFlowGraph
 import org.ucombinator.jade.decompile.DecompileStatements
 import org.ucombinator.jade.analysis.Structure
-import org.ucombinator.jade.analysis.ssa.SSA
+import org.ucombinator.jade.analysis.SSA
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log

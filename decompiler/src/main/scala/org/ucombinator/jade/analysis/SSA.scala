@@ -1,4 +1,4 @@
-package org.ucombinator.jade.analysis.ssa
+package org.ucombinator.jade.analysis
 
 import scala.jdk.CollectionConverters._
 
