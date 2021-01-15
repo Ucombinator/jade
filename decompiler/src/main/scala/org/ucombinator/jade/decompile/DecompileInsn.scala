@@ -46,7 +46,7 @@ Generators
 sealed trait DecompiledInsn { def usesNextInsn = true /* TODO */ }
 case class DecompiledStatement(statement: Statement, override val usesNextInsn: Boolean = true) extends DecompiledInsn
 case class DecompiledExpression(expression: Expression)                                         extends DecompiledInsn
-case object DecompiledMove /*(TODO)*/                                                           extends DecompiledInsn
+case class DecompiledOperandStackOperation(insn: AbstractInsnNode)                              extends DecompiledInsn
 case class DecompiledIf(labelNode: LabelNode, condition: Expression)                            extends DecompiledInsn
 case class DecompiledGoto(labelNode: LabelNode)                                                 extends DecompiledInsn { override def usesNextInsn = false }
 case class DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode)                    extends DecompiledInsn { override def usesNextInsn = false }
@@ -73,7 +73,7 @@ object DecompileInsn extends Log {
     insn match {
       case DecompiledStatement(statement, _)                                 => statement
       case DecompiledExpression(expression)                                  => new ExpressionStmt(new AssignExpr(decompileVar(retVar), expression, AssignExpr.Operator.ASSIGN))
-      case DecompiledMove /*(TODO)*/                                         => comment(f"TODO: move insn")
+      case DecompiledOperandStackOperation(insn: AbstractInsnNode)           => comment(f"Operand Stack Operation: ${insn}")
       case DecompiledIf(labelNode: LabelNode, condition: Expression)         => new IfStmt(condition, new BreakStmt(labelNode.toString), null)
       case DecompiledGoto(labelNode: LabelNode)                              => new BreakStmt(labelNode.toString) // TODO: use instruction number?
       case DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) => comment(f"Switch ${labels} ${default}")
@@ -83,7 +83,7 @@ object DecompileInsn extends Log {
       case DecompiledLabel(node: LabelNode)                                  => comment(f"Label: ${node.getLabel}")
       case DecompiledFrame(node: FrameNode)                                  => comment(f"Frame: ${node.local} ${node.stack}")
       case DecompiledLineNumber(node: LineNumberNode)                        => comment(f"Line number: ${node.line}")
-      case DecompiledUnsupported(insn: AbstractInsnNode)                     => comment(f"Unsupported ${insn}")
+      case DecompiledUnsupported(insn: AbstractInsnNode)                     => comment(f"Unsupported: ${insn}")
     }
   }
   def decompileInsn(node: AbstractInsnNode, ssa: StaticSingleAssignment): (Var, DecompiledInsn) = {
@@ -125,8 +125,8 @@ object DecompileInsn extends Log {
         case Opcodes.DCONST_0    => DecompiledExpression(new DoubleLiteralExpr("0.0D"))
         case Opcodes.DCONST_1    => DecompiledExpression(new DoubleLiteralExpr("1.0D"))
         // IntInsnNode
-        case Opcodes.BIPUSH => DecompiledMove
-        case Opcodes.SIPUSH => DecompiledMove
+        case Opcodes.BIPUSH => DecompiledOperandStackOperation(node)
+        case Opcodes.SIPUSH => DecompiledOperandStackOperation(node)
         // LdcInsnNode
         case Opcodes.LDC => DecompiledExpression(DecompileClass.decompileLiteral(node.asInstanceOf[LdcInsnNode].cst))
         // VarInsnNode
@@ -159,15 +159,15 @@ object DecompileInsn extends Log {
         case Opcodes.BASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
         case Opcodes.CASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
         case Opcodes.SASTORE => DecompiledExpression(new AssignExpr(new ArrayAccessExpr(args(0), args(1)), args(2), AssignExpr.Operator.ASSIGN))
-        case Opcodes.POP     => DecompiledMove
-        case Opcodes.POP2    => DecompiledMove
-        case Opcodes.DUP     => DecompiledMove
-        case Opcodes.DUP_X1  => DecompiledMove
-        case Opcodes.DUP_X2  => DecompiledMove
-        case Opcodes.DUP2    => DecompiledMove
-        case Opcodes.DUP2_X1 => DecompiledMove
-        case Opcodes.DUP2_X2 => DecompiledMove
-        case Opcodes.SWAP    => DecompiledMove
+        case Opcodes.POP     => DecompiledOperandStackOperation(node)
+        case Opcodes.POP2    => DecompiledOperandStackOperation(node)
+        case Opcodes.DUP     => DecompiledOperandStackOperation(node)
+        case Opcodes.DUP_X1  => DecompiledOperandStackOperation(node)
+        case Opcodes.DUP_X2  => DecompiledOperandStackOperation(node)
+        case Opcodes.DUP2    => DecompiledOperandStackOperation(node)
+        case Opcodes.DUP2_X1 => DecompiledOperandStackOperation(node)
+        case Opcodes.DUP2_X2 => DecompiledOperandStackOperation(node)
+        case Opcodes.SWAP    => DecompiledOperandStackOperation(node)
         case Opcodes.IADD    => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
         case Opcodes.LADD    => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
         case Opcodes.FADD    => DecompiledExpression(new BinaryExpr(args(0), args(1), BinaryExpr.Operator.PLUS))
