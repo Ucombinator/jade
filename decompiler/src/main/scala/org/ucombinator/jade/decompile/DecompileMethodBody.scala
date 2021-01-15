@@ -25,7 +25,7 @@ import org.objectweb.asm.util.TraceMethodVisitor
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.analysis.ControlFlowGraph
-import org.ucombinator.jade.decompile.methodbody.MethodBody
+import org.ucombinator.jade.decompile.DecompileStatements
 import org.ucombinator.jade.analysis.Structure
 import org.ucombinator.jade.analysis.ssa.SSA
 import org.ucombinator.jade.util.Errors
@@ -189,7 +189,7 @@ object DecompileMethodBody extends Log {
       // TODO: JEP 334: JVM Constants API: https://openjdk.java.net/jeps/334
 
       this.log.debug("**** Statement ****")
-      val statement = MethodBody(cfg, ssa, structure)
+      val statement = DecompileStatements(cfg, ssa, structure)
       this.log.debug(statement.toString)
       setDeclarationBody(declaration, statement)
 

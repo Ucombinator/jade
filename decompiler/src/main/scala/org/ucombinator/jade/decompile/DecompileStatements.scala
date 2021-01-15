@@ -1,4 +1,4 @@
-package org.ucombinator.jade.decompile.methodbody
+package org.ucombinator.jade.decompile
 
 import scala.collection.immutable._
 import scala.jdk.CollectionConverters._
@@ -38,7 +38,7 @@ Non-linear expressions
  */
 
 // TODO: rename to Statement
-object MethodBody extends Log {
+object DecompileStatements extends Log {
   /*
   As long as one is jumping forwards, we can always encode as a sequence of breaks
   Use topo-sort with a sort order that groups loop heads with their body
