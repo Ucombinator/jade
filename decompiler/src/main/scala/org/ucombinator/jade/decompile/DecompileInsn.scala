@@ -102,8 +102,7 @@ object DecompileInsn extends Log {
     }
     def staticCall(node: AbstractInsnNode): DecompiledInsn = {
       val (insn, argumentTypes, typeArguments) = call(node)
-      val scope = new FieldAccessExpr(Descriptor.classNameExpr(insn.owner), /*TODO*/ new NodeList(), new SimpleName(insn.name))
-      DecompiledExpression(new MethodCallExpr(scope, typeArguments, insn.name, new NodeList(argumentTypes.indices.map(args): _*)))
+      DecompiledExpression(new MethodCallExpr(Descriptor.classNameExpr(insn.owner), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(args): _*)))
     }
     (
       retVar,
