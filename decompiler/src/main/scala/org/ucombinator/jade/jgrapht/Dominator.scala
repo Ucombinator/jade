@@ -1,4 +1,4 @@
-package org.ucombinator.jade.util
+package org.ucombinator.jade.jgrapht
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
