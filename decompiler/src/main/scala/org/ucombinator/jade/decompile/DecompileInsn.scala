@@ -16,15 +16,7 @@ import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
-import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.decompile.methodbody.ssa.CopyVar
-import org.ucombinator.jade.decompile.methodbody.ssa.EmptyVar
-import org.ucombinator.jade.decompile.methodbody.ssa.ExceptionVar
-import org.ucombinator.jade.decompile.methodbody.ssa.InstructionVar
-import org.ucombinator.jade.decompile.methodbody.ssa.ParameterVar
-import org.ucombinator.jade.decompile.methodbody.ssa.PhiVar
-import org.ucombinator.jade.decompile.methodbody.ssa.ReturnVar
 import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.decompile.methodbody.ssa.Var
 import org.ucombinator.jade.util.JavaParser
