@@ -38,22 +38,24 @@ case object StaticSingleAssignment {
 
     val frames = new SSAAnalyzer(cfg, interpreter).analyze(owner, method)
 
-    StaticSingleAssignment(frames, interpreter.instructionArguments, interpreter.ssaMap)
+    StaticSingleAssignment(frames, interpreter.insnVars, interpreter.phiInputs)
   }
 }
 
 private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) with Log {
+  // Variables to be put in output
+  var insnVars = Map.empty[AbstractInsnNode, (Var, List[Var])]
+  var phiInputs = Map.empty[Var, Set[(AbstractInsnNode, Var)]]
+  // Other bookkeeping variables
   var copyOperationPosition: Int = 0 // For `copyOperation()`
   var originInsn: AbstractInsnNode = _ // For `merge`
-  var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]
-  var ssaMap = Map.empty[Var, Set[(AbstractInsnNode, Var)]]
   var returnTypeValue: ReturnVar = _ // There is no getReturn method on frames, so we save it here
 
-  def ssaMap(key: PhiVar, insn: AbstractInsnNode, value: Var, ignoreNull: Boolean = false): Unit = {
+  def phiInputs(key: PhiVar, insn: AbstractInsnNode, value: Var, ignoreNull: Boolean = false): Unit = {
     if (!ignoreNull || value != null) {
       val usedKey = key.change()
       val entry = (insn, value)
-      this.ssaMap += (usedKey -> (this.ssaMap.getOrElse(usedKey, Set.empty) + entry))
+      this.phiInputs += (usedKey -> (this.phiInputs.getOrElse(usedKey, Set.empty) + entry))
     }
   }
 
@@ -89,7 +91,7 @@ private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcode
 
   def record(insn: AbstractInsnNode, args: List[Var], ret: Var): Var = {
     val x = (ret, args)
-    this.instructionArguments += insn -> x
+    this.insnVars += insn -> x
     ret
   }
 
@@ -170,7 +172,7 @@ private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcode
   override def merge(value1: Var, value2: Var): Var = {
     if (value1.isInstanceOf[PhiVar]) {
       val newValue1 = value1.asInstanceOf[PhiVar].change()
-      ssaMap(newValue1, this.originInsn, value2)
+      phiInputs(newValue1, this.originInsn, value2)
       newValue1
     } else if (value1 == EmptyVar) {
       value2
@@ -215,7 +217,7 @@ private class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) ex
         for (i <- 0 until cfgFrame.getLocals) {
           assert((insnIndex == 0) == (frame.getLocal(i) != null))
           val phiVar = PhiVar(cfgFrame.getLocal(i), Insn(method, insn), i) // Note: not `.used`
-          this.interpreter.ssaMap(phiVar.change(), this.interpreter.originInsn, frame.getLocal(i), true)
+          this.interpreter.phiInputs(phiVar.change(), this.interpreter.originInsn, frame.getLocal(i), true)
           frame.setLocal(i, phiVar)
         }
         // Note that we use `push` instead of `setStack` as the `Frame` constructor
@@ -224,7 +226,7 @@ private class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) ex
         for (i <- 0 until cfgFrame.getStackSize) {
           assert((insnIndex == 0) == (frame.getStack(i) != null))
           val phiVar = PhiVar(cfgFrame.getStack(i), Insn(method, insn), i + frame.getLocals)
-          this.interpreter.ssaMap(phiVar.change(), this.interpreter.originInsn, frame.getStack(i), true)
+          this.interpreter.phiInputs(phiVar.change(), this.interpreter.originInsn, frame.getStack(i), true)
           frame.push(phiVar)
         }
         this.getFrames()(insnIndex) = frame
