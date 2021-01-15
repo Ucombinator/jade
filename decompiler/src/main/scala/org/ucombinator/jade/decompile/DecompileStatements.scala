@@ -11,7 +11,7 @@ import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.Insn.ordering
 import org.ucombinator.jade.decompile._
 import org.ucombinator.jade.analysis.Structure
-import org.ucombinator.jade.analysis.SSA
+import org.ucombinator.jade.analysis.StaticSingleAssignment
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.Log
 import org.ucombinator.jade.util.MyersList
@@ -47,7 +47,7 @@ object DecompileStatements extends Log {
   is it a loop head, which loop head is this part of
    */
 
-  def apply(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): BlockStmt = {
+  def apply(cfg: ControlFlowGraph, ssa: StaticSingleAssignment, structure: Structure): BlockStmt = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
     val jumpTargets = cfg.graph // TODO: rename to insnOfLabel

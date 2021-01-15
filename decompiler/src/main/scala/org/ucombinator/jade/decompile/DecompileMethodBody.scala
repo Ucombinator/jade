@@ -27,7 +27,7 @@ import org.ucombinator.jade.classfile.Descriptor
 import org.ucombinator.jade.analysis.ControlFlowGraph
 import org.ucombinator.jade.decompile.DecompileStatements
 import org.ucombinator.jade.analysis.Structure
-import org.ucombinator.jade.analysis.SSA
+import org.ucombinator.jade.analysis.StaticSingleAssignment
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log
@@ -156,7 +156,7 @@ object DecompileMethodBody extends Log {
       }
 
       this.log.debug("**** SSA ****")
-      val ssa = SSA(classNode.name, method, cfg)
+      val ssa = StaticSingleAssignment(classNode.name, method, cfg)
 
       this.log.debug(f"++++ frames: ${ssa.frames.length} ++++")
       for (i <- 0 until method.instructions.size) {

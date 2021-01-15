@@ -17,7 +17,7 @@ import com.github.javaparser.ast.stmt._
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.analysis.SSA
+import org.ucombinator.jade.analysis.StaticSingleAssignment
 import org.ucombinator.jade.analysis.Var
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log
@@ -86,7 +86,7 @@ object DecompileInsn extends Log {
       case DecompiledUnsupported(insn: AbstractInsnNode)                     => comment(f"Unsupported ${insn}")
     }
   }
-  def decompileInsn(node: AbstractInsnNode, ssa: SSA): (Var, DecompiledInsn) = {
+  def decompileInsn(node: AbstractInsnNode, ssa: StaticSingleAssignment): (Var, DecompiledInsn) = {
     val (retVar, argVars) = ssa.insnVars.getOrElse(node, (null, List()))
     val args: Array[Expression] = argVars.toArray.map(decompileVar)
     //val ret: Expression = decompileVar(retVar)

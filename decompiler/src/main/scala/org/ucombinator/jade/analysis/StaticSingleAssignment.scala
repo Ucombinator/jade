@@ -239,14 +239,14 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
   }
 }
 
-case class SSA(
+case class StaticSingleAssignment(
     frames: Array[Frame[Var]],
     insnVars: Map[AbstractInsnNode, (Var, List[Var])],
     phiInputs: Map[Var, Set[(AbstractInsnNode, Var)]]
 )
 
-case object SSA {
-  def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): SSA = {
+case object StaticSingleAssignment {
+  def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): StaticSingleAssignment = {
     val interpreter = new SSAInterpreter(method)
 
     // Hook into a method that is called whenever `analyze` starts working on a new instruction
@@ -266,6 +266,6 @@ case object SSA {
 
     val frames = new SSAAnalyzer(cfg, interpreter).analyze(owner, method)
 
-    SSA(frames, interpreter.instructionArguments, interpreter.ssaMap)
+    StaticSingleAssignment(frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
 }
