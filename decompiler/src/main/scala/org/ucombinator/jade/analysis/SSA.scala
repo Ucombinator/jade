@@ -193,7 +193,6 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
     //
     // We cannot do (1) in `merge` as all merged-in values need to know what instruction they
     // came from.  By the time `merge` runs, that information for the first value is gone.
-    assert(cfg.method eq method)
     for (insn <- method.instructions.toArray) {
       val insnIndex = method.instructions.indexOf(insn)
       val minimumInEdges =
@@ -201,7 +200,7 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
         else { 1 }
       if (
         cfg.graph.incomingEdgesOf(Insn(method, insn)).size() > minimumInEdges
-        || cfg.method.tryCatchBlocks.asScala.exists(p => p.handler == insn)
+        || method.tryCatchBlocks.asScala.exists(p => p.handler == insn)
       ) {
         // We are at a join point
         val cfgFrame = cfg.frames(insnIndex)
@@ -241,7 +240,6 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
 }
 
 case class SSA(
-    method: MethodNode,
     frames: Array[Frame[Var]],
     instructionArguments: Map[AbstractInsnNode, (Var, List[Var])],
     ssaMap: Map[Var, Set[(AbstractInsnNode, Var)]]
@@ -268,6 +266,6 @@ case object SSA {
 
     val frames = new SSAAnalyzer(cfg, interpreter).analyze(owner, method)
 
-    SSA(method, frames, interpreter.instructionArguments, interpreter.ssaMap)
+    SSA(frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
 }

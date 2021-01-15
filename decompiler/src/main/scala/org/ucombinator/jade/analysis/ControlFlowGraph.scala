@@ -13,24 +13,10 @@ import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.TypedBasicInterpreter
 
 case class ControlFlowGraph(
-    method: MethodNode,
+    entry: Insn,
     graph: DirectedPseudograph[Insn, ControlFlowGraph.Edge],
-    frames: Array[Frame[BasicValue]]
-) {
-  import ControlFlowGraph._
-  val entry = Insn(method, method.instructions.getFirst)
-  val graphWithExceptions: Graph[Insn, Edge] = {
-    val g = new DirectedPseudograph[Insn, Edge](classOf[Edge])
-    for (handler <- method.tryCatchBlocks.asScala) {
-      val s = Insn(method, handler.start)
-      val h = Insn(method, handler.handler)
-      g.addVertex(s)
-      g.addVertex(h)
-      g.addEdge(s, h, Edge(s, h))
-    }
-    new AsGraphUnion(graph, g)
-  }
-}
+    graphWithExceptions: Graph[Insn, ControlFlowGraph.Edge],
+    frames: Array[Frame[BasicValue]])
 
 case object ControlFlowGraph {
   def apply(owner: String, method: MethodNode): ControlFlowGraph = {
@@ -40,7 +26,19 @@ case object ControlFlowGraph {
     }
     val analyzer = new ControlFlowGraphAnalyzer(method, graph)
     val frames = analyzer.analyze(owner, method)
-    ControlFlowGraph(method, graph, frames)
+    val entry = Insn(method, method.instructions.getFirst)
+    val graphWithExceptions: Graph[Insn, Edge] = {
+      val g = new DirectedPseudograph[Insn, Edge](classOf[Edge])
+      for (handler <- method.tryCatchBlocks.asScala) {
+        val s = Insn(method, handler.start)
+        val h = Insn(method, handler.handler)
+        g.addVertex(s)
+        g.addVertex(h)
+        g.addEdge(s, h, Edge(s, h))
+      }
+      new AsGraphUnion(graph, g)
+    }
+    ControlFlowGraph(entry, graph, graphWithExceptions, frames)
   }
 
   final case class Edge(source: Insn, target: Insn)
