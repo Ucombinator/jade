@@ -11,13 +11,13 @@ import org.objectweb.asm.tree.analysis.BasicValue
 import org.objectweb.asm.tree.analysis.Frame
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.TypedBasicInterpreter
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph.Edge
 
 case class ControlFlowGraph(
     method: MethodNode,
     graph: DirectedPseudograph[Insn, ControlFlowGraph.Edge],
     frames: Array[Frame[BasicValue]]
 ) {
+  import ControlFlowGraph._
   val entry = Insn(method, method.instructions.getFirst)
   val graphWithExceptions: Graph[Insn, Edge] = {
     val g = new DirectedPseudograph[Insn, Edge](classOf[Edge])
