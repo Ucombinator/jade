@@ -193,7 +193,6 @@ object DecompileStatements extends Log {
     val (stmt, pendingOutside) = structuredBlock(cfg.entry)
     if (!pendingOutside.isEmpty) { Errors.fatal(f"Non-empty pending ${pendingOutside}") }
     val variables = ssa.insnVars.values.map(_._1) ++ ssa.phiInputs.keys
-    this.log.debug("VARS: " + variables.toList)
     def decompileVarDecl(v: Var): Statement = {
       // TODO: modifiers
       // TODO: comma
@@ -201,7 +200,6 @@ object DecompileStatements extends Log {
     }
     val declarations = variables.filter(_ != null).map(decompileVarDecl)
 
-    this.log.debug(declarations.toList.toString)
     val statements = new NodeList[Statement](declarations.toList.asJava)
     statements.add(stmt)
     val stmt2 = new BlockStmt(statements)
