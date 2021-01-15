@@ -69,21 +69,21 @@ object DecompileInsn extends Log {
   def decompileVar(variable: Var): NameExpr = { new NameExpr(variable.name) }
 
   def decompileInsn(retVar: Var, insn: DecompiledInsn): Statement = {
-    def comment(string: String): Statement = { JavaParser.setComment(new EmptyStmt(), new BlockComment(string)) }
+    import JavaParser.noop
     insn match {
       case DecompiledStatement(statement, _)                                 => statement
       case DecompiledExpression(expression)                                  => new ExpressionStmt(new AssignExpr(decompileVar(retVar), expression, AssignExpr.Operator.ASSIGN))
-      case DecompiledOperandStackOperation(insn: AbstractInsnNode)           => comment(f"Operand Stack Operation: ${insn}")
+      case DecompiledOperandStackOperation(insn: AbstractInsnNode)           => noop(f"Operand Stack Operation: ${insn}")
       case DecompiledIf(labelNode: LabelNode, condition: Expression)         => new IfStmt(condition, new BreakStmt(labelNode.toString), null)
       case DecompiledGoto(labelNode: LabelNode)                              => new BreakStmt(labelNode.toString) // TODO: use instruction number?
-      case DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) => comment(f"Switch ${labels} ${default}")
-      case DecompiledNew(descriptor: ClassOrInterfaceType)                   => comment(f"new ${descriptor}")
-      case DecompiledMonitorEnter(expression)                                => comment(f"Monitor Enter: ${expression}")
-      case DecompiledMonitorExit(expression)                                 => comment(f"Monitor Exit: ${expression}")
-      case DecompiledLabel(node: LabelNode)                                  => comment(f"Label: ${node.getLabel}")
-      case DecompiledFrame(node: FrameNode)                                  => comment(f"Frame: ${node.local} ${node.stack}")
-      case DecompiledLineNumber(node: LineNumberNode)                        => comment(f"Line number: ${node.line}")
-      case DecompiledUnsupported(insn: AbstractInsnNode)                     => comment(f"Unsupported: ${insn}")
+      case DecompiledSwitch(labels: Map[Int, LabelNode], default: LabelNode) => noop(f"Switch ${labels} ${default}")
+      case DecompiledNew(descriptor: ClassOrInterfaceType)                   => noop(f"new ${descriptor}")
+      case DecompiledMonitorEnter(expression)                                => noop(f"Monitor Enter: ${expression}")
+      case DecompiledMonitorExit(expression)                                 => noop(f"Monitor Exit: ${expression}")
+      case DecompiledLabel(node: LabelNode)                                  => noop(f"Label: ${node.getLabel}")
+      case DecompiledFrame(node: FrameNode)                                  => noop(f"Frame: ${node.local} ${node.stack}")
+      case DecompiledLineNumber(node: LineNumberNode)                        => noop(f"Line number: ${node.line}")
+      case DecompiledUnsupported(insn: AbstractInsnNode)                     => noop(f"Unsupported: ${insn}")
     }
   }
   def decompileInsn(node: AbstractInsnNode, ssa: StaticSingleAssignment): (Var, DecompiledInsn) = {

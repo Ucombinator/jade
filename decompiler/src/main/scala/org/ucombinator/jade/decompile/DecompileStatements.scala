@@ -22,6 +22,9 @@ import org.objectweb.asm.{Type => AsmType}
 import org.objectweb.asm.tree.LabelNode
 import org.ucombinator.jade.analysis.Var
 import org.ucombinator.jade.analysis.ControlFlowGraph
+import org.ucombinator.jade.classfile.Descriptor
+import org.ucombinator.jade.util.JavaParser
+import com.github.javaparser.ast.comments.BlockComment
 
 /*
 Non-Linear Stmt Types
@@ -195,10 +198,14 @@ object DecompileStatements extends Log {
     val variables = ssa.insnVars.values.map(_._1) ++ ssa.phiInputs.keys
     def decompileVarDecl(v: Var): Statement = {
       // TODO: modifiers
-      // TODO: comma
-      new ExpressionStmt(new VariableDeclarationExpr(new PrimitiveType(PrimitiveType.Primitive.INT), v.name))
+      if (v.basicValue == null || v.basicValue.getType() == null) {
+        JavaParser.noop(f"${v}")
+      } else {
+        val t = Descriptor.fieldDescriptor(v.basicValue.getType().getDescriptor())
+        new ExpressionStmt(new VariableDeclarationExpr(t, v.name))
+      }
     }
-    val declarations = variables.filter(_ != null).map(decompileVarDecl)
+    val declarations = variables.map(decompileVarDecl)
 
     val statements = new NodeList[Statement](declarations.toList.asJava)
     statements.add(stmt)

@@ -161,8 +161,9 @@ private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcode
   override def returnOperation(insn: AbstractInsnNode, value: Var, expected: Var): Unit = {
     // Note that `unaryOperation` is also called whenever `returnOperation` is called.
     // We override the effect of `unaryOperation` by calling `record` with `null` here.
-    TypedBasicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
-    record(insn, List(value), null)
+    // TODO: explain why we do not do this
+    //TypedBasicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
+    //record(insn, List(value), null)
     ()
   }
 
@@ -183,7 +184,7 @@ private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcode
   }
 }
 
-private class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends Analyzer[Var](interpreter) {
+private class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends Analyzer[Var](interpreter) with Log {
 
   override def init(owner: String, method: MethodNode): Unit = {
     // We override this method because it runs near the start of `Analyzer.analyze`
@@ -217,7 +218,7 @@ private class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) ex
           this.interpreter.ssaMap(phiVar.change(), this.interpreter.originInsn, frame.getLocal(i), true)
           frame.setLocal(i, phiVar)
         }
-        // Note that we use `clearStack` and `push` instead of `setStack` as the `Frame` constructor
+        // Note that we use `push` instead of `setStack` as the `Frame` constructor
         // starts with an empty stack regardless of `stackSize`
         assert(frame.getStackSize == 0)
         for (i <- 0 until cfgFrame.getStackSize) {
