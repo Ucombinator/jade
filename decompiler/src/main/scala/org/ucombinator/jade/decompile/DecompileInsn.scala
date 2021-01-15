@@ -80,8 +80,8 @@ object DecompileInsn extends Log {
       case DecompiledNew(descriptor: ClassOrInterfaceType)                   => comment(f"new ${descriptor}")
       case DecompiledMonitorEnter(expression)                                => comment(f"Monitor Enter: ${expression}")
       case DecompiledMonitorExit(expression)                                 => comment(f"Monitor Exit: ${expression}")
-      case DecompiledLabel(node: LabelNode)                                  => comment(f"Label ${node}") // TODO: use instruction number?
-      case DecompiledFrame(node: FrameNode)                                  => comment(f"Frame ${node}")
+      case DecompiledLabel(node: LabelNode)                                  => comment(f"Label: ${node.getLabel}")
+      case DecompiledFrame(node: FrameNode)                                  => comment(f"Frame: ${node.local} ${node.stack}")
       case DecompiledLineNumber(node: LineNumberNode)                        => comment(f"Line number: ${node.line}")
       case DecompiledUnsupported(insn: AbstractInsnNode)                     => comment(f"Unsupported ${insn}")
     }
