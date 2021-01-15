@@ -198,7 +198,7 @@ object MethodBody extends Log {
       // TODO: comma
       new ExpressionStmt(new VariableDeclarationExpr(new PrimitiveType(PrimitiveType.Primitive.INT), v.name))
     }
-    val declarations = variables.filter(_.basicValue != null).map(decompileVarDecl)
+    val declarations = variables.filter(_ != null).map(decompileVarDecl)
 
     this.log.debug(declarations.toList.toString)
     val statements = new NodeList[Statement](declarations.toList.asJava)

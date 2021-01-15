@@ -157,7 +157,8 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
 
   @throws[AnalyzerException]
   override def returnOperation(insn: AbstractInsnNode, value: Var, expected: Var): Unit = {
-    // Note that `unaryOperation` is also called whenever `returnOperation` is called
+    // Note that `unaryOperation` is also called whenever `returnOperation` is called.
+    // We override the effect of `unaryOperation` by calling `record` with `null` here.
     TypedBasicInterpreter.returnOperation(insn, value.basicValue, expected.basicValue)
     record(insn, List(value), null)
     ()
@@ -228,8 +229,10 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
       }
     }
 
-    // Set the `Frame.returnValue` as it is not updated by `Frame.merge`
+    // Set the `Frame.returnValue` as it is not updated by `Frame.merge`.
+    // This gets passed as to `returnOperation` as `expected`.
     for (frame <- this.getFrames) {
+      // Unreachable code has null frames, so skip those
       if (frame != null) {
         frame.setReturn(interpreter.returnTypeValue)
       }
