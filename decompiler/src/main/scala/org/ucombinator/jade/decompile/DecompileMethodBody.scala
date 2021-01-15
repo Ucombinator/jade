@@ -24,10 +24,10 @@ import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceMethodVisitor
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.analysis.ControlFlowGraph
 import org.ucombinator.jade.decompile.methodbody.MethodBody
-import org.ucombinator.jade.decompile.methodbody.Structure
-import org.ucombinator.jade.decompile.methodbody.ssa.SSA
+import org.ucombinator.jade.analysis.Structure
+import org.ucombinator.jade.analysis.ssa.SSA
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log

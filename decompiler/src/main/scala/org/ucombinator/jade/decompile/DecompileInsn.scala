@@ -17,8 +17,8 @@ import com.github.javaparser.ast.stmt._
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree._
 import org.ucombinator.jade.classfile.Descriptor
-import org.ucombinator.jade.decompile.methodbody.ssa.SSA
-import org.ucombinator.jade.decompile.methodbody.ssa.Var
+import org.ucombinator.jade.analysis.ssa.SSA
+import org.ucombinator.jade.analysis.ssa.Var
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log
 

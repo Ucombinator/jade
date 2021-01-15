@@ -1,4 +1,4 @@
-package org.ucombinator.jade.decompile.methodbody
+package org.ucombinator.jade.analysis
 
 import scala.jdk.CollectionConverters._
 

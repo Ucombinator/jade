@@ -1,4 +1,4 @@
-package org.ucombinator.jade.decompile.methodbody.ssa
+package org.ucombinator.jade.analysis.ssa
 
 import scala.jdk.CollectionConverters._
 
@@ -7,7 +7,7 @@ import org.objectweb.asm.tree._
 import org.objectweb.asm.tree.analysis._
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.TypedBasicInterpreter
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.analysis.ControlFlowGraph
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.Log
 

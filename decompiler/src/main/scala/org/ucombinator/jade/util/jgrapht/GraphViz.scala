@@ -10,7 +10,7 @@ import org.jgrapht.Graph
 import org.jgrapht.nio.DefaultAttribute
 import org.jgrapht.nio.dot.DOTExporter
 import org.ucombinator.jade.asm.Insn
-import org.ucombinator.jade.decompile.methodbody.ControlFlowGraph
+import org.ucombinator.jade.analysis.ControlFlowGraph
 
 object GraphViz {
   def escape(string: String): String = {
