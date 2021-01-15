@@ -166,11 +166,11 @@ object DecompileMethodBody extends Log {
       this.log.debug("++++ results and arguments ++++")
       for (i <- 0 until method.instructions.size) {
         val insn = method.instructions.get(i)
-        this.log.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ssa.instructionArguments.get(insn)}")
+        this.log.debug(f"args(${i}): ${Insn.longString(method, insn)} --- ${ssa.insnVars.get(insn)}")
       }
 
       this.log.debug("++++ ssa map ++++")
-      for ((key, value) <- ssa.ssaMap) {
+      for ((key, value) <- ssa.phiInputs) {
         this.log.debug(f"ssa: ${key} -> ${value}")
       }
 

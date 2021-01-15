@@ -192,7 +192,7 @@ object DecompileStatements extends Log {
 
     val (stmt, pendingOutside) = structuredBlock(cfg.entry)
     if (!pendingOutside.isEmpty) { Errors.fatal(f"Non-empty pending ${pendingOutside}") }
-    val variables = ssa.instructionArguments.values.map(_._1) ++ ssa.ssaMap.keys
+    val variables = ssa.insnVars.values.map(_._1) ++ ssa.phiInputs.keys
     this.log.debug("VARS: " + variables.toList)
     def decompileVarDecl(v: Var): Statement = {
       // TODO: modifiers

@@ -241,8 +241,8 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
 
 case class SSA(
     frames: Array[Frame[Var]],
-    instructionArguments: Map[AbstractInsnNode, (Var, List[Var])],
-    ssaMap: Map[Var, Set[(AbstractInsnNode, Var)]]
+    insnVars: Map[AbstractInsnNode, (Var, List[Var])],
+    phiInputs: Map[Var, Set[(AbstractInsnNode, Var)]]
 )
 
 case object SSA {
