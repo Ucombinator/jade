@@ -74,19 +74,8 @@ case class DecompiledUnsupported(insn: AbstractInsnNode)                        
 // TODO: use `|` patterns
 // TODO: UnaryExpr.Operator.BITWISE_COMPLEMENT: 0: iload_1; 1: iconst_m1; 2: ixor
 object DecompileInsn extends Log {
-  def decompileVar(variable: Var): NameExpr = {
-    // TODO: improve variable names (also use debug info for variable names)
-    variable match {
-      // TODO: +1 parameter if non-static
-      case ParameterVar(_, local: Int)                     => new NameExpr(f"parameter${local + 1}") // TODO: parameterVar?
-      case ReturnVar(_)                                    => new NameExpr(f"returnVar")
-      case ExceptionVar(_, insn: Insn)                     => new NameExpr(f"exceptionVar${insn.index}")
-      case InstructionVar(_, insn: Insn)                   => new NameExpr(f"instructionVar${insn.index}")
-      case CopyVar(_, insn: Insn, version: Int)            => new NameExpr(f"copyVar${insn.index}_${version}")
-      case PhiVar(_, insn: Insn, index: Int, _ /*TODO?*/ ) => new NameExpr(f"phiVar${insn.index}_${index}")
-      case EmptyVar                                        => ??? // TODO
-    }
-  }
+  def decompileVar(variable: Var): NameExpr = { new NameExpr(variable.name) }
+
   def decompileInsn(retVar: Var, insn: DecompiledInsn): Statement = {
     def comment(string: String): Statement = { JavaParser.setComment(new EmptyStmt(), new BlockComment(string)) }
     insn match {

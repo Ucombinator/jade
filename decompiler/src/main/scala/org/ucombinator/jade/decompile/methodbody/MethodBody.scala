@@ -7,7 +7,6 @@ import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 import org.jgrapht.graph._
-import org.objectweb.asm.tree.LabelNode
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.Insn.ordering
 import org.ucombinator.jade.decompile._
@@ -16,6 +15,12 @@ import org.ucombinator.jade.decompile.methodbody.ssa.SSA
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.Log
 import org.ucombinator.jade.util.MyersList
+import com.github.javaparser.ast.body.VariableDeclarator
+import com.github.javaparser.ast.`type`.PrimitiveType
+import com.github.javaparser.ast.`type`.{Type => JavaParserType}
+import org.objectweb.asm.{Type => AsmType}
+import org.objectweb.asm.tree.LabelNode
+import org.ucombinator.jade.decompile.methodbody.ssa.Var
 
 /*
 Non-Linear Stmt Types
@@ -41,7 +46,7 @@ object MethodBody extends Log {
   is it a loop head, which loop head is this part of
    */
 
-  def apply(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): Statement = {
+  def apply(cfg: ControlFlowGraph, ssa: SSA, structure: Structure): BlockStmt = {
     // TODO: check for SCCs with multiple entry points
     // TODO: LocalClassDeclarationStmt
     val jumpTargets = cfg.graph // TODO: rename to insnOfLabel
@@ -184,8 +189,21 @@ object MethodBody extends Log {
       return (currentStmt, pendingOutside)
     }
 
-    var (stmt, pendingOutside) = structuredBlock(cfg.entry)
+    val (stmt, pendingOutside) = structuredBlock(cfg.entry)
     if (!pendingOutside.isEmpty) { Errors.fatal(f"Non-empty pending ${pendingOutside}") }
-    return stmt
+    val variables = ssa.instructionArguments.values.map(_._1) ++ ssa.ssaMap.keys
+    this.log.debug("VARS: " + variables.toList)
+    def decompileVarDecl(v: Var): Statement = {
+      // TODO: modifiers
+      // TODO: comma
+      new ExpressionStmt(new VariableDeclarationExpr(new PrimitiveType(PrimitiveType.Primitive.INT), v.name))
+    }
+    val declarations = variables.filter(_.basicValue != null).map(decompileVarDecl)
+
+    this.log.debug(declarations.toList.toString)
+    val statements = new NodeList[Statement](declarations.toList.asJava)
+    statements.add(stmt)
+    val stmt2 = new BlockStmt(statements)
+    return stmt2
   }
 }

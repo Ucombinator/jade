@@ -191,7 +191,7 @@ object DecompileMethodBody extends Log {
       this.log.debug("**** Statement ****")
       val statement = MethodBody(cfg, ssa, structure)
       this.log.debug(statement.toString)
-      setDeclarationBody(declaration, new BlockStmt(new NodeList[Statement](statement)))
+      setDeclarationBody(declaration, statement)
 
       // var statements = List[Statement]()
       // for (insn <- method.instructions.toArray) {
