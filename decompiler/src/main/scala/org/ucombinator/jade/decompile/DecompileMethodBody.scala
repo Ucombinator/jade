@@ -31,8 +31,8 @@ import org.ucombinator.jade.analysis.SSA
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log
-import org.ucombinator.jade.util.jgrapht.Dominator
-import org.ucombinator.jade.util.jgrapht.GraphViz
+import org.ucombinator.jade.util.Dominator
+import org.ucombinator.jade.util.GraphViz
 
 object DecompileMethodBody extends Log {
   private def stubBody(message: String, comment: BlockComment): BlockStmt = {

@@ -1,4 +1,4 @@
-package org.ucombinator.jade.util.jgrapht
+package org.ucombinator.jade.util
 
 import java.io.StringWriter
 import java.io.Writer
