@@ -11,36 +11,38 @@ import org.ucombinator.jade.analysis.ControlFlowGraph
 import org.ucombinator.jade.util.Errors
 import org.ucombinator.jade.util.Log
 
-sealed abstract class Var(val name: String) extends Value {
-  def basicValue: BasicValue
-  override def getSize: Int = basicValue.getSize
-}
+case class StaticSingleAssignment(
+    frames: Array[Frame[Var]],
+    insnVars: Map[AbstractInsnNode, (Var, List[Var])],
+    phiInputs: Map[Var, Set[(AbstractInsnNode, Var)]]
+)
 
-// format: off
-case class ParameterVar  (basicValue: BasicValue,             local: Int  ) extends Var(f"parameterVar${local + 1}") // TODO: +1 parameter if non-static
-case class ReturnVar     (basicValue: BasicValue                          ) extends Var(f"returnVar") // TODO: used only for "expected" return type
-case class ExceptionVar  (basicValue: BasicValue, insn: Insn              ) extends Var(f"exceptionVar${insn.index}")
-case class InstructionVar(basicValue: BasicValue, insn: Insn              ) extends Var(f"insnVar${insn.index}")
-case class CopyVar       (basicValue: BasicValue, insn: Insn, version: Int) extends Var(f"copyVar${insn.index}_${version}")
-case object EmptyVar                                                        extends Var(f"emptyVar") {
-  override val basicValue: BasicValue = BasicValue.UNINITIALIZED_VALUE
-}
-case class PhiVar        (basicValue: BasicValue, insn: Insn, index: Int  , var changed: Boolean = false) extends Var(f"phiVar${insn.index}_${index}") {
-// format: on
-  // TODO: use private constructor to hide `changed`
-  // Note that `changed` has to be in the parameters so that the analysis sees that the value has changed
-  private var changedPhiVar: PhiVar = _
-  def change(): PhiVar = {
-    if (this.changedPhiVar != null) { this.changedPhiVar }
-    else {
-      this.changedPhiVar = this.copy(changed = true)
-      this.changedPhiVar.changedPhiVar = this.changedPhiVar
-      this.changedPhiVar
+case object StaticSingleAssignment {
+  def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): StaticSingleAssignment = {
+    val interpreter = new SSAInterpreter(method)
+
+    // Hook into a method that is called whenever `analyze` starts working on a new instruction
+    val oldInstructions = method.instructions
+    method.instructions = new InsnList {
+      override def get(index: Int): AbstractInsnNode = {
+        val insn = super.get(index)
+        interpreter.copyOperationPosition = 0
+        interpreter.originInsn = insn
+        insn
+      }
     }
+
+    for (i <- oldInstructions.toArray) {
+      method.instructions.add(i)
+    }
+
+    val frames = new SSAAnalyzer(cfg, interpreter).analyze(owner, method)
+
+    StaticSingleAssignment(frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
 }
 
-class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) with Log {
+private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) with Log {
   var copyOperationPosition: Int = 0 // For `copyOperation()`
   var originInsn: AbstractInsnNode = _ // For `merge`
   var instructionArguments = Map.empty[AbstractInsnNode, (Var, List[Var])]
@@ -181,7 +183,7 @@ class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) 
   }
 }
 
-class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends Analyzer[Var](interpreter) {
+private class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends Analyzer[Var](interpreter) {
 
   override def init(owner: String, method: MethodNode): Unit = {
     // We override this method because it runs near the start of `Analyzer.analyze`
@@ -236,36 +238,5 @@ class SSAAnalyzer(cfg: ControlFlowGraph, interpreter: SSAInterpreter) extends An
         frame.setReturn(interpreter.returnTypeValue)
       }
     }
-  }
-}
-
-case class StaticSingleAssignment(
-    frames: Array[Frame[Var]],
-    insnVars: Map[AbstractInsnNode, (Var, List[Var])],
-    phiInputs: Map[Var, Set[(AbstractInsnNode, Var)]]
-)
-
-case object StaticSingleAssignment {
-  def apply(owner: String, method: MethodNode, cfg: ControlFlowGraph): StaticSingleAssignment = {
-    val interpreter = new SSAInterpreter(method)
-
-    // Hook into a method that is called whenever `analyze` starts working on a new instruction
-    val oldInstructions = method.instructions
-    method.instructions = new InsnList {
-      override def get(index: Int): AbstractInsnNode = {
-        val insn = super.get(index)
-        interpreter.copyOperationPosition = 0
-        interpreter.originInsn = insn
-        insn
-      }
-    }
-
-    for (i <- oldInstructions.toArray) {
-      method.instructions.add(i)
-    }
-
-    val frames = new SSAAnalyzer(cfg, interpreter).analyze(owner, method)
-
-    StaticSingleAssignment(frames, interpreter.instructionArguments, interpreter.ssaMap)
   }
 }

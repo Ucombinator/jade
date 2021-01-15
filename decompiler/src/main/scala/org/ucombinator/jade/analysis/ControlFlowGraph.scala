@@ -12,13 +12,17 @@ import org.objectweb.asm.tree.analysis.Frame
 import org.ucombinator.jade.asm.Insn
 import org.ucombinator.jade.asm.TypedBasicInterpreter
 
+import ControlFlowGraph.Edge
+
 case class ControlFlowGraph(
     entry: Insn,
-    graph: DirectedPseudograph[Insn, ControlFlowGraph.Edge],
-    graphWithExceptions: Graph[Insn, ControlFlowGraph.Edge],
+    graph: DirectedPseudograph[Insn, Edge],
+    graphWithExceptions: Graph[Insn, Edge],
     frames: Array[Frame[BasicValue]])
 
 case object ControlFlowGraph {
+  final case class Edge(source: Insn, target: Insn)
+
   def apply(owner: String, method: MethodNode): ControlFlowGraph = {
     val graph = new DirectedPseudograph[Insn, Edge](classOf[Edge])
     for (i <- method.instructions.toArray) {
@@ -40,17 +44,15 @@ case object ControlFlowGraph {
     }
     ControlFlowGraph(entry, graph, graphWithExceptions, frames)
   }
+}
 
-  final case class Edge(source: Insn, target: Insn)
+private class ControlFlowGraphAnalyzer(method: MethodNode, graph: DirectedPseudograph[Insn, Edge])
+    extends Analyzer[BasicValue](TypedBasicInterpreter) {
 
-  class ControlFlowGraphAnalyzer(method: MethodNode, graph: DirectedPseudograph[Insn, Edge])
-      extends Analyzer[BasicValue](TypedBasicInterpreter) {
-
-    override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
-      val source = Insn(method, this.method.instructions.get(insn))
-      val target = Insn(method, this.method.instructions.get(successor))
-      this.graph.addEdge(source, target, Edge(source, target))
-      ()
-    }
+  override protected def newControlFlowEdge(insn: Int, successor: Int): Unit = {
+    val source = Insn(method, this.method.instructions.get(insn))
+    val target = Insn(method, this.method.instructions.get(successor))
+    this.graph.addEdge(source, target, Edge(source, target))
+    ()
   }
 }
