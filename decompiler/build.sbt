@@ -14,39 +14,39 @@ libraryDependencies ++= Seq(
   // NOTE: these are sorted alphabetically
 
   // Logging (see also com.typesafe.scalalogging)
-  "ch.qos.logback" % "logback-classic" % "1.2.3", // Basic logging framework
+  "ch.qos.logback" % "logback-classic" % "1.2.6", // Basic logging framework
 
   // Abstract Syntax Trees for the Java language
-  "com.github.javaparser" % "javaparser-core" % "3.18.0", // Main library
-  "com.github.javaparser" % "javaparser-core-serialization" % "3.18.0", // Serialization to/from JSON
-  "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.18.0", // Resolving symbols and identifiers
+  "com.github.javaparser" % "javaparser-core" % "3.23.0", // Main library
+  "com.github.javaparser" % "javaparser-core-serialization" % "3.23.0", // Serialization to/from JSON
+  "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.23.0", // Resolving symbols and identifiers
   // Omitting the JavaParser "parent" package as it is just metadata
   // Omitting the JavaParser "generator" and "metamodel" packages as they are just for building JavaParser
 
   // Logging (see also ch.qos.logback)
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2", // Logging via macros so they run only when needed
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4", // Logging via macros so they run only when needed
 
   // Command-line argument parsing
   "info.picocli" % "picocli" % "4.6.1",
   "info.picocli" % "picocli-codegen" % "4.6.1",
 
   // Vertex and edge graphs
-  "org.jgrapht" % "jgrapht-core" % "1.5.0",
-  "org.jgrapht" % "jgrapht-ext" % "1.5.0",
-  //"org.jgrapht" % "jgrapht-guava" % "1.5.0",
-  "org.jgrapht" % "jgrapht-io" % "1.5.0",
-  "org.jgrapht" % "jgrapht-opt" % "1.5.0",
+  "org.jgrapht" % "jgrapht-core" % "1.5.1",
+  "org.jgrapht" % "jgrapht-ext" % "1.5.1",
+  //"org.jgrapht" % "jgrapht-guava" % "1.5.1",
+  "org.jgrapht" % "jgrapht-io" % "1.5.1",
+  "org.jgrapht" % "jgrapht-opt" % "1.5.1",
 
   // `.class` file parsing and analysis
-  "org.ow2.asm" % "asm" % "9.0",
-  "org.ow2.asm" % "asm-analysis" % "9.0",
-  "org.ow2.asm" % "asm-commons" % "9.0",
-  //"org.ow2.asm" % "asm-test" % "9.0",
-  "org.ow2.asm" % "asm-tree" % "9.0",
-  "org.ow2.asm" % "asm-util" % "9.0",
+  "org.ow2.asm" % "asm" % "9.2",
+  "org.ow2.asm" % "asm-analysis" % "9.2",
+  "org.ow2.asm" % "asm-commons" % "9.2",
+  //"org.ow2.asm" % "asm-test" % "9.2",
+  "org.ow2.asm" % "asm-tree" % "9.2",
+  "org.ow2.asm" % "asm-util" % "9.2",
 
   // Testing framework for `src/test/`
-  "org.scalatest" %% "scalatest" % "3.2.3" % Test,
+  "org.scalatest" %% "scalatest" % "3.2.10" % Test,
 
   // format: on
 )
@@ -65,7 +65,7 @@ scalacOptions --= Seq(
 )
 
 // Flags to `javac`
-javacOptions in compile ++= Seq(
+compile / javacOptions  ++= Seq(
   "-Xlint", // Turn on all warnings
 )
 
@@ -77,8 +77,8 @@ dependencyAllowPreRelease := true // include pre-releases in dependency updates
 
 // Setup sbt-scalafmt
 // Run `scalafmtCheckAll` and `scalafmtSbtCheck` when compiling
-(compile in Compile) := (
-  (compile in Compile)
+(Compile / compile) := (
+  (Compile / compile)
     .dependsOn(
       scalafmtCheckAll.result, // .result ensures these are only warnings
       (Compile / scalafmtSbtCheck).result, // .result ensures these are only warnings
@@ -109,13 +109,13 @@ lazy val root = (project in file("."))
   )
 
 // Setup `sbt-assembly`
-assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
+assembly / assemblyOutputPath := new File("lib/jade/jade.jar")
 
 // In theory, this should slim down the jar to only the parts referenced.
 // However, it does not work due to the following two issues:
 //  - https://github.com/sbt/sbt-assembly/issues/186
 //  - https://github.com/sbt/sbt-assembly/issues/265
-//assemblyShadeRules in assembly := Seq(
+//assembly / assemblyShadeRules := Seq(
 //  ShadeRule.keep("org.ucombinator.jade.main.**").inAll,
 //  ShadeRule.keep("picocli.**").inAll)
 //
@@ -127,7 +127,7 @@ assemblyOutputPath in assembly := new File("lib/jade/jade.jar")
 //  - http://one-jar.sourceforge.net/
 //  - https://github.com/sbt/sbt-onejar
 
-assemblyMergeStrategy in assembly := {
+assembly / assemblyMergeStrategy := {
   case PathList(file)
       if List(
         "module-info.class",
@@ -152,10 +152,10 @@ assemblyMergeStrategy in assembly := {
 import complete.DefaultParsers._
 
 val flagsTableFile = settingKey[File]("Location of the flags table")
-flagsTableFile := (scalaSource in Compile).value / "org" / "ucombinator" / "jade" / "classfile" / "Flags.txt"
+flagsTableFile := (Compile / scalaSource).value / "org" / "ucombinator" / "jade" / "classfile" / "Flags.txt"
 
 val flagsSourceFile = settingKey[File]("Location of the generated `Flags.scala` file")
-flagsSourceFile := (sourceManaged in Compile).value / "org" / "ucombinator" / "jade" / "classfile" / "Flags.scala"
+flagsSourceFile := (Compile / sourceManaged).value / "org" / "ucombinator" / "jade" / "classfile" / "Flags.scala"
 
 val javaSpecParser =
   Space ~>
@@ -247,7 +247,7 @@ flagsTable := {
 }
 
 // TODO: sbt.Tracked.{ inputChanged, outputChanged } etc
-sourceGenerators in Compile += Def.task {
+Compile / sourceGenerators += Def.task {
   import org.scalafmt.sbt.ScalafmtSbtReporter
 
   val streamsValue = streams.value
@@ -255,7 +255,7 @@ sourceGenerators in Compile += Def.task {
   val flagsCode = FlagsGen.code(IO.read(flagsTableFile.value))
   val scalafmt = org.scalafmt.interfaces.Scalafmt
     .create(this.getClass.getClassLoader)
-    .withReporter(new ScalafmtSbtReporter(streamsValue.log, new java.io.OutputStreamWriter(streamsValue.binary())));
+    .withReporter(new ScalafmtSbtReporter(streamsValue.log, new java.io.OutputStreamWriter(streamsValue.binary()), true));
   if (flagsCode != scalafmt.format(scalafmtConfig.value.toPath(), sourceFile.toPath(), flagsCode)) {
     streamsValue.log.warn(f"\nGenerated file isn't formatted properly: ${sourceFile}\n\n")
   }
