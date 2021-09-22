@@ -177,8 +177,8 @@ class DecompileCmd extends Cmd[Unit] {
   // --include-file --exclude-file --include-class --exclude-class
   // --include-cxt-file --include-cxt-class
 
-  @Parameters(paramLabel = "<path>", arity = "1..*", description = Array("Files or directories to decompile"))
-  var path: java.util.List[Path] = _
+  @Parameters(paramLabel = "<path>", arity = "1..*", description = Array("Files or directories to decompile"), `type` = Array(classOf[java.nio.file.Path]))
+  var path: java.util.List[java.nio.file.Path] = _
 
   override def run(): Unit = {
     Decompile.main(path.asScala.toList)
