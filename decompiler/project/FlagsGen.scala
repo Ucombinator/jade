@@ -130,7 +130,7 @@ object FlagsGen {
                      |    new NodeList(flags.flatMap(_.modifier).asJava)
                      |  }
                      |
-                     |  private def fromInt[T](mapping: List[(Int, T)]): Int => List[T] = { int: Int =>
+                     |  private def fromInt[T](mapping: List[(Int, T)]): Int => List[T] = { (int: Int) =>
                      |    {
                      |      val maskedInt = int & 0xffff // Ignore ASM specific flags, which occur above bit 16
                      |      val result = mapping.filter(pair => (pair._1 & maskedInt) != 0)

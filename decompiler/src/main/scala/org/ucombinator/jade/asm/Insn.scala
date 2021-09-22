@@ -86,7 +86,7 @@ object Insn extends Textifier(Opcodes.ASM9) {
   val intToType: Map[Int, String] = typeToInt map { _.swap }
 
   // NOTE: valid only for Insn for the same method
-  implicit val ordering = new Ordering[Insn] {
+  implicit val ordering: Ordering[Insn] = new Ordering[Insn] {
     override def compare(x: Insn, y: Insn): Int = {
       assert(x.method eq y.method) // TODO: assert message or log message
       if ((x eq y) || (x.insn eq y.insn)) { 0 }

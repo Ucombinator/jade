@@ -2,7 +2,7 @@ organization := "org.ucombinator"
 name := "Jade"
 description := "Jade: The Java Decompiler"
 
-scalaVersion := "2.13.6"
+scalaVersion := "3.0.2"
 
 // TODO: subprojects: jade-lib and jade-cli
 
