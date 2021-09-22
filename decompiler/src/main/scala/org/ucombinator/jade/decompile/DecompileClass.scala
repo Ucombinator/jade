@@ -22,6 +22,7 @@ import org.ucombinator.jade.classfile.Signature
 import org.ucombinator.jade.util.JavaParser
 import org.ucombinator.jade.util.Log
 
+// TODO: rename package to `translate` or `transform` or `transformation`?
 object DecompileClass extends Log {
 
   def decompileLiteral(node: Object): Expression = {
@@ -107,7 +108,7 @@ object DecompileClass extends Log {
         index == paramCount - 1
     val varArgsAnnotations = new NodeList[AnnotationExpr]() // TODO?
     val name: SimpleName =
-      new SimpleName(
+      new SimpleName( // TODO: make consistent with analysis.ParameterVar
         if (node == null) { f"parameter${index + 1}" }
         else { node.name }
       )
@@ -147,6 +148,7 @@ object DecompileClass extends Log {
     // visibleLocalVariableAnnotations
     // invisibleLocalVariableAnnotations
     // TODO: JPModifier.Keyword.DEFAULT
+    // TODO: catch exceptions and return a stub method
     val modifiers = Flags.toModifiers(Flags.methodFlags(node.access))
     val annotations: NodeList[AnnotationExpr] = decompileAnnotations(
       node.visibleAnnotations,

@@ -42,6 +42,8 @@ case object StaticSingleAssignment {
   }
 }
 
+// TODO: maybe handle `this` var specially (i.e., no phivar)
+// TODO: extend TypedBasicInterpreter?
 private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcodes.ASM9) with Log {
   // Variables to be put in output
   var insnVars = Map.empty[AbstractInsnNode, (Var, List[Var])]
@@ -161,6 +163,7 @@ private class SSAInterpreter(method: MethodNode) extends Interpreter[Var](Opcode
 
   @throws[AnalyzerException]
   override def returnOperation(insn: AbstractInsnNode, value: Var, expected: Var): Unit = {
+    // TODO: capture `expected` Var somehow
     // Note that `unaryOperation` is also called whenever `returnOperation` is called.
     // We override the effect of `unaryOperation` by calling `record` with `null` here.
     // TODO: explain why we do not do this

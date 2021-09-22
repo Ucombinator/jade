@@ -4,6 +4,8 @@ description := "Jade: The Java Decompiler"
 
 scalaVersion := "2.13.4"
 
+// TODO: subprojects: jade-lib and jade-cli
+
 // TODO: improve compilation time
 
 libraryDependencies ++= Seq(

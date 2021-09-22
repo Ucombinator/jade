@@ -37,6 +37,7 @@ case object Decompile extends Log {
     }
     for (((name, readers), classIndex) <- VFS.classes.zipWithIndex) {
       for ((path, classReader) <- readers) { // TODO: pick "best" classReader
+        // TODO: why don't we combine the class and method passes?
         // Decompile class structure
         val compilationUnit = decompileClassFile(name, path.toString, classReader, classIndex)
 

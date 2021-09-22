@@ -27,6 +27,7 @@ import picocli.codegen.docgen.manpage.ManPageGenerator
 // TODO: description
 // TODO: header/footer?
 // TODO: aliases, description, defaultValueProvider
+// TODO: have build generate documentation
 
 // TODO: java -cp lib/jade/jade.jar picocli.AutoComplete -n jade org.ucombinator.jade.main.Main (see https://picocli.info/autocomplete.html)
 object Main {
@@ -43,6 +44,7 @@ object Main {
   }
 }
 
+// TODO: harmonize sub-command names for `gen-manpage` and `generate-completion`
 @Command(
   name = "jade",
   subcommands = Array(
@@ -76,6 +78,8 @@ class Main() extends Cmd[Unit] {
 abstract class Cmd[T] extends Callable[T] {
   @ParentCommand var mainCommand: Main = _
 
+  // TODO: Inherited Command Attributes (see release notes for 4.6)
+  // TODO: move these to inherited options (see release notes for 4.3)
   @Option(
     names = Array("--log"),
     paramLabel = "LEVEL",

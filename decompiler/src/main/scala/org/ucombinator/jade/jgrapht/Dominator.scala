@@ -7,6 +7,15 @@ import scala.reflect.ClassTag
 import org.jgrapht.Graph
 import org.jgrapht.graph.SimpleDirectedGraph
 import org.ucombinator.jade.util.Errors
+import org.jgrapht.alg.lca.EulerTourRMQLCAFinder
+
+case class DominatorTree[V](tree: Graph[V, Dominator.Edge[V]], root: V) {
+  private val lca = new EulerTourRMQLCAFinder(tree, root)
+  def dominates(a: V, b: V): Boolean = { lca.getLCA(a, b) == a }
+  def dominatesSource(a: V, b: Dominator.Edge[V]): Boolean = { lca.getLCA(a, tree.getEdgeSource(b)) == a }
+  def dominatesTarget(a: V, b: Dominator.Edge[V]): Boolean = { lca.getLCA(a, tree.getEdgeSource(b)) == a }
+}
+
 object Dominator {
   final case class Edge[V](source: V, target: V)
 

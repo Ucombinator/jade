@@ -9,6 +9,8 @@ sealed abstract class Var(val name: String) extends Value {
   override def getSize: Int = basicValue.getSize
 }
 
+// TODO: improve variable names (also use jvm bytecode debug info for variable names)
+
 // format: off
 case class ParameterVar  (basicValue: BasicValue,             local: Int  ) extends Var(f"parameterVar${local + 1}") // TODO: +1 parameter if non-static
 case class ReturnVar     (basicValue: BasicValue                          ) extends Var(f"returnVar") // TODO: used only for "expected" return type

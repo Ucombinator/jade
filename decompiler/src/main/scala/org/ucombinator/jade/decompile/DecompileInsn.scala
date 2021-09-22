@@ -98,7 +98,7 @@ object DecompileInsn extends Log {
     }
     def instanceCall(node: AbstractInsnNode): DecompiledInsn = {
       val (insn, argumentTypes, typeArguments) = call(node)
-      DecompiledExpression(new MethodCallExpr( /*TODO: cast to insn.owner?*/ args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)): _*)))
+      DecompiledExpression(new MethodCallExpr( /*TODO: cast to insn.owner?*/ args(0), typeArguments, insn.name, new NodeList(argumentTypes.indices.map(i => args(i + 1)): _*))) // TODO: better way for this
     }
     def staticCall(node: AbstractInsnNode): DecompiledInsn = {
       val (insn, argumentTypes, typeArguments) = call(node)
