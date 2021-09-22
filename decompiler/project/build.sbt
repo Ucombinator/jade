@@ -1,4 +1,4 @@
-scalaVersion := "2.12.15" // Most of our plugins do not support Scala 2.13 so we use Scala 2.12
+scalaVersion := "2.12.15" // Most of our plugins do not support Scala 3 or Scala 2.13 so we use Scala 2.12
 
 // format: off
 
