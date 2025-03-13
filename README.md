@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This repository has been replaced by a rewrite in Kotlin at https://github.com/plilab/jade and is now archived and read-only.
+
 # Jade: The Java Decompiler
 
 Jade is a Java decompiler that aims for high reliability through extensive
